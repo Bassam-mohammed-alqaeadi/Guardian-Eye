@@ -1,0 +1,181 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function member(familyId) { return signedIn() && exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)); }
+    function activeMember(familyId) {
+      return member(familyId)
+        && (!get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.keys().hasAll(['status'])
+          || get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.status == 'active');
+    }
+    function parent(familyId) { return activeMember(familyId) && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role in ['primaryParent', 'parent', 'coParent']; }
+    function owner(familyId) { return activeMember(familyId) && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role == 'primaryParent'; }
+    function creatingOwnFamily(familyId) { return signedIn() && existsAfter(/databases/$(database)/documents/families/$(familyId)) && getAfter(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid; }
+    function activeOwnedDevice(familyId, deviceId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId))
+        && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.status == 'active'
+        && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.memberUid == request.auth.uid;
+    }
+    function activeTokenDevice(familyId, deviceId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId))
+        && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.status == 'active'
+        && (get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.memberUid == request.auth.uid
+          || (get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.ownerUid == request.auth.uid
+            && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.memberUid == null
+            && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.role in ['parentDevice', 'coParentDevice', 'spouseDevice']));
+    }
+    match /families/{familyId} {
+      allow read: if activeMember(familyId);
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if owner(familyId);
+      match /members/{memberId} {
+        allow read: if parent(familyId) || (activeMember(familyId) && memberId == request.auth.uid);
+        allow create: if (creatingOwnFamily(familyId)
+            && memberId == request.auth.uid
+            && request.resource.data.role == 'primaryParent'
+            && request.resource.data.memberUid == request.auth.uid
+            && request.resource.data.status == 'active') || (
+              signedIn()
+              && memberId == request.auth.uid
+              && request.resource.data.memberUid == request.auth.uid
+              && request.resource.data.status == 'active'
+              && request.resource.data.role in ['parent', 'coParent']
+              && request.resource.data.invitationId is string
+              && exists(/databases/$(database)/documents/families/$(familyId)/invitations/$(request.resource.data.invitationId))
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/invitations/$(request.resource.data.invitationId)).data.status == 'accepted'
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/invitations/$(request.resource.data.invitationId)).data.acceptedAccountUid == request.auth.uid
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/invitations/$(request.resource.data.invitationId)).data.acceptedMemberId == request.resource.data.memberId
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/invitations/$(request.resource.data.invitationId)).data.proposedRole == request.resource.data.role
+            );
+        allow update: if owner(familyId)
+          && request.resource.data.memberUid == resource.data.memberUid
+          && request.resource.data.memberId == resource.data.memberId
+          && request.resource.data.familyId == resource.data.familyId
+          && !(resource.data.role == 'primaryParent' && request.resource.data.role != resource.data.role)
+          && request.resource.data.role in ['primaryParent', 'parent', 'coParent', 'spouse', 'child'];
+        allow delete: if owner(familyId);
+      }
+      match /invitations/{invitationId} {
+        allow read: if owner(familyId) || (signedIn()
+          && resource.data.status == 'pending'
+          && request.auth.token.email == resource.data.targetEmail);
+        allow create: if owner(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.invitationId == invitationId
+          && request.resource.data.inviterMemberId == get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.memberId
+          && request.resource.data.proposedRole in ['parent', 'coParent']
+          && request.resource.data.status == 'pending'
+          && request.resource.data.expiresAt is timestamp
+          && request.resource.data.expiresAt > request.time;
+        allow update: if (owner(familyId)
+            && resource.data.status == 'pending'
+            && request.resource.data.status == 'cancelled'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAtClient', 'updatedByUid', 'syncStatus', 'idempotencyKey', 'updatedAt'])) || (
+              signedIn()
+              && resource.data.status == 'pending'
+              && request.auth.token.email == resource.data.targetEmail
+              && request.resource.data.status == 'accepted'
+              && request.resource.data.acceptedAccountUid == request.auth.uid
+              && request.resource.data.acceptedMemberId is string
+              && request.time < resource.data.expiresAt
+              && existsAfter(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid))
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.memberUid == request.auth.uid
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.memberId == request.resource.data.acceptedMemberId
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.status == 'active'
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.invitationId == invitationId
+              && getAfter(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role == resource.data.proposedRole
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAtClient', 'acceptedAccountUid', 'acceptedMemberId', 'updatedByUid', 'syncStatus', 'idempotencyKey', 'updatedAt'])
+            );
+        allow delete: if false;
+      }
+      match /policies/{policyId} { allow read: if member(familyId); allow create, update, delete: if parent(familyId); }
+      match /policy_overrides/{overrideId} { allow read: if parent(familyId); allow create, update, delete: if parent(familyId); }
+      match /exception_requests/{requestId} {
+        allow read: if parent(familyId)
+          || (activeOwnedDevice(familyId, resource.data.childDeviceId)
+            && resource.data.childUid == request.auth.uid);
+        allow create: if activeOwnedDevice(familyId, request.resource.data.childDeviceId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.requestId == requestId
+          && request.resource.data.childUid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.requestedDurationMinutes is int
+          && request.resource.data.requestedDurationMinutes > 0
+          && request.resource.data.target is string;
+        allow update: if (
+          activeOwnedDevice(familyId, resource.data.childDeviceId)
+          && resource.data.childUid == request.auth.uid
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'reviewedAtClient', 'updatedByUid', 'syncStatus', 'idempotencyKey'])
+        ) || (
+          parent(familyId)
+          && resource.data.familyId == familyId
+          && resource.data.status == 'pending'
+          && request.resource.data.status in ['approved', 'denied']
+          && request.resource.data.childDeviceId == resource.data.childDeviceId
+          && request.resource.data.childUid == resource.data.childUid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'reviewedByMemberId', 'reviewedAtClient', 'overrideId', 'expiresAtClient', 'updatedByUid', 'syncStatus', 'idempotencyKey'])
+        );
+        allow delete: if false;
+      }
+      match /devices/{deviceId} {
+        allow read: if member(familyId);
+        allow create: if parent(familyId) && request.resource.data.ownerUid == request.auth.uid && request.resource.data.memberUid == null && request.resource.data.status == 'active';
+        allow update: if parent(familyId) && resource.data.ownerUid == request.auth.uid && request.resource.data.ownerUid == resource.data.ownerUid && request.resource.data.memberUid == resource.data.memberUid;
+        allow delete: if owner(familyId);
+        match /notification_tokens/{tokenId} {
+          allow read: if parent(familyId);
+          allow create, update: if activeTokenDevice(familyId, deviceId) && request.resource.data.userUid == request.auth.uid;
+          allow delete: if activeTokenDevice(familyId, deviceId);
+        }
+        match /enforcement_status/{statusId} {
+          allow read: if parent(familyId);
+          allow create, update: if statusId == 'current'
+            && activeOwnedDevice(familyId, deviceId)
+            && request.resource.data.familyId == familyId
+            && request.resource.data.deviceId == deviceId
+            && request.resource.data.memberUid == request.auth.uid;
+          allow delete: if false;
+        }
+        match /usage_summaries/{usageId} {
+          allow read: if parent(familyId);
+          allow create: if activeOwnedDevice(familyId, deviceId)
+            && request.resource.data.familyId == familyId
+            && request.resource.data.deviceId == deviceId
+            && request.resource.data.memberUid == request.auth.uid
+            && request.resource.data.usageId == usageId
+            && request.resource.data.target is string
+            && request.resource.data.totalMilliseconds is int
+            && request.resource.data.totalMilliseconds >= 0;
+          allow update, delete: if false;
+        }
+      }
+      match /device_pairings/{pairingId} { allow read, write: if false; }
+      match /incidents/{incidentId} {
+        allow read: if parent(familyId);
+        allow create: if activeOwnedDevice(familyId, request.resource.data.deviceId);
+        allow update: if parent(familyId) && resource.data.familyId == familyId;
+        allow delete: if owner(familyId);
+      }
+      match /sos/{sosId} {
+        allow read: if parent(familyId);
+        allow create: if activeOwnedDevice(familyId, request.resource.data.deviceId);
+        allow update: if parent(familyId) && resource.data.familyId == familyId;
+        allow delete: if false;
+      }
+      match /locations/{locationId} {
+        allow read: if parent(familyId);
+        allow create: if activeOwnedDevice(familyId, request.resource.data.deviceId);
+        allow update, delete: if owner(familyId);
+      }
+      match /messages/{messageId} { allow read, create: if member(familyId); allow update: if member(familyId); allow delete: if parent(familyId); }
+      match /sync_events/{eventId} { allow read: if parent(familyId); allow create: if member(familyId) && request.resource.data.authorUid == request.auth.uid; allow update, delete: if false; }
+      match /notification_events/{eventId} { allow read: if parent(familyId); allow create, update, delete: if false; }
+    }
+  }
+}

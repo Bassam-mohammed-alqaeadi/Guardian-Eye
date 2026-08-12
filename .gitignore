@@ -1,0 +1,12 @@
+# Tool and build outputs
+.dart_tool/
+build/
+.gradle/
+android/.gradle/
+android/local.properties
+ios/Flutter/ephemeral/
+
+# Local Firebase platform configuration supplied by the project owner.
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
