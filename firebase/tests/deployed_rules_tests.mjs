@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import {
   assertSucceeds, assertFails, initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, writeBatch, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc, setDoc, writeBatch, Timestamp } from 'firebase/firestore';
 
 const deployedRules = readFileSync('/home/ubuntu/m5_audit/deployed_ruleset_new.json', 'utf8');
 const RULES = JSON.parse(deployedRules).source.files[0].content;
@@ -324,6 +324,194 @@ test('DEPLOYED rules M7: a revoked device cannot write usage summaries', async (
   });
   const childApp = environment.authenticatedContext('child-a').firestore();
   await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-revoked`), usageSummaryData({ usageId: 'usage-revoked' })));
+});
+
+const memberDataForeign = (uid) => ({
+  familyId: 'family-b', memberId: uid, memberUid: uid, role: 'child', status: 'active',
+});
+
+const enforcementStatusData = (overrides = {}) => ({
+  familyId,
+  deviceId: 'device-a',
+  memberUid: 'child-a',
+  lastEnforcementState: 'enforcement_applied',
+  lastApplication: 'applied',
+  lastAppliedReason: 'video_over_daily_limit',
+  policyVersion: 1,
+  evaluatedAt: '2026-08-14T00:00:00.000Z',
+  ...overrides,
+});
+
+test('DEPLOYED rules M8: parents read enforcement_status; a stranger cannot', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/parent-a`), memberData('parent-a', 'primaryParent', 'owner-local'));
+      await setDoc(doc(db, `families/${familyId}/members/coparent-a`), memberData('coparent-a', 'coParent', 'coparent-local'));
+      await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+      await setDoc(doc(db, `families/${familyId}/devices/device-a/enforcement_status/current`), enforcementStatusData());
+    });
+    const owner = iso.authenticatedContext('parent-a').firestore();
+    await assertSucceeds(getDoc(doc(owner, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+    const spouse = iso.authenticatedContext('coparent-a').firestore();
+    await assertSucceeds(getDoc(doc(spouse, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+    // A revoked member of the same family is not an active parent — denied
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}/members/stranger-a`), { familyId, memberId: 'stranger-a', memberUid: 'stranger-a', role: 'child', status: 'revoked' });
+    });
+    const stranger = iso.authenticatedContext('stranger-a').firestore();
+    await assertFails(getDoc(doc(stranger, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+    // A logged-in actor from a foreign family cannot read this family's record
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/family-b`), { familyId: 'family-b', ownerUid: 'parent-b', status: 'active' });
+      await setDoc(doc(db, `families/family-b/members/child-b`), memberDataForeign('child-b'));
+    });
+    const foreignChild = iso.authenticatedContext('child-b').firestore();
+    await assertFails(getDoc(doc(foreignChild, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M8: child app writes only statusId=current on its own active device', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8b',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+    });
+    const childApp = iso.authenticatedContext('child-a').firestore();
+    await assertSucceeds(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`), enforcementStatusData()));
+    // Any statusId other than 'current' is denied — the collection is a single-slot record
+    await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/historical-1`), enforcementStatusData()));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M8: create requires the lineage invariants — family, device, member uid, statusId', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8c',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+    });
+    const childApp = iso.authenticatedContext('child-a').firestore();
+    // memberUid mismatch
+    await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`), { ...enforcementStatusData(), memberUid: 'parent-a' }));
+    // familyId mismatch
+    await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`), { ...enforcementStatusData(), familyId: 'family-b' }));
+    // deviceId mismatch
+    await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`), { ...enforcementStatusData(), deviceId: 'device-b' }));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M8: update allowed for the owning child app; delete denied for everyone', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8d',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+      await setDoc(doc(db, `families/${familyId}/devices/device-a/enforcement_status/current`), enforcementStatusData());
+    });
+    const childApp = iso.authenticatedContext('child-a').firestore();
+    await assertSucceeds(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`), { ...enforcementStatusData(), lastEnforcementState: 'evaluation_ready' }));
+    await assertFails(deleteDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+    const parent = iso.authenticatedContext('parent-a').firestore();
+    await assertFails(deleteDoc(doc(parent, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M8: a parent cannot write enforcement_status — read-only parent view', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8e',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/parent-a`), memberData('parent-a', 'primaryParent', 'owner-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+    });
+    const parent = iso.authenticatedContext('parent-a').firestore();
+    await assertFails(setDoc(doc(parent, `families/${familyId}/devices/device-a/enforcement_status/current`), enforcementStatusData()));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M8: a revoked device cannot write enforcement_status', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8f',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'revoked' });
+    });
+    const childApp = iso.authenticatedContext('child-a').firestore();
+    await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/enforcement_status/current`), enforcementStatusData()));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M8: a foreign family actor cannot write or read enforcement_status', async () => {
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m8g',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+      await setDoc(doc(db, `families/family-b/devices/device-b`), { familyId: 'family-b', ownerUid: 'parent-b', memberUid: 'child-b', status: 'active' });
+      await setDoc(doc(db, `families/family-b/devices/device-b/enforcement_status/current`), {
+        familyId: 'family-b', deviceId: 'device-b', memberUid: 'child-b',
+        lastEnforcementState: 'enforcement_applied', lastApplication: 'applied',
+        lastAppliedReason: 'bedtime', policyVersion: 1,
+        evaluatedAt: '2026-08-14T00:00:00.000Z',
+      });
+    });
+    const foreignChild = iso.authenticatedContext('child-b').firestore();
+    const foreignParent = iso.authenticatedContext('parent-b').firestore();
+    await assertFails(setDoc(doc(foreignChild, `families/${familyId}/devices/device-a/enforcement_status/current`), enforcementStatusData()));
+    await assertFails(getDoc(doc(foreignChild, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+    await assertFails(getDoc(doc(foreignParent, `families/${familyId}/devices/device-a/enforcement_status/current`)));
+  } finally {
+    await iso.cleanup();
+  }
 });
 
 test('DEPLOYED rules M7: a foreign family actor cannot write or read usage summaries', async () => {

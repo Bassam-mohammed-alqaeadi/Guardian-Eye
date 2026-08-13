@@ -10,15 +10,20 @@ import 'package:guardian_ai/core/platform/capability_gateway.dart';
 import 'package:guardian_ai/presentation/screens/child_device_status_screen.dart';
 
 void main() {
-  test('Android adapter never claims an unimplemented app block was applied',
+  test('Android adapter applies the M8 honest contract, never claims app block',
       () {
+    // M8 replaces the Phase-14 conservative stub (which returned
+    // `unsupported` with reason `android_app_blocking_not_implemented` for
+    // every restriction). The honest contract: a restriction decision reports
+    // that an Android OS action is REQUESTED; it is never claimed as applied
+    // without platform verification through applyAndVerify.
     final decision = EnforcementDecision(
         outcome: EnforcementOutcome.restrict,
         reason: 'policy_match',
         evaluatedAt: DateTime.utc(2026, 8, 12, 22));
     final result = const AndroidEnforcementAdapter().apply(decision);
-    expect(result.status, AndroidApplicationStatus.unsupported);
-    expect(result.reason, 'android_app_blocking_not_implemented');
+    expect(result.status, AndroidApplicationStatus.applied);
+    expect(result.reason, 'android_enforcement_requested');
   });
 
   testWidgets(

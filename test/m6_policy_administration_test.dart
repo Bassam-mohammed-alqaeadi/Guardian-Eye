@@ -388,7 +388,11 @@ void main() {
           actor: _parentMember,
           languageCode: 'ar',
           policies: [_bedtime]);
-      await _scrollTo(tester, 'سياسة النوم');
+      // The effective-decision card legitimately embeds the policy name in
+      // its reason line, so the broad textContaining finder matches twice.
+      // Scroll using the exact-name finder so only the policy tile scrolls.
+      await tester.scrollUntilVisible(find.text('سياسة النوم'), 100);
+      await tester.pumpAndSettle();
       expect(find.text('سياسة النوم'), findsOneWidget);
       expect(find.textContaining('21:00'), findsOneWidget);
       expect(find.textContaining('07:00'), findsOneWidget);
