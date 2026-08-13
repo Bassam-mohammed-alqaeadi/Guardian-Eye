@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 12,
+        version: 13,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -111,6 +111,10 @@ class GuardianDatabase {
         "CREATE UNIQUE INDEX idx_exception_pending_target ON child_exception_requests(child_device_id, target) WHERE status = 'pending'");
     batch.execute(
         'CREATE INDEX idx_exception_family_status_created ON child_exception_requests(family_id, status, created_at DESC)');
+    batch.execute(
+        'CREATE TABLE child_enforcement_states(id TEXT PRIMARY KEY, device_id TEXT NOT NULL REFERENCES devices(id), family_id TEXT NOT NULL REFERENCES families(id), state TEXT NOT NULL, outcome TEXT, reason TEXT NOT NULL, decided_at TEXT NOT NULL, applied_at TEXT, policy_version INTEGER, enqueued_for_sync INTEGER NOT NULL DEFAULT 0)');
+    batch.execute(
+        'CREATE INDEX idx_enforcement_states_device_time ON child_enforcement_states(device_id, decided_at DESC)');
     await batch.commit(noResult: true);
   }
 
@@ -192,7 +196,7 @@ class GuardianDatabase {
       await db.execute('ALTER TABLE policy_overrides ADD COLUMN child_device_id TEXT REFERENCES devices(id)');
     }
     if (oldVersion < 12) {
-      await db.execute("ALTER TABLE family_members ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+      await db.execute('ALTER TABLE family_members ADD COLUMN status TEXT NOT NULL DEFAULT \'active\'');
       await db.execute('ALTER TABLE family_members ADD COLUMN account_uid TEXT');
       await db.execute('ALTER TABLE family_members ADD COLUMN invitation_id TEXT');
       await db.execute('ALTER TABLE family_members ADD COLUMN invited_at TEXT');
@@ -205,6 +209,12 @@ class GuardianDatabase {
       await db.execute("CREATE UNIQUE INDEX idx_members_family_account_active ON family_members(family_id, account_uid) WHERE account_uid IS NOT NULL AND status = 'active'");
       await db.execute('CREATE INDEX idx_invitations_family_status_expiry ON family_invitations(family_id, status, expires_at)');
       await db.execute('CREATE INDEX idx_invitations_target_status ON family_invitations(target_email, status, expires_at)');
+    }
+    if (oldVersion < 13) {
+      await db.execute(
+          'CREATE TABLE child_enforcement_states(id TEXT PRIMARY KEY, device_id TEXT NOT NULL REFERENCES devices(id), family_id TEXT NOT NULL REFERENCES families(id), state TEXT NOT NULL, outcome TEXT, reason TEXT NOT NULL, decided_at TEXT NOT NULL, applied_at TEXT, policy_version INTEGER, enqueued_for_sync INTEGER NOT NULL DEFAULT 0)');
+      await db.execute(
+          'CREATE INDEX idx_enforcement_states_device_time ON child_enforcement_states(device_id, decided_at DESC)');
     }
   }
 }

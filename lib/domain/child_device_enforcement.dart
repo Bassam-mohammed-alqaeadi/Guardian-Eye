@@ -300,3 +300,134 @@ class EnforcementEngine {
         policyVersion: resolution.policyVersion);
   }
 }
+
+/// M8 enforcement vocabulary. Appended without modifying the existing
+/// enforcement engine; the states deliberately distinguish the four
+/// non-interchangeable facts: policy exists, decision says over-limit,
+/// enforcement requested, enforcement applied. Raw enum names are never
+/// exposed to users — UI strings live in localization.
+enum EnforcementState {
+  /// No restriction evaluation has been requested yet.
+  notRequested,
+
+  /// Android usage-access permission must be granted before observation.
+  permissionRequired,
+
+  /// The device cannot observe or enforce (API unavailable).
+  unsupported,
+
+  /// A fresh policy exists and a decision can be evaluated.
+  evaluationReady,
+
+  /// A restriction decision exists and the OS action is being verified.
+  enforcementRequested,
+
+  /// Android confirmed the OS-level action (verified result).
+  enforcementApplied,
+
+  /// The OS action could not be confirmed.
+  enforcementFailed,
+
+  /// No valid fresh policy: restriction is honestly suspended.
+  policyStale,
+
+  /// The device cannot sync with the parent backend right now.
+  deviceOffline,
+
+  /// A recovery mechanism (boot, reopen, sync) is restoring enforcement.
+  recoveryPending,
+
+  /// The child manually revoked usage-access permission.
+  permissionDenied
+}
+
+/// The verified result of applying a restriction on Android. Only
+/// [EnforcementApplication.applied] counts as "Enforcement Applied".
+enum EnforcementApplication { notRequested, requested, applied, failed }
+
+/// Local durable enforcement row stored in the device repository.
+class EnforcementStateRecord {
+  const EnforcementStateRecord({
+    required this.deviceId,
+    required this.state,
+    required this.outcome,
+    required this.reason,
+    required this.decidedAt,
+    required this.appliedAt,
+    required this.policyVersion,
+    required this.enqueuedForSync,
+  });
+  final String deviceId;
+  final EnforcementState state;
+  final EnforcementOutcome? outcome;
+  final String reason;
+  final DateTime decidedAt;
+  final DateTime? appliedAt;
+  final int? policyVersion;
+  final bool enqueuedForSync;
+
+  /// Offline-safe freshness: a stale policy may not silently keep an
+  /// old restriction active beyond the documented watermark.
+  bool isWithinFreshnessWindow(DateTime now, {Duration maxAge = const Duration(days: 7)}) =>
+      now.difference(decidedAt.toUtc()) <= maxAge;
+
+  Map<String, Object?> toRow() => {
+        'device_id': deviceId,
+        'state': state.name,
+        'outcome': outcome?.name,
+        'reason': reason,
+        'decided_at': decidedAt.toIso8601String(),
+        'applied_at': appliedAt?.toIso8601String(),
+        'policy_version': policyVersion,
+        // Stored as 0/1 INTEGER — the sqflite FFI runtime rejects bool
+        // values inside SQL statements, so booleans are normalized here.
+        'enqueued_for_sync': enqueuedForSync ? 1 : 0,
+      };
+
+  factory EnforcementStateRecord.fromRow(Map<String, Object?> row) =>
+      EnforcementStateRecord(
+        deviceId: row['device_id'] as String,
+        state: EnforcementState.values.firstWhere(
+            (candidate) => candidate.name == row['state']),
+        outcome: (row['outcome'] as String?) == null
+            ? null
+            : EnforcementOutcome.values
+                .firstWhere((candidate) => candidate.name == row['outcome']),
+        reason: row['reason'] as String,
+        decidedAt: DateTime.parse(row['decided_at'] as String),
+        appliedAt: (row['applied_at'] as String?) == null
+            ? null
+            : DateTime.parse(row['applied_at'] as String),
+        policyVersion: row['policy_version'] as int?,
+        enqueuedForSync: (row['enqueued_for_sync'] is int)
+            ? (row['enqueued_for_sync'] as int) == 1
+            : (row['enqueued_for_sync'] ?? 0) == 1,
+      );
+}
+
+/// The sync evidence of the most recent enforcement record delivery.
+enum EnforcementSyncState { synced, syncPending, syncFailed, neverSynced, offlineCached }
+
+/// Snapshot presented to the child-context UI for the M8 enforcement section.
+class EnforcementApplicationSnapshot {
+  const EnforcementApplicationSnapshot({
+    required this.deviceId,
+    required this.state,
+    required this.application,
+    required this.freshness,
+    required this.syncState,
+    required this.decisionReason,
+    required this.decidedAt,
+    required this.appliedAt,
+    required this.policyVersion,
+  });
+  final String deviceId;
+  final EnforcementState state;
+  final EnforcementApplication application;
+  final bool freshness;
+  final EnforcementSyncState syncState;
+  final String decisionReason;
+  final DateTime? decidedAt;
+  final DateTime? appliedAt;
+  final int? policyVersion;
+}

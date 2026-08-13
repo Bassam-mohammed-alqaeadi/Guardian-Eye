@@ -358,6 +358,79 @@ class ChildDeviceRepository {
     });
   }
 
+  /// M8 durable enforcement state. Written inside a transaction together
+  /// with the local lifecycle state so offline enforcement always has a
+  /// single consistent truth on the device.
+  Future<void> recordEnforcementState(EnforcementStateRecord record) async {
+    final db = await _database.database;
+    await db.transaction((tx) async {
+      final lifecycleState = await _requiredState(tx, record.deviceId); // ensures offline-safe lifecycle row exists
+      await tx.insert('child_enforcement_states',
+          record.toRow()
+            ..['id'] = _uuid.v4()
+            ..['family_id'] = lifecycleState.familyId);
+    });
+  }
+
+  /// Most recent enforcement record for the device (offline-safe read).
+  Future<EnforcementStateRecord?> activeEnforcementState(
+      String deviceId) async {
+    final db = await _database.database;
+    final rows = await db.rawQuery(
+        "SELECT * FROM child_enforcement_states WHERE device_id = ? "
+        "ORDER BY decided_at DESC LIMIT 1",
+        [deviceId]);
+    if (rows.isEmpty) return null;
+    return EnforcementStateRecord.fromRow(rows.single);
+  }
+
+
+  Future<EnforcementStateRecord?> _activeEnforcementStateTx(
+      Transaction tx, String deviceId) async {
+    final rows = await tx.rawQuery(
+        "SELECT * FROM child_enforcement_states WHERE device_id = ? "
+        "ORDER BY decided_at DESC LIMIT 1",
+        [deviceId]);
+    if (rows.isEmpty) return null;
+    return EnforcementStateRecord.fromRow(rows.single);
+  }
+
+  /// Enqueues the enforcement state for remote delivery through the
+  /// existing outbox (path /devices/{deviceId}/enforcement_status).
+  Future<void> queueEnforcementSync(String deviceId) async {
+    final db = await _database.database;
+    await db.transaction((tx) async {
+      final state = await _requiredState(tx, deviceId);
+      final record = await _activeEnforcementStateTx(tx, deviceId);
+      await _enqueue(tx,
+          aggregateId: deviceId,
+          operation: 'child.enforcement.applied',
+          payload: {
+            'familyId': state.familyId,
+            'deviceId': deviceId,
+            'state': record?.state.name,
+            'outcome': record?.outcome?.name,
+            'reason': record?.reason,
+            'decidedAt': record?.decidedAt.toIso8601String(),
+            'appliedAt': record?.appliedAt?.toIso8601String(),
+            'policyVersion': record?.policyVersion
+          });
+    });
+  }
+
+  /// Outbox rows proving (or disproving) that the latest enforcement
+  /// record reached the parent backend. Mirrors the M7 usage pattern.
+  Future<List<Map<String, Object?>>> pendingEnforcementSyncRowsForDevice(
+      {required String deviceId}) async {
+    final db = await _database.database;
+    return db.rawQuery(
+        "SELECT state, last_error FROM outbox WHERE aggregate_type = 'childDevice' "
+        "AND aggregate_id = ? AND operation = 'child.enforcement.applied' "
+        "AND state IN ('queued', 'failed', 'syncing', 'blocked') "
+        "ORDER BY created_at DESC",
+        [deviceId]);
+  }
+
   Future<Map<String, Object?>> _childDevice(
       Transaction tx, String deviceId) async {
     final rows = await tx.query('devices',

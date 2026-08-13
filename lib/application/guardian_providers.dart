@@ -5,9 +5,11 @@ import '../core/database/guardian_database.dart';
 import '../core/firebase/guardian_firebase_bootstrap.dart';
 import '../core/platform/capability_gateway.dart';
 import '../core/platform/android_enforcement_adapter.dart';
+import '../core/platform/enforcement_platform_channel.dart';
 import '../core/platform/android_observation_gateway.dart';
 import 'child_screen_time_coordinator.dart';
 import 'child_usage_measurement_provider.dart';
+import 'child_enforcement_coordinator.dart';
 import 'device_link_service.dart';
 import '../data/fcm_token_repository.dart';
 import '../data/child_device_repository.dart';
@@ -127,7 +129,7 @@ final capabilityGatewayProvider = Provider((ref) => const CapabilityGateway());
 final androidObservationGatewayProvider =
     Provider((ref) => const AndroidObservationGateway());
 final androidEnforcementAdapterProvider =
-    Provider((ref) => const AndroidEnforcementAdapter());
+    Provider((ref) => AndroidEnforcementAdapter(platform: EnforcementPlatformChannel()));
 final childScreenTimeCoordinatorProvider = Provider((ref) =>
     ChildScreenTimeCoordinator(
         ref.watch(childDeviceRepositoryProvider),
@@ -145,6 +147,18 @@ final childUsageMeasurementProvider =
             repository: ref.watch(childDeviceRepositoryProvider),
             deviceId: deviceId,
             now: DateTime.now()));
+/// M8 — Screen-Time Enforcement. On-demand, consent-gated enforcement
+/// evaluation for a child device: honest enforcement state, application
+/// evidence, policy freshness, and sync evidence derived only from the
+/// actual outbox row state. Offline-safe: all inputs are local.
+final childEnforcementCoordinatorProvider = Provider<ChildEnforcementCoordinator>(
+    (ref) => ChildEnforcementCoordinator(
+        ref.watch(childDeviceRepositoryProvider),
+        ref.watch(androidEnforcementAdapterProvider)));
+final enforcementStateProvider =
+    FutureProvider.family((ref, String deviceId) =>
+        ref.watch(childEnforcementCoordinatorProvider).evaluate(deviceId,
+            moment: DateTime.now().toUtc()));
 final dashboardProvider = FutureProvider<GuardianDashboard>(
     (ref) => ref.watch(familyRepositoryProvider).loadDashboard());
 final capabilityStatusProvider = FutureProvider<List<CapabilityStatus>>(

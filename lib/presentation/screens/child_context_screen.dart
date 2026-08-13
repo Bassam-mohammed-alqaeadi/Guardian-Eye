@@ -139,6 +139,11 @@ class _ChildContextBody extends ConsumerWidget {
               totalMinutes: snapshot.todayUsage.totalMinutes,
               hasDevice: snapshot.deviceState != null,
               canAct: canAct),
+        const SizedBox(height: 12),
+        if (snapshot.deviceState != null)
+          _EnforcementSection(
+              deviceId: snapshot.deviceState!.deviceId,
+              canAct: canAct),
         const SizedBox(height: 20),
         _ScreenTimeSection(
             familyId: familyId,
@@ -543,6 +548,195 @@ class _UsageMeasurementSection extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// M8 — honest screen-time enforcement status on the child device.
+///
+/// The states below are derived from the verified enforcement chain
+/// (resolver → engine → adapter), never asserted without platform
+/// confirmation. No label ever claims an app was 'blocked' — the UI
+/// describes the policy condition and what the device confirmed.
+class _EnforcementSection extends ConsumerWidget {
+  const _EnforcementSection({required this.deviceId, required this.canAct});
+  final String deviceId;
+  final bool canAct;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final enforcement = ref.watch(enforcementStateProvider(deviceId));
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.shield_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(l10n.t('m8EnforcementTitle'),
+                        style: theme.textTheme.titleMedium)),
+                if (!canAct)
+                  const Icon(Icons.lock_outline,
+                      size: 18, color: Colors.orange),
+              ],
+            ),
+            const SizedBox(height: 10),
+            enforcement.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (_, __) => Text(l10n.t('m8EnforcementUnavailable'),
+                  style: theme.textTheme.bodyMedium),
+              data: (snapshot) =>
+                  _EnforcementCard(snapshot: snapshot),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () =>
+                    ref.invalidate(enforcementStateProvider(deviceId)),
+                icon: const Icon(Icons.refresh_outlined, size: 18),
+                label: Text(l10n.t('m8RefreshEnforcement'),
+                    style: theme.textTheme.labelMedium),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EnforcementCard extends StatelessWidget {
+  const _EnforcementCard({required this.snapshot});
+  final EnforcementApplicationSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final state = snapshot.state;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('${l10n.t('m8EnforcementSubtitle')}:',
+            style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(_stateText(state, l10n), style: theme.textTheme.bodyLarge),
+        const SizedBox(height: 4),
+        Text(_stateDetail(state, l10n),
+            style: theme.textTheme.bodyMedium),
+        if (snapshot.application == EnforcementApplication.applied &&
+            snapshot.appliedAt != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_outlined, size: 16,
+                    color: Colors.green),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                      '${l10n.t('m8StateEnforcementApplied')}: '
+                      '${_shortStamp(snapshot.appliedAt!, l10n)}',
+                      style: theme.textTheme.bodySmall),
+                ),
+              ],
+            ),
+          ),
+        if (snapshot.application == EnforcementApplication.failed &&
+            state == EnforcementState.enforcementFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(l10n.t('m8VerificationNote'),
+                style: theme.textTheme.bodySmall),
+          ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _syncBadge(snapshot.syncState, l10n),
+            const SizedBox(width: 8),
+            _freshnessBadge(snapshot.freshness, l10n),
+            if (snapshot.policyVersion != null) const SizedBox(width: 8),
+            if (snapshot.policyVersion != null)
+              Text('${l10n.t('policyVersion')}: ${snapshot.policyVersion}',
+                  style: theme.textTheme.bodySmall),
+          ],
+        ),
+      ],
+    );
+  }
+
+  static String _stateText(EnforcementState state, AppLocalizations l10n) =>
+      switch (state) {
+        EnforcementState.notRequested => l10n.t('m8StateNotRequested'),
+        EnforcementState.permissionRequired =>
+          l10n.t('m8StatePermissionRequired'),
+        EnforcementState.evaluationReady => l10n.t('m8StateEvaluationReady'),
+        EnforcementState.enforcementRequested =>
+          l10n.t('m8StateEvaluationReady'),
+        EnforcementState.enforcementApplied =>
+          l10n.t('m8StateEnforcementApplied'),
+        EnforcementState.enforcementFailed => l10n.t('m8StateEnforcementFailed'),
+        EnforcementState.policyStale => l10n.t('m8StatePolicyStale'),
+        EnforcementState.deviceOffline => l10n.t('m8StateDeviceOffline'),
+        EnforcementState.unsupported => l10n.t('m8StateUnsupported'),
+        EnforcementState.recoveryPending => l10n.t('m8StateDeviceOffline'),
+        EnforcementState.permissionDenied => l10n.t('m8StatePermissionDenied'),
+      };
+
+  static String _stateDetail(
+          EnforcementState state, AppLocalizations l10n) =>
+      switch (state) {
+        EnforcementState.notRequested => l10n.t('m8StateNotRequestedDetail'),
+        EnforcementState.permissionRequired =>
+          l10n.t('m8StatePermissionRequiredDetail'),
+        EnforcementState.evaluationReady =>
+          l10n.t('m8StateEvaluationReadyDetail'),
+        EnforcementState.enforcementRequested =>
+          l10n.t('m8StateEvaluationReadyDetail'),
+        EnforcementState.enforcementApplied =>
+          l10n.t('m8StateEnforcementAppliedDetail'),
+        EnforcementState.enforcementFailed =>
+          l10n.t('m8StateEnforcementFailedDetail'),
+        EnforcementState.policyStale => l10n.t('m8StatePolicyStaleDetail'),
+        EnforcementState.deviceOffline => l10n.t('m8StateDeviceOfflineDetail'),
+        EnforcementState.unsupported => l10n.t('m8StateUnsupportedDetail'),
+        EnforcementState.recoveryPending =>
+          l10n.t('m8StateDeviceOfflineDetail'),
+        EnforcementState.permissionDenied =>
+          l10n.t('m8StatePermissionDeniedDetail'),
+      };
+
+  static Widget _syncBadge(
+      EnforcementSyncState sync, AppLocalizations l10n) {
+    final String text = switch (sync) {
+      EnforcementSyncState.synced => l10n.t('m8SyncedNow'),
+      EnforcementSyncState.syncPending => l10n.t('m8SyncPending'),
+      EnforcementSyncState.syncFailed => l10n.t('m8SyncFailed'),
+      EnforcementSyncState.neverSynced => l10n.t('m8SyncPending'),
+      EnforcementSyncState.offlineCached => l10n.t('m8SyncPending'),
+    };
+    return Chip(label: Text(text, style: const TextStyle(fontSize: 11)));
+  }
+
+  static Widget _freshnessBadge(bool fresh, AppLocalizations l10n) {
+    final String text = fresh
+        ? l10n.t('dataFresh')
+        : l10n.t('m7StaleData');
+    return Chip(label: Text(text, style: const TextStyle(fontSize: 11)));
+  }
+
+  static String _shortStamp(DateTime at, AppLocalizations l10n) {
+    final local = at.toLocal();
+    final pad = (int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${pad(local.month)}-${pad(local.day)} '
+        '${pad(local.hour)}:${pad(local.minute)}';
   }
 }
 
