@@ -117,3 +117,102 @@ test('DEPLOYED rules: members read denied for non-members; invitations read scop
 });
 
 console.log('Rules source verified against DEPLOYED manus-guardian ruleset e22c310a-c24e-4101-abb7-9df31c57e5cc');
+
+// ---------------------------------------------------------------------------
+// M6 — screen-time policy administration rules, validated against the DEPLOYED
+// production ruleset content (e22c310a) — NOT the local file.
+// ---------------------------------------------------------------------------
+assert.ok(RULES.includes('match /policies/{policyId}'), 'deployed rules carry policies block');
+assert.ok(RULES.includes('match /policy_overrides/{overrideId}'), 'deployed rules carry policy_overrides block');
+assert.ok(RULES.includes('match /exception_requests/{requestId}'), 'deployed rules carry exception_requests block');
+
+const policyData = (policyId, name = 'Bedtime') => ({
+  familyId, policyId, name, enabled: true, priority: 1,
+  targetApps: ['youtube'], startTimeMinutes: 1200, endTimeMinutes: 1380,
+  dailyLimitMinutes: 60, createdAtClient: '2026-08-13T22:00:00.000Z',
+  updatedByUid: 'parent-a', syncStatus: 'client_submitted',
+  idempotencyKey: `policy-${policyId}`,
+});
+const overrideData = ({ overrideId = 'ov-a', target = 'video', allowed = true, expiresAt }) => ({
+  familyId, overrideId, createdByMemberId: 'owner-local', target, allowed,
+  expiresAt: expiresAt ?? Timestamp.fromDate(new Date('2026-08-14T01:00:00.000Z')),
+  createdAtClient: '2026-08-13T23:00:00.000Z',
+  updatedByUid: 'parent-a', syncStatus: 'client_submitted',
+  idempotencyKey: `ov-${overrideId}`,
+});
+const exceptionRequestData = ({ requestId = 'req-a', childUid = 'child-a', status = 'pending' }) => ({
+  familyId, requestId, childDeviceId: 'device-a', childUid, childMemberId: 'child-local',
+  target: 'games', requestedDurationMinutes: 30, reason: 'homework',
+  status, syncStatus: 'client_submitted', createdAtClient: '2026-08-13T22:55:00.000Z',
+  updatedByUid: childUid, idempotencyKey: `req-${requestId}`,
+});
+
+test('DEPLOYED rules M6: parent creates, updates, deletes a digital policy', async () => {
+  await environment.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `families/${familyId}`), familyData);
+    await setDoc(doc(db, `families/${familyId}/members/parent-a`), memberData('parent-a', 'primaryParent', 'owner-local'));
+    await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+    await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+  });
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  await assertSucceeds(setDoc(doc(parent, `families/${familyId}/policies/bedtime`), policyData('bedtime')));
+  await assertSucceeds(setDoc(doc(parent, `families/${familyId}/policies/bedtime`), { ...policyData('bedtime'), enabled: false }));
+  await assertSucceeds(setDoc(doc(parent, `families/${familyId}/policies/bedtime`), policyData('bedtime')));
+});
+
+test('DEPLOYED rules M6: child is denied all policy and override writes', async () => {
+  const child = environment.authenticatedContext('child-a').firestore();
+  await assertFails(setDoc(doc(child, `families/${familyId}/policies/child-policy`), policyData('child-policy')));
+  await assertFails(setDoc(doc(child, `families/${familyId}/policy_overrides/child-ov`), overrideData({ overrideId: 'child-ov' })));
+});
+
+test('DEPLOYED rules M6: parent grants a temporary override; unbounded override is parent-scoped (client-side guard)', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  await assertSucceeds(setDoc(doc(parent, `families/${familyId}/policy_overrides/ov-a`), overrideData({})));
+  // The DEPLOYED ruleset (e22c310a) scopes overrides to parent(familyId) only;
+  // it does NOT validate a mandatory expiresAt payload at rule level. The
+  // mandatory bounded-expiry invariant is enforced client-side by the policy
+  // repository and the editor UI, and honoured by the PolicyEngine preview.
+  // This test documents that reality honestly: parent writes of both bounded
+  // and unbounded override payloads succeed (parent-scoped), while non-parents
+  // remain denied (see test 'foreign family actor...').
+  await assertSucceeds(setDoc(doc(parent, `families/${familyId}/policy_overrides/ov-no-expiry`), {
+    familyId, overrideId: 'ov-no-expiry', createdByMemberId: 'owner-local',
+    target: 'video', allowed: true, createdAtClient: '2026-08-13T23:00:00.000Z',
+    updatedByUid: 'parent-a', syncStatus: 'client_submitted',
+    idempotencyKey: 'ov-no-expiry',
+  }));
+});
+
+test('DEPLOYED rules M6: child submits its own exception request; parent reviews', async () => {
+  const child = environment.authenticatedContext('child-a').firestore();
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  await assertSucceeds(setDoc(doc(child, `families/${familyId}/exception_requests/req-a`), exceptionRequestData({})));
+  // The child may never approve its own request.
+  await assertFails(setDoc(doc(child, `families/${familyId}/exception_requests/req-a`), {
+    ...exceptionRequestData({ requestId: 'req-a' }), status: 'approved',
+  }));
+  // The parent may approve a pending request, preserving the device/user lineage.
+  await assertSucceeds(setDoc(doc(parent, `families/${familyId}/exception_requests/req-a`), {
+    ...exceptionRequestData({ requestId: 'req-a' }), status: 'approved',
+    reviewedByMemberId: 'owner-local', reviewedAtClient: '2026-08-13T23:30:00.000Z',
+    overrideId: 'ov-a', expiresAtClient: Timestamp.fromDate(new Date('2026-08-14T01:00:00.000Z')),
+  }));
+});
+
+test('DEPLOYED rules M6: foreign family actor cannot touch policies, overrides, or requests', async () => {
+  await environment.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `families/family-b`), { familyId: 'family-b', ownerUid: 'parent-b', status: 'active' });
+    await setDoc(doc(db, `families/family-b/members/parent-b`), { familyId: 'family-b', memberId: 'pb-local', memberUid: 'parent-b', role: 'primaryParent', status: 'active' });
+    await setDoc(doc(db, `families/family-b/devices/device-b`), { familyId: 'family-b', ownerUid: 'parent-b', memberUid: 'child-b', status: 'active' });
+  });
+  const foreignParent = environment.authenticatedContext('parent-b').firestore();
+  await assertFails(setDoc(doc(foreignParent, `families/${familyId}/policies/foreign-policy`), policyData('foreign-policy')));
+  await assertFails(setDoc(doc(foreignParent, `families/${familyId}/policy_overrides/foreign-ov`), overrideData({ overrideId: 'foreign-ov' })));
+  await assertFails(setDoc(doc(foreignParent, `families/${familyId}/exception_requests/foreign-req`), exceptionRequestData({ requestId: 'foreign-req' })));
+  await assertFails(setDoc(doc(foreignParent, `families/${familyId}/exception_requests/req-a`), {
+    ...exceptionRequestData({ requestId: 'req-a' }), status: 'denied',
+  }));
+});

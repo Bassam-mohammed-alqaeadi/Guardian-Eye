@@ -441,9 +441,11 @@ void main() {
       expect(Directionality.of(element), TextDirection.rtl);
       await _scrollTo(tester, 'العودة إلى لوحة التحكم');
       expect(find.text('العودة إلى لوحة التحكم'), findsOneWidget);
-      expect(find.text('إمكانات قادمة — غير متوفرة بعد'), findsOneWidget);
-      expect(find.textContaining('وضع النوم'), findsOneWidget);
-      expect(find.textContaining('تصفية المحتوى'), findsOneWidget);
+      // M6 replaced the coming-soon placeholder with the live screen-time
+      // administration section; assert its title and the policies label.
+      await _scrollTo(tester, 'إدارة وقت الشاشة');
+      expect(find.textContaining('إدارة وقت الشاشة'), findsOneWidget);
+      expect(find.textContaining('سياسات نشطة'), findsOneWidget);
     });
 
     testWidgets('11. English locale drives a left-to-right surface',
@@ -460,12 +462,11 @@ void main() {
       expect(find.text('Child context'), findsOneWidget);
       await _scrollTo(tester, 'Back to dashboard');
       expect(find.text('Back to dashboard'), findsOneWidget);
-      await _scrollTo(tester, 'Upcoming capabilities');
-      expect(find.text('Upcoming capabilities — not yet available'),
-          findsOneWidget);
-      expect(find.text('Coming soon'), findsWidgets);
-      expect(find.textContaining('Bedtime mode'), findsOneWidget);
-      expect(find.textContaining('Content filtering'), findsOneWidget);
+      // M6 replaced the coming-soon placeholder with the live screen-time
+      // administration section; assert its title and the policies label.
+      await _scrollTo(tester, 'Manage screen time');
+      expect(find.textContaining('Manage screen time'), findsOneWidget);
+      expect(find.textContaining('active policies'), findsOneWidget);
     });
 
     testWidgets('12. navigation to child context is canonical and deep-linkable',
