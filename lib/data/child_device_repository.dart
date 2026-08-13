@@ -319,6 +319,22 @@ class ChildDeviceRepository {
     return rows.map(_summaryFromMap).toList();
   }
 
+  /// Honest sync evidence for the device's usage observations. Returns the
+  /// outbox rows that are still queued, failed, syncing, or blocked — the only
+  /// evidence the measurement UI may use to claim that a usage observation is
+  /// pending synchronization or has a recorded failure. Never interprets
+  /// absence as failure.
+  Future<List<Map<String, Object?>>> pendingUsageSyncRowsForDevice(
+      {required String deviceId}) async {
+    final db = await _database.database;
+    return db.rawQuery(
+        "SELECT state, last_error FROM outbox WHERE aggregate_type = 'childDevice' "
+        "AND aggregate_id = ? AND operation = 'child.usage.observed' "
+        "AND state IN ('queued', 'failed', 'syncing', 'blocked') "
+        "ORDER BY created_at DESC",
+        [deviceId]);
+  }
+
   Future<void> recordScreenTimeEvaluation(
       {required String deviceId,
       required ScreenTimeEvaluation evaluation,

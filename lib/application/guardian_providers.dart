@@ -7,6 +7,7 @@ import '../core/platform/capability_gateway.dart';
 import '../core/platform/android_enforcement_adapter.dart';
 import '../core/platform/android_observation_gateway.dart';
 import 'child_screen_time_coordinator.dart';
+import 'child_usage_measurement_provider.dart';
 import 'device_link_service.dart';
 import '../data/fcm_token_repository.dart';
 import '../data/child_device_repository.dart';
@@ -132,6 +133,18 @@ final childScreenTimeCoordinatorProvider = Provider((ref) =>
         ref.watch(childDeviceRepositoryProvider),
         ref.watch(androidObservationGatewayProvider),
         ref.watch(androidEnforcementAdapterProvider)));
+
+/// M7 — Screen-Time Measurement. On-demand, consent-gated measurement
+/// snapshot for a child device's current local day: usage totals,
+/// per-target breakdown, honest observation state, freshness, and sync
+/// evidence derived only from the actual outbox row state.
+final childUsageMeasurementProvider =
+    FutureProvider.family((ref, String deviceId) =>
+        buildUsageMeasurementSnapshot(
+            coordinator: ref.watch(childScreenTimeCoordinatorProvider),
+            repository: ref.watch(childDeviceRepositoryProvider),
+            deviceId: deviceId,
+            now: DateTime.now()));
 final dashboardProvider = FutureProvider<GuardianDashboard>(
     (ref) => ref.watch(familyRepositoryProvider).loadDashboard());
 final capabilityStatusProvider = FutureProvider<List<CapabilityStatus>>(

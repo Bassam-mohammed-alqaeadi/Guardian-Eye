@@ -8,8 +8,22 @@ enum UsageObservationState {
   unsupported,
   observing,
   noObservation,
-  observed
+  observed,
+  stale,
+  offlineCached,
+  syncPending,
+  syncFailed
 }
+
+/// How fresh a locally observed usage measurement is relative to now.
+/// Kept coarse on purpose: the UI must never pretend an old reading
+/// is current. [staleThreshold] is intentionally short (2 hours).
+enum UsageFreshness { fresh, stale }
+
+/// [UsageFreshness] derived from the observation capture moment.
+UsageFreshness freshnessFor(DateTime capturedAt, DateTime now,
+        {Duration threshold = const Duration(hours: 2)}) =>
+    now.difference(capturedAt) > threshold ? UsageFreshness.stale : UsageFreshness.fresh;
 
 enum EnforcementStatus {
   notRequested,
