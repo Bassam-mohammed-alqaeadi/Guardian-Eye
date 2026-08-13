@@ -201,8 +201,8 @@ class _Dashboard extends ConsumerWidget {
               familyId: familyId,
               children: data.children,
               deviceStates: deviceStates,
-              onOpenChild: () =>
-                  context.push('/family/$familyId', extra: actor?.id)),
+              onOpenChild: (child) =>
+                  context.push('/child/$familyId/${child.id}')),
           const SizedBox(height: 20),
           _NavGroup(
             label: l10n.t('familyMembers'),
@@ -510,7 +510,8 @@ class _ChildOverview extends StatelessWidget {
   final String familyId;
   final List<FamilyMember> children;
   final AsyncValue<List<ChildDeviceState>> deviceStates;
-  final VoidCallback onOpenChild;
+    /// Opens the child-context surface for the tapped child.
+  final void Function(FamilyMember child) onOpenChild;
 
   @override
   Widget build(BuildContext context) {
@@ -555,7 +556,7 @@ class _ChildOverview extends StatelessWidget {
                           'device${lifecycleName[0].toUpperCase() + lifecycleName.substring(1)}')
                       : l10n.t('noDevicesLinked')),
                   trailing: OutlinedButton(
-                    onPressed: onOpenChild,
+                    onPressed: () => onOpenChild(child),
                     child: Text(l10n.t('childDetails')),
                   ),
                 ),
