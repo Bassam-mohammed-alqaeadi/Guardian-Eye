@@ -12,10 +12,10 @@
 | Firestore authorization | Owner invite/cancel and recipient acceptance rules with post-commit membership checks. | **VERIFIED IN EMULATOR** | Rules not deployed in Phase 17. |
 | Child restriction | Child role cannot invite, change role, revoke, or accept an adult invitation. | **VERIFIED IN EMULATOR** | Physical authenticated child flow not tested. |
 | Cross-family isolation | Rules deny owner from another family and forged family payload. | **VERIFIED IN EMULATOR** | Real-backend evidence absent. |
-| Trusted authenticated actor | Server-sourced UID path, local/remote family-member reconciliation, role/status/child boundary checks, and fail-closed result. | **IMPLEMENTED + VERIFIED LOCALLY** | Requires Flutter client ↔ Emulator and physical runtime evidence after original artifact restoration. |
-| Family members UI | RTL/LTR local screen, member/device status, pending invitations, and owner-gated forms. | **IMPLEMENTED + VERIFIED LOCALLY** | Dashboard now passes only the verified actor; its runtime evidence awaits the Firebase artifacts. |
-| Full Flutter verification | Full suite attempted. | **IMPLEMENTED — VALIDATION BLOCKED** | Missing original `firebase_options.dart` prevents five test files and analysis from compiling. |
-| Android APK | Build attempted. | **HUMAN ACTION REQUIRED** | Recovered sandbox has no Android SDK. |
+| Trusted authenticated actor | Server-sourced UID path, local/remote family-member reconciliation, role/status/child boundary checks, and fail-closed result. | **IMPLEMENTED + VERIFIED LOCALLY** (10/10) | Flutter client ↔ Emulator live round trip and physical runtime evidence still pending (outside in-repo scope). |
+| Family members UI | RTL/LTR local screen, member/device status, pending invitations, and owner-gated forms. | **IMPLEMENTED + VERIFIED LOCALLY** | Dashboard passes only the verified actor; runtime evidence pending physical-device validation. |
+| Full Flutter verification | Full suite. | **VERIFIED — 73/73 PASS** (final reconfirmation 13 Aug 2026, 0 blocked files after Firebase options recovery and localization fixes). | — |
+| Android APK | Build. | **VERIFIED — BUILD_SUCCESS** (debug artifact, ≈172 MB, single attempt, Android SDK installed, Gradle remediated). | Release APK and device validation remain separate approvals. |
 | iPhone verification | No macOS/Xcode runtime available. | **HUMAN ACTION REQUIRED** | Requires a Mac and Apple signing/device process. |
 | Real Firebase Phase 17 deployment | No deployment attempted. | **NOT IMPLEMENTED** | Requires explicit owner approval after local artifact restoration and review. |
 
@@ -25,6 +25,6 @@ The acceptance path is stronger than a client-declared role transition: a recipi
 
 The UI does not infer authority from local role alone. A view that lacks an explicit active actor member does not render member-management controls. This avoids presenting an unauthenticated device as a family owner, but it means Dashboard-level management must remain unavailable until account-to-member binding has evidence.
 
-## Decision
+## Decision (updated 13 August 2026 — final closure)
 
-Phase 17 has a verified local and Emulator foundation but does not satisfy its full GREEN acceptance gate. The next engineering action is not UI expansion or Phase 18: it is secure restoration of the original Firebase local artifacts, complete Flutter validation, and Flutter-client-to-Emulator validation of the implemented trusted actor binding.
+Phase 17 now satisfies its full in-repo GREEN acceptance gate: Firebase client configuration recovered and identity-matched, complete Flutter validation (73/73, 0 analyzer issues), emulator validation (15/15 Firestore, 2/2 Functions), and a successful debug APK build. The next engineering action is not UI expansion or Phase 18: it is the remaining runtime/physical validations (physical Android device/AVD, client ↔ Emulator live round trip, and real-backend validation upon explicit owner approval), none of which were performed or authorized in Phase 17. **Do not start Phase 18 without explicit product-owner authorization.**

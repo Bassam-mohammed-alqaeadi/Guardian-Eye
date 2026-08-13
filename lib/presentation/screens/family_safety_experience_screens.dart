@@ -136,14 +136,20 @@ class ParentExceptionRequestsScreen extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (_, __) => _Retry(onRetry: () =>
                     ref.invalidate(familyExceptionRequestsProvider(familyId))),
-                data: (items) => ListView(padding: const EdgeInsets.all(16), children: [
+                data: (items) => SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(children: [
                   _Notice(text: l10n.t('exceptionUnsupportedNotice')),
                   const SizedBox(height: 12),
+                  Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(l10n.t('approvalNature'),
+                          style: Theme.of(context).textTheme.bodySmall)),
                   if (items.isEmpty)
                     _Notice(text: l10n.t('noRequests'))
                   else
                     ...items.map((request) => _ParentRequestCard(request: request))
-                ]))));
+                ])))));
   }
 }
 

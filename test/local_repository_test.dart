@@ -49,7 +49,7 @@ void main() {
         startMinute: 1260,
         endMinute: 420,
         restrictedTargets: {'video'});
-    final now = DateTime(2026, 8, 12, 22);
+    final now = DateTime.now();
     final override = await policies.createOverride(
         familyId: family.id,
         createdByMemberId: 'parent',
