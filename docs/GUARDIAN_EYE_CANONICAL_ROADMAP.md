@@ -593,6 +593,8 @@ After M4's gates pass, the prescribed order is M5, then M6–M8 as the screen-ti
 | 4 | 2026-08-13 | Manus AI | Split Screen Time into three milestones (M6 administration, M7 measurement, M8 enforcement/resilience), consistent with the Phase 13 separation of policy creation from device enforcement. |
 | 5 | 2026-08-13 | Manus AI | Deferred communication (chat/audio/mirroring) to M14, Couple Harmony authority to M12, commercialization to M15/M16, and location/filtering to M12/M13 — none may block the MVP critical path. |
 | 6 | 2026-08-13 | Manus AI | Declared M9 a pure infrastructure-promotion milestone (remote writer, rules, FCM proof) gated by HUMAN ACTION REQUIRED Firebase decisions; M4–M8 evidence defined in local terms only. |
+| 7 | 2026-08-13 | Manus AI | M5 executed with early real-backend integration under the owner-authorized execution model: real `manus-guardian` (Spark, `billingEnabled: false`) audited read-only (Phase B), document shapes verified compatible, outbox-backed operations (invite/cancel/accept/role update/revocation) classified REAL FIREBASE — queued until the local `firebase/firestore.rules` is redeployed (the live ruleset `c102428d` lacks the `invitations` subcollection block). M9 remains the production promotion gate; this change refines the execution model without cancelling M9. |
+
 
 This document is a living artifact. Any deviation from its milestone ordering must be recorded here before implementation begins, and no M4+ implementation may start without explicit user instruction, per the standing user requirements.
 
@@ -613,5 +615,9 @@ This document is a living artifact. Any deviation from its milestone ordering mu
 [11]: docs/ARCHITECTURE_STATUS.md "Architecture Status"
 [12]: docs/PHASE_17_ARCHITECTURE.md "Phase 17 Architecture — Canonical Family Membership"
 [13]: docs/UX_SPRINT_01_V2_RECONCILIATION.md "UX Sprint 01 v2 Reconciliation — dead-path inventory"
+[14]: docs/UX_SPRINT_01_M5_SCOPE_AND_CONTRACT.md "M5 Scope and Contract"
+[15]: docs/UX_SPRINT_01_M5_GAP_AUDIT.md "M5 Gap Audit"
+[16]: docs/UX_SPRINT_01_M5_TEST_EVIDENCE.md "M5 Test Evidence"
+[17]: docs/UX_SPRINT_01_M5_COMPLETION_REPORT.md "M5 Completion Report"
 
 *Implementation evidence cited above was verified read-only against the repository at commit `d72c66d`. No file was modified in producing this document.*
