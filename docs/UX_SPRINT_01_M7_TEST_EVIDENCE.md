@@ -1,6 +1,6 @@
 # UX Sprint 01 — M7 Test Evidence
 
-**Date:** 2026-08-13 (UTC+3) · **Baseline:** `9f360d32cbb8ee2c7f3ee0e022e040ff88e27356` · **Environment:** Flutter 3.47.0 / Dart 3.7.x, Ubuntu 24.04 sandbox, Firebase Emulator Suite
+**Date:** 2026-08-13 (UTC+3) · **Baseline:** `9f360d32cbb8ee2c7f3ee0e022e040ff88e27356` · **Environment:** Flutter 3.47.0 / Dart 3.13.0, Ubuntu 24.04 sandbox, Firebase Emulator Suite
 
 This document records the direct output of every validation gate executed for M7. Screenshots, timings, and tail output are quoted verbatim where relevant. No result in this document is inferred; every claim is backed by the command run.
 
