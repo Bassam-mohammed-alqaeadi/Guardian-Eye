@@ -1,3 +1,4 @@
+library;
 /// M1 — App Shell + Canonical Navigation: focused widget evidence.
 ///
 /// These tests prove the shell properties defined by the M1 scope:
@@ -13,12 +14,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:guardian_ai/application/family_context_provider.dart';
 import 'package:guardian_ai/application/guardian_providers.dart';
-import 'package:guardian_ai/core/localization/app_localizations.dart';
+import 'package:guardian_ai/data/child_device_repository.dart';
+import 'package:guardian_ai/domain/child_device_enforcement.dart';
 import 'package:guardian_ai/domain/family_authorization.dart';
 import 'package:guardian_ai/domain/guardian_models.dart';
-import 'package:go_router/go_router.dart';
 import 'package:guardian_ai/presentation/guardian_app.dart';
 import 'package:guardian_ai/presentation/router/app_router.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'test_database.dart';
+
+/// The new dashboard providers (device states, incidents) are pure
+/// local reads; every shell test overrides them with deterministic
+/// values so the SQLite layer is never touched by these tests.
+/// Stub repository returning no child device states — the dashboard
+/// overview is exercised deterministically without touching SQLite.
+class _NoChildDevicesRepository implements ChildDeviceRepository {
+  @override
+  Future<List<ChildDeviceState>> statesForFamily(String familyId) async =>
+      const [];
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+final List<Override> _dataSourceOverrides = [
+  childDeviceRepositoryProvider.overrideWithValue(
+      _NoChildDevicesRepository()),
+  recentIncidentsProvider('f-1').overrideWith((ref) async => const []),
+];
 
 /// Empty-family dashboard fixture reused by every shell test.
 const GuardianDashboard _emptyFamily = GuardianDashboard(
@@ -33,6 +56,7 @@ Future<void> _pump(WidgetTester tester, {String languageCode = 'ar'}) async {
       overrides: [
         dashboardProvider.overrideWith((ref) async => _emptyFamily),
         localeProvider.overrideWith((ref) => languageCode),
+        ..._dataSourceOverrides,
       ],
       child: const GuardianApp(),
     ),
@@ -61,9 +85,10 @@ class _GoConsumer extends ConsumerWidget {
 Future<void> _pumpWithTarget(WidgetTester tester, String location) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+          overrides: [
         dashboardProvider.overrideWith((ref) async => _emptyFamily),
-        localeProvider.overrideWith((ref) => 'ar'),
+            localeProvider.overrideWith((ref) => 'ar'),
+            ..._dataSourceOverrides,
       ],
       child: Directionality(
         textDirection: TextDirection.ltr,
@@ -82,6 +107,12 @@ Future<void> _pumpWithTarget(WidgetTester tester, String location) async {
 
 void main() {
   group('M1 shell', () {
+    setUpAll(() async {
+      // M2: the dashboard now reads child device states from the local
+      // database, so tests initialize an in-memory SQLite factory.
+      sqfliteFfiInit();
+      await openTestDatabase();
+    });
     testWidgets('renders the family home with the canonical Cairo theme',
         (tester) async {
       await _pump(tester);
@@ -123,6 +154,7 @@ void main() {
                     incidentsToday: 0,
                     queuedOperations: 0)),
             localeProvider.overrideWith((ref) => 'ar'),
+            ..._dataSourceOverrides,
           ],
           child: const GuardianApp(),
         ),
@@ -176,6 +208,7 @@ void main() {
                   children: const [],
                   devices: const [],
                 )),
+            ..._dataSourceOverrides,
           ],
           child: const GuardianApp(),
         ),
@@ -184,6 +217,11 @@ void main() {
 
       // The manage-policies action exists but is disabled — never a
       // locally-added role check, always delegated via FamilyRuntimeContext.
+      // The dashboard now has more cards before the safety-policies group,
+      // so scroll until the manage-policies button is built and visible.
+      await tester.scrollUntilVisible(
+          find.text('إدارة السياسات'), 100);
+      await tester.pumpAndSettle();
       final managePolicies = tester.widget<OutlinedButton>(
           find.widgetWithText(OutlinedButton, 'إدارة السياسات'));
       expect(managePolicies.onPressed, isNull);

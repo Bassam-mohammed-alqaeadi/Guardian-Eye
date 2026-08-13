@@ -120,6 +120,7 @@ class AppLocalizations {
       'enforcementDecision': 'قرار النطاق',
       'statusReason': 'سبب الحالة',
       'noData': 'لا توجد بيانات',
+      'createdFamily': 'تاريخ الإنشاء',
       'noEvaluation': 'لم يكتمل تقييم بعد'
       ,'dailyLimitMinutes': 'الحد اليومي بالدقائق (اختياري)'
       ,'policyPackageId': 'معرّف حزمة Android للقياس (مثال: com.google.android.youtube)'
@@ -203,7 +204,19 @@ class AppLocalizations {
       ,'remainingTime': 'الوقت المتبقي'
       ,'policyConfigured': 'السياسة مُعدّة'
       ,'policyDelivered': 'تم إعداد السياسة'
-      ,'approvalNature': 'تُقدَّم الموافقة كإعفاء مؤقت من السياسة فقط، ولا تعني أن التطبيق حُظر أو أُلغي حظره على الجهاز.'
+      ,'approvalNature': 'تُقدَّم الموافقة كإعفاء مؤقت من السياسة فقط، ولا تعني أن التطبيق حُظر أو أُلغي حظره على الجهاز.',
+      'familyIdentity': 'هوية العائلة',
+      'childOverview': 'نظرة على الأطفال',
+      'safetySignal': 'إشارة السلامة',
+      'safeToday': 'لا توجد حوادث نشطة اليوم',
+      'attentionRequired': 'توجد حوادث نشطة تحتاج انتباهك',
+      'noDevicesLinked': 'لا يوجد جهاز مربوط بعد',
+      'todayScreenTime': 'وقت الشاشة اليوم',
+      'screenTimeUnavailable': 'غير متوفر اليوم',
+      'lastSync': 'آخر مزامنة',
+      'dataFresh': 'حديثة',
+      'syncUnavailable': 'المزامنة غير متاحة',
+      'childDetails': 'تفاصيل الطفل'
     },
     'en': {
       'appTitle': 'Guardian Eye Pro',
@@ -320,6 +333,7 @@ class AppLocalizations {
       'enforcementDecision': 'Domain decision',
       'statusReason': 'Status reason',
       'noData': 'No data',
+      'createdFamily': 'Created',
       'noEvaluation': 'No evaluation yet'
       ,'dailyLimitMinutes': 'Daily limit in minutes (optional)'
       ,'policyPackageId': 'Android package ID to measure (for example: com.google.android.youtube)'
@@ -403,7 +417,19 @@ class AppLocalizations {
       ,'remainingTime': 'Remaining time'
       ,'policyConfigured': 'Policy configured'
       ,'policyDelivered': 'Policy configured'
-      ,'approvalNature': 'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.'
+      ,'approvalNature': 'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.',
+      'familyIdentity': 'Family identity',
+      'childOverview': 'Children overview',
+      'safetySignal': 'Safety signal',
+      'safeToday': 'No active incidents today',
+      'attentionRequired': 'Active incidents need your attention',
+      'noDevicesLinked': 'No device linked yet',
+      'todayScreenTime': 'Screen time today',
+      'screenTimeUnavailable': 'Unavailable today',
+      'lastSync': 'Last sync',
+      'dataFresh': 'Up to date',
+      'syncUnavailable': 'Sync unavailable',
+      'childDetails': 'Child details'
     },
   };
   String t(String key) => _values[locale.languageCode]?[key] ?? key;

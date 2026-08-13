@@ -60,6 +60,24 @@ class IncidentRepository {
     return incident;
   }
 
+  /// Unacknowledged incidents for a family, newest first. Used by the
+  /// dashboard safety signal — a local read over the incidents table; it
+  /// performs no mutation and makes no network call.
+  Future<List<GuardianIncident>> unacknowledgedIncidentsForFamily(
+      String familyId,
+      {int limit = 10}) async {
+    final db = await _database.database;
+    final rows = await db.query(
+      'incidents',
+      where: 'family_id = ? AND status IN (?, ?)',
+      whereArgs: [familyId, IncidentState.localPending.storageKey,
+        IncidentState.synced.storageKey],
+      orderBy: 'observed_at DESC',
+      limit: limit,
+    );
+    return rows.map(GuardianIncident.fromMap).toList();
+  }
+
   Future<bool> acknowledge({required String incidentId}) async {
     final db = await _database.database;
     return db.transaction((tx) async {

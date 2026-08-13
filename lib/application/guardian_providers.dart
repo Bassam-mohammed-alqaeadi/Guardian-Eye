@@ -64,6 +64,12 @@ final sosRepositoryProvider =
     Provider((ref) => SosRepository(GuardianDatabase.instance));
 final incidentRepositoryProvider = Provider(
     (ref) => IncidentRepository(GuardianDatabase.instance, const RiskEngine()));
+/// Unacknowledged incidents for the family — drives the dashboard safety
+/// signal. A pure local read; never called directly from a widget.
+final recentIncidentsProvider = FutureProvider.family<List<GuardianIncident>, String>(
+    (ref, String familyId) => ref
+        .watch(incidentRepositoryProvider)
+        .unacknowledgedIncidentsForFamily(familyId));
 final firebaseAuthContextProvider =
     Provider<FirebaseAuthContext>((ref) => const FirebaseAuthContext());
 final firebaseAuthServiceProvider = Provider(

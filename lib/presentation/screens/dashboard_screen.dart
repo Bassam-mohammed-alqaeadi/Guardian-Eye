@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/guardian_models.dart';
+import '../../domain/child_device_enforcement.dart';
 import '../../application/family_context_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -133,6 +134,8 @@ class _Dashboard extends ConsumerWidget {
     bool can(FamilyPermission permission) =>
         runtime.valueOrNull?.can(permission) ?? false;
     final verifiedActor = runtime.valueOrNull?.isVerified ?? false;
+    final deviceStates = ref.watch(childDeviceStatesProvider(familyId));
+    final recentIncidents = ref.watch(recentIncidentsProvider(familyId));
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(dashboardProvider);
@@ -176,6 +179,30 @@ class _Dashboard extends ConsumerWidget {
               icon: Icons.sync_problem_outlined,
               label: l10n.t('syncQueue'),
               value: '${data.queuedOperations}'),
+          const SizedBox(height: 12),
+          _FamilyIdentityCard(
+              family: data.family!,
+              incidentsToday: data.incidentsToday,
+              queuedOperations: data.queuedOperations),
+          const SizedBox(height: 12),
+          if (deviceStates.valueOrNull != null ||
+              recentIncidents.valueOrNull != null)
+            _SafetySignalCard(
+                recentIncidents: recentIncidents,
+                onOpenTimeline: () => context.push('/timeline/$familyId'),
+                permission: can(FamilyPermission.viewSafetyTimeline))
+          else if (deviceStates.hasError || recentIncidents.hasError)
+            _SafetySignalError(onRetry: () {
+              ref.invalidate(childDeviceStatesProvider(familyId));
+              ref.invalidate(recentIncidentsProvider(familyId));
+            }),
+          const SizedBox(height: 12),
+          _ChildOverview(
+              familyId: familyId,
+              children: data.children,
+              deviceStates: deviceStates,
+              onOpenChild: () =>
+                  context.push('/family/$familyId', extra: actor?.id)),
           const SizedBox(height: 20),
           _NavGroup(
             label: l10n.t('familyMembers'),
@@ -240,26 +267,6 @@ class _Dashboard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          Text(l10n.t('children'),
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          if (data.children.isEmpty)
-            Card(
-                child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Text(l10n.t('noChildren'))))
-          else
-            ...data.children.map(
-              (child) => Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                      child: Text(child.displayName.characters.first)),
-                  title: Text(child.displayName),
-                  subtitle: Text(l10n.t('setupRequired')),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -356,6 +363,208 @@ class _NavGroup extends StatelessWidget {
           Wrap(spacing: 10, runSpacing: 10, children: children),
         ],
       );
+}
+
+/// Family identity card — M2: presents the family's own reference data
+/// (name, created date, today's honest counts) without inventing anything.
+class _FamilyIdentityCard extends StatelessWidget {
+  const _FamilyIdentityCard(
+      {required this.family,
+      required this.incidentsToday,
+      required this.queuedOperations});
+  final GuardianFamily family;
+  final int incidentsToday;
+  final int queuedOperations;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Card(
+      child: Semantics(
+        label: l10n.t('familyIdentity'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.t('familyIdentity'),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 8),
+              Text(family.name, style: theme.textTheme.titleMedium),
+              Text(
+                  '${l10n.t('createdFamily')}: '
+                  '${_formatDate(family.createdAt)}',
+                  style: theme.textTheme.bodySmall,
+                  semanticsLabel:
+                      '${l10n.t('createdFamily')}: ${_formatDate(family.createdAt)}'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.today_outlined, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                      child: Text(queuedOperations == 0
+                          ? l10n.t('dataFresh')
+                          : l10n.t('syncQueue'))),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime date) =>
+      '${date.day}/${date.month}/${date.year}';
+}
+
+/// Safety signal — honest reflection of real unacknowledged incidents.
+/// Zero active incidents: safe today. Any active incident: attention
+/// required, with a canonical entry into the timeline for review.
+class _SafetySignalCard extends StatelessWidget {
+  const _SafetySignalCard(
+      {required this.recentIncidents,
+      required this.onOpenTimeline,
+      required this.permission});
+  final AsyncValue<List<GuardianIncident>> recentIncidents;
+  final VoidCallback onOpenTimeline;
+  final bool permission;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final active = recentIncidents.valueOrNull ?? [];
+    final attention = active.isNotEmpty;
+    return Card(
+      child: Semantics(
+        label: attention
+            ? l10n.t('attentionRequired')
+            : l10n.t('safeToday'),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 8),
+          leading: Icon(
+              attention
+                  ? Icons.warning_amber_rounded
+                  : Icons.shield_outlined,
+              color: attention
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.primary),
+          title: Text(attention
+              ? l10n.t('attentionRequired')
+              : l10n.t('safeToday')),
+          subtitle: Text(
+              '${l10n.t('safetySignal')} '
+              '${attention ? active.length.toString() : ''}'),
+          trailing: OutlinedButton(
+            onPressed:
+                permission && !attention ? null : onOpenTimeline,
+            child: Text(l10n.t('childDetails')),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Local signal load failure — retry invalidates the read providers.
+class _SafetySignalError extends StatelessWidget {
+  const _SafetySignalError({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const Icon(Icons.error_outline),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Text(AppLocalizations.of(context).t('noData'))),
+              TextButton(
+                  onPressed: onRetry,
+                  child: Text(AppLocalizations.of(context).t('retry'))),
+            ],
+          ),
+        ),
+      );
+}
+
+/// Children overview — one card per child joined with its real device
+/// state; an unlinked child is shown explicitly (no silent omission).
+///
+/// A plain [StatelessWidget]: every piece of data it needs arrives
+/// through constructor parameters, so nothing about its render path
+/// depends on provider keys resolving at test time.
+class _ChildOverview extends StatelessWidget {
+  const _ChildOverview(
+      {required this.familyId,
+      required this.children,
+      required this.deviceStates,
+      required this.onOpenChild});
+  final String familyId;
+  final List<FamilyMember> children;
+  final AsyncValue<List<ChildDeviceState>> deviceStates;
+  final VoidCallback onOpenChild;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final devices = deviceStates.valueOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.t('childOverview'),
+            style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 8),
+        if (children.isEmpty)
+          Card(
+              child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Text(l10n.t('noChildren'))))
+        else
+          ...children.map((child) {
+            ChildDeviceState? state;
+            for (final candidate in devices ?? const <ChildDeviceState>[]) {
+              if (candidate.memberId == child.id) {
+                state = candidate;
+                break;
+              }
+            }
+            final devicePresent = state != null;
+            final lifecycleName = state?.lifecycle.name ?? '';
+            return Card(
+              child: Semantics(
+                label: '${child.displayName} '
+                    '${devicePresent ? lifecycleName : l10n.t('noDevicesLinked')}',
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  leading: CircleAvatar(
+                      child: Text(child.displayName.characters.first)),
+                  title: Text(child.displayName),
+                  subtitle: Text(devicePresent
+                      ? l10n.t(
+                          'device${lifecycleName[0].toUpperCase() + lifecycleName.substring(1)}')
+                      : l10n.t('noDevicesLinked')),
+                  trailing: OutlinedButton(
+                    onPressed: onOpenChild,
+                    child: Text(l10n.t('childDetails')),
+                  ),
+                ),
+              ),
+            );
+          }),
+      ],
+    );
+  }
 }
 
 class _Failure extends StatelessWidget {
