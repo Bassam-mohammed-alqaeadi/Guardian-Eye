@@ -7,6 +7,7 @@ import '../core/platform/capability_gateway.dart';
 import '../core/platform/android_enforcement_adapter.dart';
 import '../core/platform/android_observation_gateway.dart';
 import 'child_screen_time_coordinator.dart';
+import 'device_link_service.dart';
 import '../data/fcm_token_repository.dart';
 import '../data/child_device_repository.dart';
 import '../data/child_exception_request_repository.dart';
@@ -30,6 +31,8 @@ final policyRepositoryProvider =
     Provider((ref) => PolicyRepository(GuardianDatabase.instance));
 final childDeviceRepositoryProvider =
     Provider((ref) => ChildDeviceRepository(GuardianDatabase.instance));
+final deviceLinkServiceProvider = Provider(
+    (ref) => DeviceLinkService(ref.watch(pairingRepositoryProvider)));
 final childExceptionRequestRepositoryProvider = Provider((ref) =>
     ChildExceptionRequestRepository(GuardianDatabase.instance,
         ref.watch(policyRepositoryProvider)));

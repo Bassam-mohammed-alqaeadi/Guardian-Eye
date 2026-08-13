@@ -5,6 +5,8 @@ import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/platform/capability_gateway.dart';
 import '../../domain/child_device_enforcement.dart';
+import '../../domain/guardian_models.dart';
+import '../../application/family_context_provider.dart';
 import 'permissions_screen.dart';
 
 class ChildDeviceStatusScreen extends ConsumerWidget {
@@ -166,6 +168,12 @@ class _DeviceCard extends ConsumerWidget {
                                       '${summary.totalDuration.inMinutes} min'))
                               .toList())),
               const SizedBox(height: 8),
+              if (state.lifecycle == ChildDeviceLifecycle.active ||
+                  state.lifecycle == ChildDeviceLifecycle.enrolled)
+                _UnlinkAction(
+                    familyId: familyId,
+                    deviceId: state.deviceId,
+                    ownerMemberId: state.memberId),
               OutlinedButton.icon(
                   onPressed: state.lifecycle == ChildDeviceLifecycle.revoked
                       ? null
@@ -190,6 +198,65 @@ class _DeviceCard extends ConsumerWidget {
                 _StatusLine(
                     label: l10n.t('statusReason'), value: state.failureCode!)
             ])));
+  }
+}
+
+class _UnlinkAction extends ConsumerWidget {
+  const _UnlinkAction(
+      {required this.familyId, required this.deviceId, required this.ownerMemberId});
+
+  final String familyId;
+  final String deviceId;
+  final String ownerMemberId;
+
+  Future<void> _unlink(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final ctx =
+        ref.read(familyRuntimeContextProvider(familyId)).asData?.value;
+    final authorized =
+        ctx != null && ctx.can(FamilyPermission.manageDevices);
+    if (!authorized) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.t('unauthorizedActorBody'))));
+      return;
+    }
+    if (!context.mounted) return;
+    final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+              title: Text(l10n.t('unlinkConfirmTitle')),
+              content: Text(l10n.t('unlinkConfirmBody')),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: Text(l10n.t('unlinkCancel'))),
+                FilledButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: Text(l10n.t('unlinkDevice'))),
+              ],
+            ));
+    if (confirmed != true) return;
+    final removed = await ref
+        .read(pairingRepositoryProvider)
+        .revokeDevice(deviceId: deviceId, ownerMemberId: ownerMemberId);
+    if (!context.mounted) return;
+    ref.invalidate(childDeviceStatesProvider(familyId));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(removed
+            ? l10n.t('unlinkConfirmed')
+            : l10n.t('unknownRedeemErrorBody'))));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: OutlinedButton.icon(
+            onPressed: () => _unlink(context, ref),
+            icon: const Icon(Icons.phonelink_erase_outlined),
+            label: Text(l10n.t('unlinkDevice'))));
   }
 }
 

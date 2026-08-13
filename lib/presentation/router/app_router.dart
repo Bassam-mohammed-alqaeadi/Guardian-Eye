@@ -9,6 +9,7 @@ import '../screens/child_context_screen.dart';
 import '../screens/family_safety_experience_screens.dart';
 import '../screens/settings_screen.dart';
 import '../screens/pairing_screen.dart';
+import '../screens/child_redemption_screen.dart';
 import '../screens/permissions_screen.dart';
 import '../../core/localization/app_localizations.dart';
 
@@ -77,6 +78,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'safetyPairing',
         builder: (context, state) =>
             PairingScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/device-link/:familyId',
+        name: 'deviceLink',
+        builder: (context, state) =>
+            ChildRedemptionScreen(familyId: state.pathParameters['familyId']!),
       ),
       GoRoute(
         path: '/safety/permissions',
