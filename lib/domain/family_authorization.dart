@@ -1,0 +1,63 @@
+import 'guardian_models.dart';
+
+class FamilyDraft {
+  const FamilyDraft(
+      {required this.familyName, required this.primaryParentName});
+  final String familyName;
+  final String primaryParentName;
+  bool get isValid =>
+      familyName.trim().isNotEmpty && primaryParentName.trim().isNotEmpty;
+}
+
+class ChildDraft {
+  const ChildDraft({required this.displayName});
+  final String displayName;
+  bool get isValid => displayName.trim().isNotEmpty;
+}
+
+class FamilyAuthorization {
+  const FamilyAuthorization();
+  Set<FamilyPermission> permissionsFor(FamilyRole role) => switch (role) {
+        FamilyRole.primaryParent => Set<FamilyPermission>.from(FamilyPermission.values),
+        FamilyRole.parent || FamilyRole.coParent => {
+            FamilyPermission.viewFamily,
+            FamilyPermission.viewMembers,
+            FamilyPermission.viewChildren,
+            FamilyPermission.manageChildren,
+            FamilyPermission.viewPolicies,
+            FamilyPermission.managePolicies,
+            FamilyPermission.reviewExceptionRequests,
+            FamilyPermission.viewSafetyTimeline,
+            FamilyPermission.viewUsage,
+            FamilyPermission.viewChildStatus,
+            FamilyPermission.manageDevices,
+          },
+        FamilyRole.child => {
+            FamilyPermission.viewFamily,
+            FamilyPermission.requestOwnException,
+            FamilyPermission.viewOwnPolicy,
+            FamilyPermission.viewOwnUsage,
+            FamilyPermission.viewOwnStatus,
+          },
+        FamilyRole.spouse => {
+            FamilyPermission.viewFamily,
+            FamilyPermission.viewMembers,
+          },
+      };
+  bool hasPermission(FamilyMember member, FamilyPermission permission) =>
+      member.isActive && permissionsFor(member.role).contains(permission);
+  void require(FamilyMember member, FamilyPermission permission) {
+    if (!hasPermission(member, permission)) {
+      throw StateError('family_permission_denied:${permission.name}');
+    }
+  }
+  bool canManageFamily(FamilyRole role) =>
+      permissionsFor(role).contains(FamilyPermission.manageMembers);
+  bool canViewSafetyEvents(FamilyRole role) => role != FamilyRole.child;
+  bool canManageDevice(
+          {required FamilyRole actorRole,
+          required String actorMemberId,
+          required String ownerMemberId}) =>
+      actorMemberId == ownerMemberId || actorRole == FamilyRole.primaryParent;
+  bool canAcknowledgeIncident(FamilyRole role) => role != FamilyRole.child;
+}

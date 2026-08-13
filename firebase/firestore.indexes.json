@@ -1,0 +1,9 @@
+{
+  "indexes": [
+    {"collectionGroup": "incidents", "queryScope": "COLLECTION_GROUP", "fields": [{"fieldPath": "familyId", "order": "ASCENDING"}, {"fieldPath": "observedAt", "order": "DESCENDING"}]},
+    {"collectionGroup": "sos", "queryScope": "COLLECTION_GROUP", "fields": [{"fieldPath": "familyId", "order": "ASCENDING"}, {"fieldPath": "status", "order": "ASCENDING"}, {"fieldPath": "createdAt", "order": "DESCENDING"}]},
+    {"collectionGroup": "notification_events", "queryScope": "COLLECTION_GROUP", "fields": [{"fieldPath": "familyId", "order": "ASCENDING"}, {"fieldPath": "status", "order": "ASCENDING"}, {"fieldPath": "requestedAt", "order": "DESCENDING"}]},
+    {"collectionGroup": "sync_metadata", "queryScope": "COLLECTION_GROUP", "fields": [{"fieldPath": "familyId", "order": "ASCENDING"}, {"fieldPath": "status", "order": "ASCENDING"}, {"fieldPath": "updatedAt", "order": "DESCENDING"}]}
+  ],
+  "fieldOverrides": []
+}

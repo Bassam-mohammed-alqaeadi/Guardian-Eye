@@ -1,0 +1,9 @@
+{
+  "name": "guardian-eye-firebase-functions",
+  "private": true,
+  "engines": {"node": "20"},
+  "main": "lib/index.js",
+  "scripts": {"build": "tsc", "serve": "npm run build && firebase emulators:start --only functions", "deploy": "npm run build && firebase deploy --only functions", "lint": "tsc --noEmit", "test:emulator": "node --test test/functions_emulator.test.mjs"},
+  "dependencies": {"firebase-admin": "^13.0.0", "firebase-functions": "^6.0.0"},
+  "devDependencies": {"typescript": "^5.7.0"}
+}

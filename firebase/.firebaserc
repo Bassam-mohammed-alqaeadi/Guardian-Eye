@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "guardian": "manus-guardian",
+    "default": "manus-guardian"
+  }
+}

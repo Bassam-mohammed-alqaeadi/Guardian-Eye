@@ -1,0 +1,10 @@
+{
+  "name": "guardian-eye-firestore-emulator-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test firestore.rules.test.mjs",
+    "test:real": "node real_backend_validation.mjs"
+  },
+  "devDependencies": {"@firebase/rules-unit-testing": "^3.0.2", "firebase": "^10.0.0"}
+}
