@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
-import '../../domain/family_authorization.dart';
 import '../../domain/guardian_models.dart';
+import '../../application/family_context_provider.dart';
 import 'firebase_session_screen.dart';
 import 'child_device_status_screen.dart';
 import 'family_members_screen.dart';
@@ -140,12 +140,12 @@ class _Dashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final familyId = data.family!.id;
-    final actorResult = ref.watch(familyActorBindingProvider(familyId));
-    final actor = actorResult.valueOrNull?.binding?.member;
-    const authorization = FamilyAuthorization();
+    // Phase 18: single canonical family runtime context.
+    final runtime = ref.watch(familyRuntimeContextProvider(familyId));
+    final FamilyMember? actor = runtime.valueOrNull?.actor;
     bool can(FamilyPermission permission) =>
-        actor != null && authorization.hasPermission(actor, permission);
-    final verifiedActor = actorResult.valueOrNull?.isVerified ?? false;
+        runtime.valueOrNull?.can(permission) ?? false;
+    final verifiedActor = runtime.valueOrNull?.isVerified ?? false;
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(dashboardProvider);
