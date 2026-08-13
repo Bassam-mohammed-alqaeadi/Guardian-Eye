@@ -18,6 +18,13 @@ class AppLocalizations {
       'children': 'الأطفال',
       'incidentsToday': 'حوادث اليوم',
       'syncQueue': 'عمليات بانتظار المزامنة',
+      'requestPending': 'بانتظار مراجعة الوالد',
+      'requestApproved': 'تمت الموافقة على الطلب',
+      'requestDenied': 'تم رفض الطلب',
+      'requestExpired': 'انتهت صلاحية الطلب',
+      'requestCancelled': 'أُلغي الطلب',
+      'childPolicyExplanation':
+          'هذه القاعدة تساعد عائلتك على إدارة الوقت بوضوح. لا تعني تلقائيًا أن Android حظر تطبيقًا.',
       'addChild': 'إضافة طفل',
       'childName': 'اسم الطفل',
       'pairDevice': 'ربط جهاز',
@@ -118,6 +125,11 @@ class AppLocalizations {
       ,'enforcementStatus': 'حالة الإنفاذ'
       ,'permissionRequired': 'يلزم منح الوصول'
       ,'enforcementUnsupported': 'الإنفاذ غير مدعوم على هذا الجهاز'
+      ,'approveRequest': 'موافقة'
+      ,'denyRequest': 'رفض'
+      ,'requestDecisionSaved': 'تم حفظ القرار محليًا وسيزامن عند الاتصال'
+      ,'temporaryExceptionUntil': 'استثناء مؤقت حتى'
+      ,'approvalNotice': 'الموافقة تنشئ سماحًا مؤقتًا بالسياسة. وهي ليست دليلًا على أن Android حظر تطبيقًا أو ألغى حظره.'
       ,'familyMembers': 'أعضاء الأسرة'
       ,'inviteMember': 'دعوة عضو'
       ,'memberRole': 'الدور'
@@ -233,6 +245,13 @@ class AppLocalizations {
       'retry': 'Retry',
       'childDeviceStatus': 'Child device status',
       'noChildDevices': 'No child devices are linked locally yet.',
+      'requestPending': 'Awaiting parent review',
+      'requestApproved': 'Request approved',
+      'requestDenied': 'Request denied',
+      'requestExpired': 'Request expired',
+      'requestCancelled': 'Request cancelled',
+      'childPolicyExplanation':
+          'This rule helps your family manage time clearly. It does not automatically mean Android blocked an app.',
       'childEnforcementNotice':
           'This screen shows local policy and readiness state. It is not evidence that Android blocked an application.',
       'usageStatsReady':
@@ -268,6 +287,11 @@ class AppLocalizations {
       ,'enforcementStatus': 'Enforcement status'
       ,'permissionRequired': 'Permission is required'
       ,'enforcementUnsupported': 'Enforcement is unsupported on this device'
+      ,'approveRequest': 'Approval'
+      ,'denyRequest': 'Deny'
+      ,'requestDecisionSaved': 'Decision saved locally; it will sync when connected.'
+      ,'temporaryExceptionUntil': 'Temporary exception until'
+      ,'approvalNotice': 'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.'
       ,'familyMembers': 'Family members'
       ,'inviteMember': 'Invite member'
       ,'memberRole': 'Role'

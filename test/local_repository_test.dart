@@ -49,13 +49,13 @@ void main() {
         startMinute: 1260,
         endMinute: 420,
         restrictedTargets: {'video'});
-    final now = DateTime(2026, 8, 12, 22);
+    final now = DateTime.now().toUtc();
     final override = await policies.createOverride(
         familyId: family.id,
         createdByMemberId: 'parent',
         target: 'video',
         allowed: true,
-        expiresAt: now.toUtc().add(const Duration(minutes: 10)));
+        expiresAt: now.add(const Duration(minutes: 10)));
     final decision = const PolicyEngine().resolve(
         target: 'video',
         moment: now,

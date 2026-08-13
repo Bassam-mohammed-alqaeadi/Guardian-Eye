@@ -208,6 +208,9 @@ class _ParentRequestCardState extends ConsumerState<_ParentRequestCard> {
                 _Line(label: l10n.t('temporaryExceptionUntil'), value: request.expiresAt!.toLocal().toString()),
               if (request.status == ChildExceptionRequestStatus.pending) ...[
                 const SizedBox(height: 8),
+                Text(l10n.t('approvalNotice'),
+                    style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 8),
                 Row(children: [
                   Expanded(child: OutlinedButton(
                       onPressed: _saving ? null : () => _review(false),
