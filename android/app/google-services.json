@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "165160049292",
+    "project_id": "manus-guardian",
+    "storage_bucket": "manus-guardian.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:165160049292:android:922e6c8a4749c42e4839a9",
+        "android_client_info": {
+          "package_name": "com.guardianeye.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "165160049292-2p5hvdc2fo61htd59ol66eo55ujtfrmf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbsHkUuTrb9hcu2md4tmfja7QAmpMKPMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "165160049292-2p5hvdc2fo61htd59ol66eo55ujtfrmf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

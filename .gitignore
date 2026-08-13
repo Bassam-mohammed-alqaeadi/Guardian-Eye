@@ -6,7 +6,5 @@ android/.gradle/
 android/local.properties
 ios/Flutter/ephemeral/
 
-# Local Firebase platform configuration supplied by the project owner.
-android/app/google-services.json
-ios/Runner/GoogleService-Info.plist
-lib/firebase_options.dart
+# Firebase platform configuration is committed with every push (project owner policy).
+# firebase_options.dart, google-services.json, GoogleService-Info.plist are included in Git.
