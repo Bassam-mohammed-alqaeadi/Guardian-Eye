@@ -40,7 +40,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Firebase'));
+    // The shell no longer exposes a raw "Firebase" icon in the app bar;
+    // account/session entry now lives on the settings surface.
+    await tester.tap(find.byTooltip('الإعدادات'));
+    await tester.pumpAndSettle();
+    expect(find.text('الحساب والجلسة'), findsOneWidget);
+    // The account/session card (showing "Not signed in") is the entry
+    // point to the Firebase session screen.
+    await tester.tap(find.text('غير مسجّل الدخول'));
     await tester.pumpAndSettle();
     expect(find.text('Firebase غير مهيأ'), findsOneWidget);
     expect(find.textContaining('يبقى التطبيق محليًا'), findsOneWidget);

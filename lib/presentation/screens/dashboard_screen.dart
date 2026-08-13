@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/guardian_models.dart';
 import '../../application/family_context_provider.dart';
-import 'firebase_session_screen.dart';
-import 'child_device_status_screen.dart';
-import 'family_members_screen.dart';
-import 'family_safety_experience_screens.dart';
-import 'pairing_screen.dart';
-import 'permissions_screen.dart';
-import 'safety_policies_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -27,16 +21,9 @@ class DashboardScreen extends ConsumerWidget {
           title: Text(l10n.t('appTitle')),
           actions: [
             IconButton(
-                tooltip: 'Firebase',
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const FirebaseSessionScreen())),
-                icon: const Icon(Icons.account_circle_outlined)),
-            TextButton.icon(
-              onPressed: () => ref.read(localeProvider.notifier).state =
-                  l10n.isRtl ? 'en' : 'ar',
-              icon: const Icon(Icons.language),
-              label: Text(l10n.t('language')),
-            ),
+                tooltip: l10n.t('settings'),
+                onPressed: () => context.push('/settings'),
+                icon: const Icon(Icons.settings_outlined)),
           ],
         ),
         body: dashboard.when(
@@ -190,54 +177,14 @@ class _Dashboard extends ConsumerWidget {
               label: l10n.t('syncQueue'),
               value: '${data.queuedOperations}'),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          _NavGroup(
+            label: l10n.t('familyMembers'),
             children: [
               FilledButton.icon(
-                onPressed: can(FamilyPermission.manageDevices)
-                    ? () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => PairingScreen(familyId: familyId)))
-                    : null,
-                icon: const Icon(Icons.qr_code_2),
-                label: Text(l10n.t('pairDevice')),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const PermissionsScreen())),
-                icon: const Icon(Icons.tune),
-                label: Text(l10n.t('permissions')),
-              ),
-              OutlinedButton.icon(
-                onPressed: can(FamilyPermission.managePolicies)
-                    ? () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => SafetyPoliciesScreen(familyId: familyId)))
-                    : null,
-                icon: const Icon(Icons.bedtime_outlined),
-                label: Text(l10n.t('managePolicies')),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => FamilyMembersScreen(
-                        familyId: familyId, actorMemberId: actor?.id))),
+                onPressed: () => context.push('/family/$familyId',
+                    extra: actor?.id),
                 icon: const Icon(Icons.groups_outlined),
                 label: Text(l10n.t('familyMembers')),
-              ),
-              OutlinedButton.icon(
-                onPressed: can(FamilyPermission.viewChildStatus)
-                    ? () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => ChildDeviceStatusScreen(familyId: familyId)))
-                    : null,
-                icon: const Icon(Icons.phonelink_lock_outlined),
-                label: Text(l10n.t('childDeviceStatus')),
-              ),
-              OutlinedButton.icon(
-                onPressed: can(FamilyPermission.viewSafetyTimeline)
-                    ? () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => FamilyDailySafetyScreen(familyId: familyId)))
-                    : null,
-                icon: const Icon(Icons.today_outlined),
-                label: Text(l10n.t('dailySafety')),
               ),
               OutlinedButton.icon(
                 onPressed: can(FamilyPermission.manageChildren)
@@ -245,6 +192,51 @@ class _Dashboard extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.person_add_alt),
                 label: Text(l10n.t('addChild')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.manageDevices)
+                    ? () => context.push('/safety/pairing/$familyId')
+                    : null,
+                icon: const Icon(Icons.qr_code_2),
+                label: Text(l10n.t('pairDevice')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('safetyPolicies'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/safety/policies/$familyId')
+                    : null,
+                icon: const Icon(Icons.bedtime_outlined),
+                label: Text(l10n.t('managePolicies')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewChildStatus)
+                    ? () => context.push('/safety/device-status/$familyId')
+                    : null,
+                icon: const Icon(Icons.phonelink_lock_outlined),
+                label: Text(l10n.t('childDeviceStatus')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewSafetyTimeline)
+                    ? () => context.push('/safety/daily/$familyId')
+                    : null,
+                icon: const Icon(Icons.today_outlined),
+                label: Text(l10n.t('dailySafety')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('permissionsTitle'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => context.push('/safety/permissions'),
+                icon: const Icon(Icons.tune),
+                label: Text(l10n.t('permissions')),
               ),
             ],
           ),
@@ -339,6 +331,30 @@ class _Metric extends StatelessWidget {
             ],
           ),
         ),
+      );
+}
+
+/// A small labeled group of navigation buttons inside the family home.
+/// The label answers "what is this group for?" in product language;
+/// the buttons inside are the only ways into that area — no duplicate
+/// entry points live elsewhere in the shell.
+class _NavGroup extends StatelessWidget {
+  const _NavGroup({required this.label, required this.children});
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelLarge
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 10, runSpacing: 10, children: children),
+        ],
       );
 }
 
