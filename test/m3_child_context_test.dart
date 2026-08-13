@@ -17,6 +17,8 @@ import 'package:guardian_ai/application/family_context_provider.dart';
 import 'package:guardian_ai/application/guardian_providers.dart';
 import 'package:guardian_ai/data/child_device_repository.dart';
 import 'package:guardian_ai/data/family_membership_repository.dart';
+import 'package:guardian_ai/application/child_screen_time_coordinator.dart';
+import 'package:guardian_ai/core/platform/android_observation_gateway.dart';
 import 'package:guardian_ai/domain/child_device_enforcement.dart';
 import 'package:guardian_ai/domain/family_authorization.dart';
 import 'package:guardian_ai/domain/guardian_models.dart';
@@ -106,6 +108,13 @@ class _StubDeviceRepository implements ChildDeviceRepository {
   Future<List<ChildDeviceState>> statesForFamily(String familyId) async =>
       states.where((s) => s.familyId == familyId).toList();
   @override
+  Future<ChildDeviceState?> getState(String deviceId) async =>
+      states.where((s) => s.deviceId == deviceId).firstOrNull;
+  @override
+  Future<List<Map<String, Object?>>> pendingUsageSyncRowsForDevice(
+          {required String deviceId}) async =>
+      const <Map<String, Object?>>[];
+  @override
   Future<List<DailyUsageSummary>> usageForDeviceDay(
       {required String deviceId, required DateTime day}) async =>
       states
@@ -130,6 +139,28 @@ final FamilyMember _adultMember = FamilyMember(
     role: FamilyRole.parent,
     createdAt: DateTime(2026, 1, 1));
 
+/// M7 — The linked-device path now shows the consent-gated measurement
+/// section, which reads the coordinator inside the child context screen.
+/// M3 predates that provider, so its provider chain stubs a coordinator
+/// that reports an honest `observed` baseline with an empty policy
+/// breakdown; the 54-minute usage evidence comes from the stubbed
+/// repository (which the section also reads) and stays testable here.
+class _StubCoordinator implements ChildScreenTimeCoordinator {
+  @override
+  Future<ScreenTimeRunReport> evaluateNow(String deviceId) async =>
+      ScreenTimeRunReport(
+        observation: PolicyUsageObservation(
+            status: ForegroundApplicationStatus.observed,
+            dayStart: DateTime(2026, 8, 13),
+            capturedAt: DateTime(2026, 8, 13, 12, 0),
+            summaries: const []),
+        targets: const [],
+        ranAt: DateTime(2026, 8, 13, 12, 0),
+      );
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 List<Override> _overridesFor({
   FamilyMember? actor,
   bool isVerified = true,
@@ -151,6 +182,7 @@ List<Override> _overridesFor({
               : _StubDeviceRepository(devices)),
       recentIncidentsProvider(_familyId).overrideWith(
           (ref) async => incidents ?? const <GuardianIncident>[]),
+      childScreenTimeCoordinatorProvider.overrideWithValue(_StubCoordinator()),
       familyRuntimeContextProvider(_familyId).overrideWith((ref) async =>
           FamilyRuntimeContext(
             familyId: _familyId,
@@ -281,12 +313,16 @@ void main() {
       expect(find.text('ليلى'), findsOneWidget);
       expect(find.text('طفل'), findsOneWidget);
       expect(find.text('نشط محليًا'), findsOneWidget);
-      expect(find.text('ملخص النشاط'), findsOneWidget);
-      // Today's screen time totals are computed from the usage join.
-      await _scrollTo(tester, 'وقت الشاشة اليوم');
-      expect(find.textContaining('54'), findsOneWidget);
-      expect(find.text('تم القياس محليًا؛ لا يعني ذلك أن Android حظر تطبيقًا.'),
+      // With a linked device, the consent-gated M7 measurement section
+      // replaces the legacy activity summary card; the 54-minute usage
+      // evidence now renders with its honest cached-data state chip
+      // instead of the legacy local-measurement caveat, which lives on
+      // the no-device path only.
+      await _scrollTo(tester, 'استخدام اليوم');
+      expect(find.textContaining('إجمالي وقت الشاشة: 54 دقيقة'),
           findsOneWidget);
+      expect(find.textContaining('آخر قياس'), findsOneWidget);
+      expect(find.textContaining('محفوظة بدون اتصال'), findsOneWidget);
     });
 
     testWidgets('3. offline cached child shows sync time verbatim',
@@ -351,11 +387,20 @@ void main() {
       );
       // The screen remains legible; verification is required but never
       // blocks reading local context. The device card sits at the top of
-      // the list and paints the lock affordance when the actor cannot act.
+      // the list and paints the lock affordance when the actor cannot act;
+      // the consent-gated measurement section paints the same lock
+      // affordance, so assert presence rather than a single icon.
       expect(find.text('ليلى'), findsOneWidget);
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-      await _scrollTo(tester, 'العودة إلى لوحة التحكم');
+      expect(find.byIcon(Icons.lock_outline), findsWidgets);
+      // The verification line lives on the device card near the top of the
+      // list; assert it while the card is still mounted, because the M7
+      // measurement section now lengthens the list and scrolling to the
+      // bottom unmounts the top widgets in a lazy ListView.
       expect(find.textContaining('تُعرض البيانات المحلية'), findsWidgets);
+      await tester.scrollUntilVisible(
+          find.textContaining('العودة إلى لوحة التحكم'), 100);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('العودة إلى لوحة التحكم'), findsOneWidget);
     });
 
     testWidgets('7. error state offers an honest retry', (tester) async {

@@ -216,3 +216,134 @@ test('DEPLOYED rules M6: foreign family actor cannot touch policies, overrides, 
     ...exceptionRequestData({ requestId: 'req-a' }), status: 'denied',
   }));
 });
+
+// ---------------------------------------------------------------------------
+// M7 — screen-time usage measurement rules, validated against the DEPLOYED
+// production ruleset content (e22c310a) — NOT the local file. The child
+// device app user is the device's memberUid ('child-a'); parents read.
+// ---------------------------------------------------------------------------
+assert.ok(RULES.includes('match /usage_summaries/{usageId}'), 'deployed rules carry usage_summaries block');
+// M7 tests run on their own isolated family ('family-m7') so earlier tests'
+// direct-enabled writes to family-a (invitations, member role updates,
+// policy mutation) cannot corrupt the device/member state the M7 rules read.
+
+const usageSummaryData = ({ usageId = 'usage-a', target = 'video', totalMilliseconds = 120 * 60000 }) => ({
+  familyId, deviceId: 'device-a', usageId,
+  memberUid: 'child-a', target, totalMilliseconds,
+  day: '2026-08-13', observedAt: Timestamp.fromDate(new Date('2026-08-13T12:00:00.000Z')),
+  updatedByUid: 'child-a', syncStatus: 'client_submitted',
+  idempotencyKey: `usage-${usageId}`,
+});
+
+test('DEPLOYED rules M7: parents read usage summaries; a stranger cannot', async () => {
+  await environment.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+    await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+    await setDoc(doc(db, `families/${familyId}/devices/device-a/usage_summaries/usage-a`), usageSummaryData({}));
+    await setDoc(doc(db, `families/${familyId}/members/coparent-a`), memberData('coparent-a', 'coParent', 'coparent-local'));
+  });
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const coParent = environment.authenticatedContext('coparent-a').firestore();
+  const stranger = environment.authenticatedContext('stranger-x').firestore();
+  await assertSucceeds(getDoc(doc(parent, `families/${familyId}/devices/device-a/usage_summaries/usage-a`)));
+  await assertSucceeds(getDoc(doc(coParent, `families/${familyId}/devices/device-a/usage_summaries/usage-a`)));
+  await assertFails(getDoc(doc(stranger, `families/${familyId}/devices/device-a/usage_summaries/usage-a`)));
+});
+
+test('DEPLOYED rules M7: child app writes its own summary on its own active device', async () => {
+  // Isolated environment: the shared harness environment accumulates state and
+  // compiled-rule quirks from the earlier invitation/policy tests, so this
+  // write assertion compiles and evaluates the deployed ruleset on its own.
+  const iso = await initializeTestEnvironment({
+    projectId: 'manus-guardian-deployed-rules-m7',
+    firestore: { host: '127.0.0.1', port: 8080, rules: RULES },
+  });
+  try {
+    await iso.withSecurityRulesDisabled(async ctx => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, `families/${familyId}`), familyData);
+      await setDoc(doc(db, `families/${familyId}/members/child-a`), memberData('child-a', 'child', 'child-local'));
+      await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+    });
+    const childApp = iso.authenticatedContext('child-a').firestore();
+    await assertSucceeds(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-a`), usageSummaryData({})));
+  } finally {
+    await iso.cleanup();
+  }
+});
+
+test('DEPLOYED rules M7: create requires the lineage invariants — family, device, member uid, usage id', async () => {
+  const childApp = environment.authenticatedContext('child-a').firestore();
+  // memberUid mismatch
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-b`), {
+    ...usageSummaryData({ usageId: 'usage-b' }), memberUid: 'parent-a',
+  }));
+  // familyId mismatch
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-b`), {
+    ...usageSummaryData({ usageId: 'usage-b' }), familyId: 'family-b',
+  }));
+  // deviceId mismatch
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-b`), {
+    ...usageSummaryData({ usageId: 'usage-b' }), deviceId: 'device-b',
+  }));
+  // usageId mismatch
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-b`), {
+    ...usageSummaryData({ usageId: 'usage-b' }), usageId: 'usage-c',
+  }));
+  // missing target
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-b`), {
+    ...usageSummaryData({ usageId: 'usage-b' }), target: null,
+  }));
+  // zero minutes is allowed (zero-as-data: absence-of-observation is modelled as no document, never a zero-sum with negative values)
+  await assertSucceeds(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-zero`), {
+    ...usageSummaryData({ usageId: 'usage-zero', totalMilliseconds: 0 }),
+  }));
+  // negative totalMilliseconds is denied
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-negative`), {
+    ...usageSummaryData({ usageId: 'usage-negative', totalMilliseconds: -5000 }),
+  }));
+});
+
+test('DEPLOYED rules M7: a parent is denied all usage_summary writes', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  await assertFails(setDoc(doc(parent, `families/${familyId}/devices/device-a/usage_summaries/usage-parent`), usageSummaryData({ usageId: 'usage-parent' })));
+});
+
+test('DEPLOYED rules M7: update and delete denied on usage summaries for everyone, including the device app', async () => {
+  const childApp2 = environment.authenticatedContext('child-a').firestore();
+  const parent2 = environment.authenticatedContext('parent-a').firestore();
+  await assertFails(setDoc(doc(childApp2, `families/${familyId}/devices/device-a/usage_summaries/usage-a`), { ...usageSummaryData({}), totalMilliseconds: 999 * 60000 }));
+  await assertFails(setDoc(doc(parent2, `families/${familyId}/devices/device-a/usage_summaries/usage-a`), { ...usageSummaryData({}), totalMilliseconds: 999 * 60000 }));
+});
+
+test('DEPLOYED rules M7: a revoked device cannot write usage summaries', async () => {
+  await environment.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'revoked' });
+  });
+  const childApp = environment.authenticatedContext('child-a').firestore();
+  await assertFails(setDoc(doc(childApp, `families/${familyId}/devices/device-a/usage_summaries/usage-revoked`), usageSummaryData({ usageId: 'usage-revoked' })));
+});
+
+test('DEPLOYED rules M7: a foreign family actor cannot write or read usage summaries', async () => {
+  await environment.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, `families/${familyId}/devices/device-a`), { familyId, ownerUid: 'parent-a', memberUid: 'child-a', status: 'active' });
+    await setDoc(doc(db, `families/family-b/devices/device-b`), { familyId: 'family-b', ownerUid: 'parent-b', memberUid: 'child-b', status: 'active' });
+    await setDoc(doc(db, `families/family-b/devices/device-b/usage_summaries/usage-b`), {
+      familyId: 'family-b', deviceId: 'device-b', usageId: 'usage-b', memberUid: 'child-b',
+      target: 'video', totalMilliseconds: 10 * 60000, day: '2026-08-13',
+    });
+  });
+  const foreignChild = environment.authenticatedContext('child-b').firestore();
+  const foreignParent = environment.authenticatedContext('parent-b').firestore();
+  await assertFails(setDoc(doc(foreignChild, `families/${familyId}/devices/device-a/usage_summaries/usage-foreign`), usageSummaryData({ usageId: 'usage-foreign' })));
+  await assertFails(setDoc(doc(foreignChild, `families/family-b/devices/device-a/usage_summaries/usage-cross`), {
+    ...usageSummaryData({ usageId: 'usage-cross' }), familyId: 'family-b',
+  }));
+  await assertFails(getDoc(doc(foreignChild, `families/${familyId}/devices/device-a/usage_summaries/usage-a`)));
+  await assertFails(getDoc(doc(foreignParent, `families/${familyId}/devices/device-a/usage_summaries/usage-a`)));
+});
+
+console.log('M7 usage_summaries rules verified against DEPLOYED manus-guardian ruleset e22c310a-c24e-4101-abb7-9df31c57e5cc');
