@@ -18,6 +18,7 @@ class FamilyMembersScreen extends ConsumerWidget {
     final members = ref.watch(familyMembersProvider(familyId));
     final invitations = ref.watch(familyInvitationsProvider(familyId));
     final deviceCounts = ref.watch(familyMemberDeviceCountsProvider(familyId));
+    final syncStates = ref.watch(familyMemberSyncStatesProvider(familyId));
     return Directionality(
       textDirection: l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -51,6 +52,9 @@ class FamilyMembersScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 children: [
+                  ..._familyOverviewSection(context, items, deviceCounts.valueOrNull ?? const {}, syncStates.valueOrNull ?? const {}, actor),
+                  if (actor == null)
+                    ..._unauthorizedSection(context),
                   if (items.isEmpty)
                     Card(
                         child: Padding(
@@ -60,6 +64,8 @@ class FamilyMembersScreen extends ConsumerWidget {
                     ...items.map((member) => _MemberTile(
                         member: member,
                         deviceCount: deviceCounts.valueOrNull?[member.id] ?? 0,
+                        syncState: syncStates.valueOrNull?[member.id] ??
+                            SyncState.localOnly.name,
                         onChangeRole: !_can(actor, FamilyPermission.manageRoles) ||
                                 member.id == actor!.id
                             ? null
@@ -92,6 +98,16 @@ class FamilyMembersScreen extends ConsumerWidget {
                                             context, ref, actor!, invitation)))
                                 .toList(growable: false)),
                   ),
+                  const SizedBox(height: 24),
+                  _InvitationHistorySection(
+                      invitations: invitations.valueOrNull ?? const [],
+                      onCancel: (invitation) =>
+                          !_can(actor, FamilyPermission.inviteMembers) ||
+                                  invitation.status !=
+                                      FamilyInvitationStatus.pending
+                              ? null
+                              : () => _cancelInvitation(
+                                  context, ref, actor!, invitation)),
                 ],
               ),
             );
@@ -310,11 +326,13 @@ class _MemberTile extends StatelessWidget {
   const _MemberTile(
       {required this.member,
       required this.deviceCount,
+      this.syncState = 'localOnly',
       this.onChangeRole,
       this.onRevoke});
 
   final FamilyMember member;
   final int deviceCount;
+  final String syncState;
   final VoidCallback? onChangeRole;
   final VoidCallback? onRevoke;
 
@@ -326,7 +344,8 @@ class _MemberTile extends StatelessWidget {
         leading: CircleAvatar(child: Icon(_memberIcon(member.role))),
         title: Text(member.displayName),
         subtitle: Text('${_roleLabel(l10n, member.role)} · '
-            '${_statusLabel(l10n, member.status)}\n'
+            '${_statusLabel(l10n, member.status)} · '
+            '${_syncStateLabel(l10n, syncState)}\n'
             '${deviceCount == 0 ? l10n.t('notConnected') : '$deviceCount ${l10n.t('memberDevices')}'}'),
         isThreeLine: true,
         trailing: onChangeRole == null && onRevoke == null
@@ -416,3 +435,225 @@ String _invitationStatusLabel(
       FamilyInvitationStatus.cancelled => l10n.t('invitationCancelled'),
       FamilyInvitationStatus.expired => l10n.t('invitationExpired'),
     };
+
+/// M5 honest per-member synchronization label derived from the outbox state.
+/// Never claims remote completion without proof: `queued` and `failed` are
+/// surfaced explicitly, and absence of an outbox entry is reported as the
+/// local-only reference state.
+String _syncStateLabel(AppLocalizations l10n, String syncState) {
+  switch (syncState) {
+    case 'synced':
+      return l10n.t('memberSynced');
+    case 'queued':
+      return l10n.t('memberPendingSync');
+    case 'failed':
+    case 'blocked':
+      return l10n.t('memberSyncFailed');
+    default:
+      return l10n.t('memberSavedLocal');
+  }
+}
+
+// — M5 Family Management helpers —
+
+/// M5 family overview — honest reference counts (members, children, devices)
+/// computed from the local canonical data, never invented.
+List<Widget> _familyOverviewSection(
+    BuildContext context,
+    List<FamilyMember> members,
+    Map<String, int> deviceCounts,
+    Map<String, String> syncStates,
+    FamilyMember? actor) {
+  final l10n = AppLocalizations.of(context);
+  final theme = Theme.of(context);
+  final children = members
+      .where((m) => m.role == FamilyRole.child)
+      .length;
+  final adultMembers = members.length - children;
+  final totalDevices = deviceCounts.values.fold(0, (sum, c) => sum + c);
+  final pendingSync = syncStates.values
+          .where((s) => s == SyncState.queued.name || s == SyncState.failed.name)
+          .length;
+  return [
+    Card(
+      child: Semantics(
+        label: l10n.t('familyOverview'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l10n.t('familyOverview'),
+                style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            Row(children: [
+              const Icon(Icons.group_outlined, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: Text('${l10n.t('memberCount')}: $adultMembers · '
+                      '${l10n.t('childCount')}: $children')),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              const Icon(Icons.devices_outlined, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: Text(
+                      '${l10n.t('deviceCount')}: $totalDevices')),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              Icon(
+                  pendingSync > 0
+                      ? Icons.cloud_upload_outlined
+                      : Icons.cloud_done_outlined,
+                  size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: Text(pendingSync == 0
+                      ? l10n.t('memberSynced')
+                      : l10n.t('memberPendingSync'))),
+            ]),
+          ]),
+        ),
+      ),
+    ),
+    const SizedBox(height: 16),
+  ];
+}
+
+/// M5 unauthorized state — the verified actor could not be bound, so no
+/// administrative action is exposed (fail-closed, consistent with the UX
+/// constitution's honesty requirement).
+List<Widget> _unauthorizedSection(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  return [
+    Card(
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.person_off_outlined,
+                color: Theme.of(context).colorScheme.onErrorContainer),
+            const SizedBox(width: 8),
+            Text(l10n.t('unauthorizedActor'),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(
+                        color: Theme.of(context).colorScheme.onErrorContainer)),
+          ]),
+          const SizedBox(height: 8),
+          Text(l10n.t('actorVerificationRequired'),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(
+                      color: Theme.of(context).colorScheme.onErrorContainer)),
+        ]),
+      ),
+    ),
+    const SizedBox(height: 16),
+  ];
+}
+
+/// M5 invitation history — read-only view of accepted, cancelled, and expired
+/// invitations. Pending invitations are managed in the section above.
+/// Cancelling a closed invitation is deliberately not offered.
+class _InvitationHistorySection extends StatefulWidget {
+  const _InvitationHistorySection(
+      {required this.invitations, required this.onCancel});
+  final List<FamilyInvitation> invitations;
+  final VoidCallback? Function(FamilyInvitation) onCancel;
+
+  @override
+  State<_InvitationHistorySection> createState() =>
+      _InvitationHistorySectionState();
+}
+
+class _InvitationHistorySectionState extends State<_InvitationHistorySection> {
+  FamilyInvitationStatus? _filter;
+
+  List<FamilyInvitation> get _filtered =>
+      _filter == null
+          ? widget.invitations
+          : widget.invitations
+              .where((i) => i.status == _filter)
+              .toList(growable: false);
+
+  bool get _isClosed =>
+      widget.invitations.every((i) => i.status == FamilyInvitationStatus.pending);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final nonPending = widget.invitations
+        .where((i) => i.status != FamilyInvitationStatus.pending)
+        .length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(l10n.t('invitationHistory'), style: theme.textTheme.titleLarge),
+      const SizedBox(height: 8),
+      if (nonPending == 0 && _isClosed)
+        Card(
+            child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Text(l10n.t('invitationHistoryEmpty'))))
+      else
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _HistoryChip(
+                    label: l10n.t('invitationAll'),
+                    selected: _filter == null,
+                    onTap: () => setState(() => _filter = null)),
+                _HistoryChip(
+                    label: l10n.t('invitationAccepted'),
+                    selected: _filter == FamilyInvitationStatus.accepted,
+                    onTap: () => setState(
+                        () => _filter = FamilyInvitationStatus.accepted)),
+                _HistoryChip(
+                    label: l10n.t('invitationCancelled'),
+                    selected: _filter == FamilyInvitationStatus.cancelled,
+                    onTap: () => setState(
+                        () => _filter = FamilyInvitationStatus.cancelled)),
+                _HistoryChip(
+                    label: l10n.t('invitationExpired'),
+                    selected: _filter == FamilyInvitationStatus.expired,
+                    onTap: () => setState(
+                        () => _filter = FamilyInvitationStatus.expired)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ..._filtered.map(
+                (invitation) => _InvitationTile(invitation: invitation,
+                    onCancel: widget.onCancel(invitation))),
+          ],
+        ),
+    ]);
+  }
+}
+
+class _HistoryChip extends StatelessWidget {
+  const _HistoryChip(
+      {required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: theme.colorScheme.secondaryContainer,
+      checkmarkColor: theme.colorScheme.onSecondaryContainer,
+    );
+  }
+}
