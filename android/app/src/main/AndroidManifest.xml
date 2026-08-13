@@ -3,7 +3,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
-    <application
+        <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+<application
         android:label="Guardian Eye Pro"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
@@ -34,6 +37,23 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- M8 screen-time enforcement: transparent foreground monitoring service
+             (foregroundServiceType intentionally omitted; Android 14+ requires an
+             explicit type declaration — see HUMAN ACTION REQUIRED note in
+             docs/UX_SPRINT_01_M8_COMPLETION_REPORT.md). -->
+        <service
+            android:name=".EnforcementService"
+            android:exported="false" />
+        <!-- M8 boot resilience: restart enforcement monitoring after reboot.
+             WorkManager periodic rescheduling after boot is handled by the
+             workmanager Flutter plugin. -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

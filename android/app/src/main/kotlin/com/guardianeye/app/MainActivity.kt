@@ -34,6 +34,94 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        // M8 enforcement channel (guardian_eye.enforcement)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "guardian_eye.enforcement")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getEnforcementState" -> {
+                        val deviceId = call.argument<String>("deviceId")
+                        if (deviceId.isNullOrBlank()) {
+                            result.error("invalidArgument", "deviceId is required", null)
+                            return@setMethodCallHandler
+                        }
+                        result.success(buildEnforcementStateMap())
+                    }
+                    "startEnforcementMonitoring" -> {
+                        // Starts (or re-starts) the transparent foreground monitoring
+                        // service. Returns the actual outcome so the Flutter side can
+                        // report it honestly; never silently swallows the failure.
+                        val intent = Intent(this@MainActivity, EnforcementService::class.java)
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(intent)
+                            } else {
+                                startService(intent)
+                            }
+                            result.success(
+                                mapOf(
+                                    "started" to true,
+                                    "reason" to null,
+                                    "observation" to (EnforcementService.latestObservation(this@MainActivity)
+                                        ?: mapOf("status" to "noObservation", "reason" to "no_observation_recorded_yet"))
+                                )
+                            )
+                        } catch (exception: Exception) {
+                            result.success(
+                                mapOf(
+                                    "started" to false,
+                                    "reason" to "service_start_failed:${exception.javaClass.simpleName}",
+                                    "observation" to null
+                                )
+                            )
+                        }
+                    }
+                    "getLastVerifiedObservation" -> {
+                        result.success(
+                            mapOf(
+                                "status" to "ok",
+                                "observation" to (EnforcementService.latestObservation(this@MainActivity)
+                                    ?: mapOf("status" to "noObservation", "reason" to "no_observation_recorded_yet")),
+                                "capturedAt" to if (EnforcementService.latestObservationAt(this@MainActivity) > 0L)
+                                    Instant.ofEpochMilli(EnforcementService.latestObservationAt(this@MainActivity)).toString()
+                                else null
+                            )
+                        )
+                    }
+                    "getBootState" -> {
+                        val prefs = getSharedPreferences("guardian_m8_boot", Context.MODE_PRIVATE)
+                        result.success(
+                            mapOf(
+                                "lastBootAt" to if (prefs.getLong(BootReceiver.KEY_LAST_BOOT_AT, 0L) > 0L)
+                                    Instant.ofEpochMilli(prefs.getLong(BootReceiver.KEY_LAST_BOOT_AT, 0L)).toString()
+                                else null,
+                                "lastBootReason" to prefs.getString(BootReceiver.KEY_LAST_BOOT_REASON, null)
+                            )
+                        )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        }
+
+    private fun buildEnforcementStateMap(): Map<String, Any?> {
+        val granted = try {
+            val manager = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            manager.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                packageName
+            ) == AppOpsManager.MODE_ALLOWED
+        } catch (exception: Exception) {
+            false
+        }
+        val latest = EnforcementService.latestObservation(this)
+        val latestAt = EnforcementService.latestObservationAt(this)
+        return mapOf(
+            "usageStatsPermission" to (if (granted) "granted" else "notGranted"),
+            "observation" to (latest ?: mapOf("status" to "noObservation", "reason" to "no_observation_recorded_yet")),
+            "lastObservationAt" to if (latestAt > 0L) Instant.ofEpochMilli(latestAt).toString() else null
+        )
     }
 
     private fun isGranted(capability: String): Boolean = when (capability) {

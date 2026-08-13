@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- M8 screen-time enforcement: minimal foreground-service strings. -->
+    <string name="app_name">Guardian Eye Pro</string>
+    <string name="m8_fg_channel_name">Screen-time monitoring</string>
+    <string name="m8_fg_channel_description">Keeps a verified record of screen-time activity so that agreed family limits can be tracked while the device is on.</string>
+    <string name="m8_fg_notification_title">Guardian Eye Pro is monitoring screen time</string>
+    <string name="m8_fg_notification_text">Family screen-time policy tracking is active.</string>
+</resources>
