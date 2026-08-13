@@ -6,6 +6,7 @@ import '../screens/family_members_screen.dart';
 import '../screens/safety_policies_screen.dart';
 import '../screens/child_device_status_screen.dart';
 import '../screens/child_context_screen.dart';
+import '../screens/screen_time_policies_screen.dart';
 import '../screens/family_safety_experience_screens.dart';
 import '../screens/settings_screen.dart';
 import '../screens/pairing_screen.dart';
@@ -34,6 +35,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/child/:familyId/:childId',
         name: 'childContext',
         builder: (context, state) => ChildContextScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      GoRoute(
+        path: '/child/:familyId/:childId/policies',
+        name: 'childPolicies',
+        builder: (context, state) => ScreenTimePoliciesScreen(
             familyId: state.pathParameters['familyId']!,
             childId: state.pathParameters['childId']!),
       ),

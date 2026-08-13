@@ -29,6 +29,22 @@ final pairingRepositoryProvider =
     Provider((ref) => PairingRepository(GuardianDatabase.instance));
 final policyRepositoryProvider =
     Provider((ref) => PolicyRepository(GuardianDatabase.instance));
+
+/// M6 — Screen-Time Administration. The policy list a parent sees for a
+/// child's family. Local first; each policy carries its honest
+/// [SyncState] so the UI never claims server delivery without evidence.
+final childPoliciesProvider =
+    FutureProvider.family((ref, String familyId) =>
+        ref.watch(policyRepositoryProvider).forFamily(familyId));
+
+/// M6 — Screen-Time Administration. Active temporary allowances for a
+/// family. The engine applies these on top of policies; every allowance
+/// is bounded by expiry and the UI displays that expiry plainly.
+final childOverridesProvider =
+    FutureProvider.family((ref, String familyId) => ref
+        .watch(policyRepositoryProvider)
+        .overridesForFamily(familyId));
+
 final childDeviceRepositoryProvider =
     Provider((ref) => ChildDeviceRepository(GuardianDatabase.instance));
 final deviceLinkServiceProvider = Provider(

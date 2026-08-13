@@ -3,9 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/child_context_provider.dart';
 import '../../application/family_context_provider.dart';
+import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/child_device_enforcement.dart';
+import '../../domain/child_exception_request.dart';
 import '../../domain/guardian_models.dart';
+import '../../domain/policy_engine.dart';
 
 /// The child-context vertical (M3).
 ///
@@ -74,7 +77,10 @@ class ChildContextScreen extends ConsumerWidget {
                     ?.can(FamilyPermission.viewChildStatus) ??
                 false;
             return _ChildContextBody(
-                snapshot: data, canAct: canAct);
+                familyId: familyId,
+                childId: childId,
+                snapshot: data,
+                canAct: canAct);
           },
         ),
       ),
@@ -82,13 +88,19 @@ class ChildContextScreen extends ConsumerWidget {
   }
 }
 
-class _ChildContextBody extends StatelessWidget {
-  const _ChildContextBody({required this.snapshot, required this.canAct});
+class _ChildContextBody extends ConsumerWidget {
+  const _ChildContextBody(
+      {required this.familyId,
+      required this.childId,
+      required this.snapshot,
+      required this.canAct});
+  final String familyId;
+  final String childId;
   final ChildContextSnapshot snapshot;
   final bool canAct;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return ListView(
@@ -120,7 +132,10 @@ class _ChildContextBody extends StatelessWidget {
             hasDevice: snapshot.deviceState != null,
             canAct: canAct),
         const SizedBox(height: 20),
-        const _ComingSoonSection(),
+        _ScreenTimeSection(
+            familyId: familyId,
+            childId: childId,
+            hasDevice: snapshot.deviceState != null),
         const SizedBox(height: 12),
         Center(
           child: TextButton.icon(
@@ -347,60 +362,112 @@ class _ActivityCard extends StatelessWidget {
   }
 }
 
-class _ComingSoonSection extends StatelessWidget {
-  const _ComingSoonSection();
+/// M6 — Screen-Time Administration entry point on the child context.
+///
+/// An honest, live summary replaces the old coming-soon placeholder:
+/// active policy count, the effective decision for a sample target
+/// right now (PolicyEngine arithmetic, never a device report), a
+/// pending exception badge, and a manage button that opens the
+/// child-centric policy surface. Members without `managePolicies`
+/// (spouse under Option A, child) see the read-only summary only.
+class _ScreenTimeSection extends ConsumerWidget {
+  const _ScreenTimeSection(
+      {required this.familyId,
+      required this.childId,
+      required this.hasDevice});
+  final String familyId;
+  final String childId;
+  final bool hasDevice;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final auth = ref.watch(familyRuntimeContextProvider(familyId));
+    final canManage =
+        auth.valueOrNull?.can(FamilyPermission.managePolicies) ?? false;
+    final policies = ref.watch(childPoliciesProvider(familyId));
+    final overrides = ref.watch(childOverridesProvider(familyId));
+    final requests =
+        ref.watch(familyExceptionRequestsProvider(familyId));
+    final pendingRequests = requests.valueOrNull
+            ?.where((request) =>
+                request.status == ChildExceptionRequestStatus.pending)
+            .length ??
+        0;
+    final activePolicies = policies.valueOrNull
+            ?.where((policy) => policy.enabled)
+            .length ??
+        0;
+    final activeOverride = (overrides.valueOrNull ?? const [])
+        .where((o) =>
+            o.target == 'video' && o.isActiveAt(DateTime.now()))
+        .firstOrNull;
+    final decision = const PolicyEngine().resolve(
+        policies: policies.valueOrNull ?? const [],
+        override: activeOverride,
+        target: 'video',
+        moment: DateTime.now());
     return Card(
         color: theme.colorScheme.surfaceContainerHighest
-          .withValues(alpha: 0.5),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.bolt_outlined),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(l10n.t('comingSoonSection'),
-                      style: theme.textTheme.titleMedium),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-              ...[
-              ('bedtime', Icons.bedtime_outlined),
-              ('webFiltering', Icons.filter_list_outlined),
-              ('locationTracking', Icons.place_outlined),
-              ('deviceControls', Icons.settings_cell_outlined),
-              ('weeklyReports', Icons.insights_outlined),
-              ('sosAlerts', Icons.emergency_outlined),
-              ('aiMonitoring', Icons.psychology_outlined),
-            ].map((row) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Icon(row.$2),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(l10n.t(row.$1),
-                            style: theme.textTheme.bodyMedium),
-                      ),
-                      Text(l10n.t('comingSoon'),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary)),
-                    ],
+            .withValues(alpha: 0.5),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(l10n.t('screenTimeManage'),
+                        style: theme.textTheme.titleMedium),
                   ),
-                )),
-          ],
-        ),
-      ),
-    );
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (!hasDevice)
+                Text(l10n.t('childUnlinkedPolicyNotice'),
+                    style: theme.textTheme.bodyMedium)
+              else ...[
+                Text(
+                    '${l10n.t('policiesActiveCountPlural').replaceAll('{count}', '$activePolicies')}',
+                    style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 6),
+                Text(
+                    '${l10n.t('effectiveDecisionNow')}: '
+                    '${decision.restricted ? l10n.t('effectiveDecisionRestricted') : l10n.t('effectiveDecisionAllowed')}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 6),
+                if (pendingRequests > 0)
+                  Chip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text(
+                          '$pendingRequests ${pendingRequests == 1 ? l10n.t('pendingExceptionBadge') : l10n.t('pendingExceptionBadgePlural')}')),
+                Text(l10n.t('policyNotDeviceEnforced'),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 10),
+              ],
+              if (canManage)
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: FilledButton.icon(
+                    onPressed: () => context.push(
+                        '/child/$familyId/$childId/policies'),
+                    icon: const Icon(Icons.settings_outlined),
+                    label: Text(l10n.t('managePolicies')),
+                  ),
+                )
+              else
+                Text(l10n.t('screenTimeAdminUnavailableBody'),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant)),
+            ],
+          ),
+        ));
   }
 }
 
