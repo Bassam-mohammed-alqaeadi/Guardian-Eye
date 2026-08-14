@@ -141,12 +141,16 @@ final networkConnectivityServiceProvider =
 /// pending state). Never claims synced without real outbox evidence.
 final outboxSyncStatusProvider =
     Provider((ref) => OutboxSyncStatus(GuardianDatabase.instance));
-final pendingOutboxCountProvider = FutureProvider<int>(
+/// M9 — honest pending-count read for the sync UI. `autoDispose` so the count
+/// is re-derived from the real SQLite outbox every time the surface opens
+/// (never a stale cached value from before a mutation was enqueued).
+final pendingOutboxCountProvider = FutureProvider.autoDispose<int>(
     (ref) => ref.watch(outboxSyncStatusProvider).pendingCount());
 /// M9 E3 — family-level pending sync derived from the REAL outbox state,
 /// including `family.created` (aggregate type `family`) so a queued family
-/// mutation is never presented as fully synchronized.
-final familyPendingSyncProvider = FutureProvider.family<bool, String>(
+/// mutation is never presented as fully synchronized. `autoDispose` keeps the
+/// read fresh whenever the family screen opens.
+final familyPendingSyncProvider = FutureProvider.autoDispose.family<bool, String>(
     (ref, String familyId) =>
         ref.watch(outboxSyncStatusProvider).hasPendingForFamily(familyId));
 final deviceTokenRepositoryProvider =

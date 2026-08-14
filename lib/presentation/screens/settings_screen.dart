@@ -133,6 +133,14 @@ class _SyncNowCardState extends ConsumerState<_SyncNowCard> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final syncState = ref.watch(syncCoordinatorProvider);
+    // Honesty: whenever a run finishes while this card is visible (startup or
+    // connectivity trigger), re-read the real outbox instead of trusting a
+    // count computed before the mutation was enqueued.
+    ref.listen(syncCoordinatorProvider, (previous, next) {
+      if ((previous?.isSyncing ?? false) && !next.isSyncing) {
+        ref.invalidate(pendingOutboxCountProvider);
+      }
+    });
     final pending = ref.watch(pendingOutboxCountProvider);
     final pendingCount = pending.valueOrNull ?? 0;
     final syncing = syncState.isSyncing || _running;
