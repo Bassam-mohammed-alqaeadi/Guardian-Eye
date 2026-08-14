@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../application/family_membership_providers.dart';
+import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/family_authorization.dart';
 import '../../domain/guardian_models.dart';
@@ -19,6 +19,11 @@ class FamilyMembersScreen extends ConsumerWidget {
     final invitations = ref.watch(familyInvitationsProvider(familyId));
     final deviceCounts = ref.watch(familyMemberDeviceCountsProvider(familyId));
     final syncStates = ref.watch(familyMemberSyncStatesProvider(familyId));
+    // M9 E3: family-level pending sync derived from the REAL outbox state
+    // (including `family.created`). A queued family mutation must never be
+    // presented as fully synchronized.
+    final familyPendingSync =
+        ref.watch(familyPendingSyncProvider(familyId)).valueOrNull ?? false;
     return Directionality(
       textDirection: l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
@@ -52,7 +57,7 @@ class FamilyMembersScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 children: [
-                  ..._familyOverviewSection(context, items, deviceCounts.valueOrNull ?? const {}, syncStates.valueOrNull ?? const {}, actor),
+                  ..._familyOverviewSection(context, items, deviceCounts.valueOrNull ?? const {}, syncStates.valueOrNull ?? const {}, actor, familyPendingSync),
                   if (actor == null)
                     ..._unauthorizedSection(context),
                   if (items.isEmpty)
@@ -463,7 +468,8 @@ List<Widget> _familyOverviewSection(
     List<FamilyMember> members,
     Map<String, int> deviceCounts,
     Map<String, String> syncStates,
-    FamilyMember? actor) {
+    FamilyMember? actor,
+    bool familyPendingSync) {
   final l10n = AppLocalizations.of(context);
   final theme = Theme.of(context);
   final children = members
@@ -471,9 +477,16 @@ List<Widget> _familyOverviewSection(
       .length;
   final adultMembers = members.length - children;
   final totalDevices = deviceCounts.values.fold(0, (sum, c) => sum + c);
-  final pendingSync = syncStates.values
-          .where((s) => s == SyncState.queued.name || s == SyncState.failed.name)
-          .length;
+  final memberPending = syncStates.values
+      .where((s) =>
+          s == SyncState.queued.name ||
+          s == SyncState.failed.name ||
+          s == SyncState.blocked.name)
+      .isNotEmpty;
+  // E3 honesty: the family is presented as synchronized ONLY when no member
+  // mutation and no family-level mutation (e.g. `family.created`) is still
+  // pending in the outbox.
+  final pendingSync = familyPendingSync || memberPending;
   return [
     Card(
       child: Semantics(
@@ -503,15 +516,15 @@ List<Widget> _familyOverviewSection(
             const SizedBox(height: 4),
             Row(children: [
               Icon(
-                  pendingSync > 0
+                  pendingSync
                       ? Icons.cloud_upload_outlined
                       : Icons.cloud_done_outlined,
                   size: 16),
               const SizedBox(width: 6),
               Expanded(
-                  child: Text(pendingSync == 0
-                      ? l10n.t('memberSynced')
-                      : l10n.t('memberPendingSync'))),
+                  child: Text(pendingSync
+                      ? l10n.t('memberPendingSync')
+                      : l10n.t('memberSynced'))),
             ]),
           ]),
         ),
