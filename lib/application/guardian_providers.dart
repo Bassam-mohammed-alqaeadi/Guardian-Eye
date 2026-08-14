@@ -20,8 +20,11 @@ import '../data/family_actor_binding_service.dart';
 import '../data/family_membership_repository.dart';
 import '../data/guardian_repositories.dart';
 import '../data/outbox_sync_executor.dart';
+import '../data/outbox_sync_status.dart';
 import '../data/policy_repository.dart';
 import '../data/safety_repositories.dart';
+import 'sync_coordinator.dart';
+import '../core/platform/network_connectivity_service.dart';
 import '../domain/incident_engine.dart';
 import '../domain/guardian_models.dart';
 
@@ -123,6 +126,29 @@ final outboxSyncExecutorProvider = Provider((ref) => OutboxSyncExecutor(
     GuardianDatabase.instance,
     ref.watch(firebaseAuthContextProvider),
     ref.watch(outboxRemoteWriterProvider)));
+/// M9 — canonical runtime sync coordinator. All triggers (startup,
+/// connectivity restoration, manual sync, WorkManager) funnel through this
+/// single-flight coordinator so only one execution may operate on the outbox
+/// at a time. UI watches [syncCoordinatorProvider] for the honest state.
+final syncCoordinatorCoreProvider = Provider(
+    (ref) => SyncCoordinatorCore(ref.watch(outboxSyncExecutorProvider)));
+final syncCoordinatorProvider = StateNotifierProvider<SyncCoordinator, SyncRunState>(
+    (ref) => SyncCoordinator(ref.watch(syncCoordinatorCoreProvider)));
+/// M9 Trigger B — network restoration monitor (offline → online).
+final networkConnectivityServiceProvider =
+    Provider((ref) => NetworkConnectivityService());
+/// M9 — honest outbox status queries for the UI (pending count, family-level
+/// pending state). Never claims synced without real outbox evidence.
+final outboxSyncStatusProvider =
+    Provider((ref) => OutboxSyncStatus(GuardianDatabase.instance));
+final pendingOutboxCountProvider = FutureProvider<int>(
+    (ref) => ref.watch(outboxSyncStatusProvider).pendingCount());
+/// M9 E3 — family-level pending sync derived from the REAL outbox state,
+/// including `family.created` (aggregate type `family`) so a queued family
+/// mutation is never presented as fully synchronized.
+final familyPendingSyncProvider = FutureProvider.family<bool, String>(
+    (ref, String familyId) =>
+        ref.watch(outboxSyncStatusProvider).hasPendingForFamily(familyId));
 final deviceTokenRepositoryProvider =
     Provider((ref) => DeviceTokenRepository(GuardianDatabase.instance));
 final capabilityGatewayProvider = Provider((ref) => const CapabilityGateway());

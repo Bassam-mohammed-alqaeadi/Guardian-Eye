@@ -47,6 +47,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
+            _SectionHeader(title: l10n.t('dataSync')),
+            const _SyncNowCard(),
+            const SizedBox(height: 20),
             _SectionHeader(title: l10n.t('appPreferences')),
             Card.filled(
               child: Padding(
@@ -98,6 +101,75 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// M9 Trigger C — canonical manual "sync now" surface.
+///
+/// Reflects the honest pipeline state: queued (operations waiting), syncing
+/// (execution in flight), synced (nothing pending / last delivery confirmed),
+/// failed (a pipeline failure was recorded). The label is derived from real
+/// outbox state, never from optimistic assumptions.
+class _SyncNowCard extends ConsumerStatefulWidget {
+  const _SyncNowCard();
+
+  @override
+  ConsumerState<_SyncNowCard> createState() => _SyncNowCardState();
+}
+
+class _SyncNowCardState extends ConsumerState<_SyncNowCard> {
+  bool _running = false;
+
+  Future<void> _syncNow() async {
+    setState(() => _running = true);
+    await ref.read(syncCoordinatorProvider.notifier).executeNow();
+    ref.invalidate(pendingOutboxCountProvider);
+    if (mounted) setState(() => _running = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final syncState = ref.watch(syncCoordinatorProvider);
+    final pending = ref.watch(pendingOutboxCountProvider);
+    final pendingCount = pending.valueOrNull ?? 0;
+    final syncing = syncState.isSyncing || _running;
+
+    final String statusKey;
+    if (syncing) {
+      statusKey = 'syncInProgress';
+    } else if (pending.hasError) {
+      statusKey = 'syncUnavailable';
+    } else if (syncState.lastError != null) {
+      statusKey = 'syncFailed';
+    } else if (pendingCount > 0) {
+      statusKey = 'syncQueued';
+    } else {
+      statusKey = 'syncSynced';
+    }
+
+    return Card.filled(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(children: [
+          Icon(syncing ? Icons.sync : Icons.cloud_sync_outlined),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              syncing
+                  ? l10n.t('syncInProgress')
+                  : '${l10n.t(statusKey)}'
+                      '${pendingCount > 0 && !pending.hasError && syncState.lastError == null ? ' ($pendingCount)' : ''}',
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.tonal(
+            onPressed: syncing ? null : _syncNow,
+            child: Text(l10n.t('syncNow')),
+          ),
+        ]),
       ),
     );
   }

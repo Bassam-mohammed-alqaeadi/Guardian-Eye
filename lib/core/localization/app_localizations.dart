@@ -88,6 +88,9 @@ class AppLocalizations {
       'syncSynced': 'متزامن',
       'syncBlocked': 'المزامنة محجوبة',
       'syncFailed': 'فشلت المزامنة',
+      'syncNow': 'مزامنة الآن',
+      'syncInProgress': 'جارٍ المزامنة…',
+      'dataSync': 'مزامنة البيانات',
       'policyNotDeviceEnforced':
           'هذا تكوين سياسة. لا يتم ادعاء تطبيقه على جهاز الطفل قبل التحقق من تكامل Android.',
       'video': 'فيديو',
@@ -507,6 +510,9 @@ class AppLocalizations {
       'syncSynced': 'Synced',
       'syncBlocked': 'Sync blocked',
       'syncFailed': 'Sync failed',
+      'syncNow': 'Sync now',
+      'syncInProgress': 'Syncing…',
+      'dataSync': 'Data sync',
       'policyNotDeviceEnforced':
           'This is policy configuration. It is not claimed to be enforced on a child device before Android integration is verified.',
       'video': 'Video',
