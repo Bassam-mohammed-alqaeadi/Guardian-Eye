@@ -36,7 +36,7 @@ class FamilyMembersScreen extends ConsumerWidget {
             return !_can(actor, FamilyPermission.inviteMembers)
                 ? null
                 : FloatingActionButton.extended(
-                    onPressed: () => _showInviteSheet(context, ref, actor!),
+                    onPressed: () => _showInviteSheet(context, actor!),
                     icon: const Icon(Icons.person_add_alt_1),
                     label: Text(l10n.t('inviteMember')),
                   );
@@ -136,82 +136,12 @@ class FamilyMembersScreen extends ConsumerWidget {
       actor != null && const FamilyAuthorization().hasPermission(actor, permission);
 
   Future<void> _showInviteSheet(
-      BuildContext context, WidgetRef ref, FamilyMember owner) async {
-    final l10n = AppLocalizations.of(context);
-    final email = TextEditingController();
-    var role = FamilyRole.coParent;
-    var saving = false;
+      BuildContext context, FamilyMember owner) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 20, 20, MediaQuery.of(sheetContext).viewInsets.bottom + 20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(l10n.t('inviteAdult'),
-                style: Theme.of(sheetContext).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            TextField(
-              controller: email,
-              autofocus: true,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: l10n.t('targetEmail')),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<FamilyRole>(
-              initialValue: role,
-              decoration: InputDecoration(labelText: l10n.t('proposedRole')),
-              items: [
-                DropdownMenuItem(
-                    value: FamilyRole.parent,
-                    child: Text(l10n.t('roleParent'))),
-                DropdownMenuItem(
-                    value: FamilyRole.coParent,
-                    child: Text(l10n.t('roleCoParent'))),
-              ],
-              onChanged: saving
-                  ? null
-                  : (value) => setSheetState(() => role = value ?? role),
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: saving
-                  ? null
-                  : () async {
-                      setSheetState(() => saving = true);
-                      try {
-                        await ref
-                            .read(familyMembershipRepositoryProvider)
-                            .inviteAdult(
-                                familyId: familyId,
-                                actorMemberId: owner.id,
-                                targetEmail: email.text,
-                                proposedRole: role);
-                        ref.invalidate(familyInvitationsProvider(familyId));
-                        if (sheetContext.mounted) Navigator.pop(sheetContext);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.t('invitationCreated'))));
-                        }
-                      } catch (_) {
-                        if (sheetContext.mounted) {
-                          ScaffoldMessenger.of(sheetContext).showSnackBar(
-                              SnackBar(content: Text(l10n.t('error'))));
-                        }
-                        if (sheetContext.mounted) setSheetState(() => saving = false);
-                      }
-                    },
-              child: saving
-                  ? const CircularProgressIndicator()
-                  : Text(l10n.t('sendInvitation')),
-            ),
-          ]),
-        ),
-      ),
+      builder: (_) => _InviteSheet(familyId: familyId, owner: owner),
     );
-    email.dispose();
   }
 
   Future<void> _showRoleSheet(BuildContext context, WidgetRef ref,
@@ -325,11 +255,101 @@ class FamilyMembersScreen extends ConsumerWidget {
       }
     }
   }
+}class _InviteSheet extends ConsumerStatefulWidget {
+  const _InviteSheet({required this.familyId, required this.owner});
+
+  final String familyId;
+  final FamilyMember owner;
+
+  @override
+  ConsumerState<_InviteSheet> createState() => _InviteSheetState();
+}
+
+class _InviteSheetState extends ConsumerState<_InviteSheet> {
+  final TextEditingController _email = TextEditingController();
+  FamilyRole _role = FamilyRole.coParent;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(familyMembershipRepositoryProvider)
+          .inviteAdult(
+              familyId: widget.familyId,
+              actorMemberId: widget.owner.id,
+              targetEmail: _email.text,
+              proposedRole: _role);
+      ref.invalidate(familyInvitationsProvider(widget.familyId));
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.t('invitationCreated'))));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.t('error'))));
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(l10n.t('inviteAdult'),
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _email,
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(labelText: l10n.t('targetEmail')),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<FamilyRole>(
+          initialValue: _role,
+          decoration: InputDecoration(labelText: l10n.t('proposedRole')),
+          items: [
+            DropdownMenuItem(
+                value: FamilyRole.parent,
+                child: Text(l10n.t('roleParent'))),
+            DropdownMenuItem(
+                value: FamilyRole.coParent,
+                child: Text(l10n.t('roleCoParent'))),
+          ],
+          onChanged: _saving
+              ? null
+              : (value) => setState(() => _role = value ?? _role),
+        ),
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const CircularProgressIndicator()
+              : Text(l10n.t('sendInvitation')),
+        ),
+      ]),
+    );
+  }
 }
 
 class _MemberTile extends StatelessWidget {
-  const _MemberTile(
-      {required this.member,
+  const _MemberTile({
+    required this.member,
       required this.deviceCount,
       this.syncState = 'localOnly',
       this.onChangeRole,

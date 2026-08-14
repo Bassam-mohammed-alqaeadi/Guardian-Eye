@@ -274,40 +274,77 @@ class _Dashboard extends ConsumerWidget {
 
   Future<void> _addChild(
       BuildContext context, WidgetRef ref, String familyId) async {
-    final controller = TextEditingController();
-    final l10n = AppLocalizations.of(context);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.fromLTRB(
-            20, 20, 20, MediaQuery.of(sheetContext).viewInsets.bottom + 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.t('addChild'),
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: InputDecoration(labelText: l10n.t('childName'))),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () async {
-                await ref
-                    .read(familyRepositoryProvider)
-                    .addChild(familyId: familyId, childName: controller.text);
-                ref.invalidate(dashboardProvider);
-                if (sheetContext.mounted) Navigator.pop(sheetContext);
-              },
-              child: Text(l10n.t('continue')),
-            ),
-          ],
-        ),
+      builder: (_) => _AddChildSheet(familyId: familyId),
+    );
+  }
+}
+
+class _AddChildSheet extends ConsumerStatefulWidget {
+  const _AddChildSheet({required this.familyId});
+
+  final String familyId;
+
+  @override
+  ConsumerState<_AddChildSheet> createState() => _AddChildSheetState();
+}
+
+class _AddChildSheetState extends ConsumerState<_AddChildSheet> {
+  final TextEditingController _name = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(familyRepositoryProvider)
+          .addChild(familyId: widget.familyId, childName: _name.text);
+      ref.invalidate(dashboardProvider);
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.t('error'))));
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(l10n.t('addChild'),
+              style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 16),
+          TextField(
+              controller: _name,
+              autofocus: true,
+              decoration: InputDecoration(labelText: l10n.t('childName'))),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const CircularProgressIndicator()
+                : Text(l10n.t('continue')),
+          ),
+        ],
       ),
     );
-    controller.dispose();
   }
 }
 
