@@ -33,9 +33,9 @@ const String _familyId = 'f-1';
 const String _childId = 'm-child';
 const String _parentAId = 'm-parent';
 const String _spouseId = 'm-spouse';
-// Anchored late in the day so that every override whose expiry is
-// `_now + duration` stays active for the whole test run, no matter
-// when the suite actually executes.
+// Anchored late in the day so that overrides created at `_now` remain
+// chronologically coherent; widget tests that must keep an override
+// active against the real wall clock derive expiry from DateTime.now().
 final DateTime _now = DateTime(2026, 8, 13, 23);
 
 final FamilyMember _childMember = FamilyMember(
@@ -442,7 +442,11 @@ void main() {
             createdByMemberId: _parentAId,
             createdAt: _now,
             target: 'video',
-            expiresAt: _now.add(const Duration(hours: 1)),
+            // Wall-clock-relative expiry: the preview evaluates the override
+            // against DateTime.now(), so the expiry must sit in the future of
+            // the real clock for the override to be active (anchored _now + 1h
+            // silently expires once the wall clock passes the anchor).
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
             allowed: true,
             syncState: SyncState.synced)];
       await tester.pumpWidget(

@@ -429,7 +429,14 @@ void main() {
       // read is canonical and local; a missing child is genuinely
       // absent, so the surface renders the honest error-recovery flow.
       expect(find.textContaining('تعذّر العثور على هذه الصفحة'), findsOneWidget);
-      expect(find.byType(FilledButton), findsWidgets);
+      // On Flutter 3.35.7, FilledButton.icon is the private
+      // _FilledButtonWithIcon class and the release's finder used exact-type
+      // matching, so find.byType(FilledButton) matches nothing. The
+      // subtype predicate below is version-agnostic and preserves the
+      // exact semantic contract (an honest filled retry button exists).
+      expect(tester.widgetList(
+              find.byWidgetPredicate((w) => w is FilledButton)),
+          isNotEmpty);
       // The retry button re-invalidates the provider; tapping it must
       // run without throwing.
       await tester.tap(find.byIcon(Icons.refresh_outlined));

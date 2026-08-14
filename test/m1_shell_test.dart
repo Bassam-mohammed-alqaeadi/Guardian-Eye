@@ -214,6 +214,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // dashboardProvider is an async provider: pumpAndSettle waits only
+      // for the frame pipeline, so runAsync lets the provider's Future
+      // complete (proper async handling, not a sleep workaround).
+      await tester.runAsync(() async {
+        await Future<void>.delayed(Duration.zero);
+      });
+      await tester.pumpAndSettle();
 
       // The manage-policies action exists but is disabled — never a
       // locally-added role check, always delegated via FamilyRuntimeContext.
@@ -222,8 +229,42 @@ void main() {
       await tester.scrollUntilVisible(
           find.text('إدارة السياسات'), 100);
       await tester.pumpAndSettle();
-      final managePolicies = tester.widget<OutlinedButton>(
-          find.widgetWithText(OutlinedButton, 'إدارة السياسات'));
+      // In Flutter 3.35.7, OutlinedButton.icon returns the private
+      // _OutlinedButtonWithIcon widget rather than an OutlinedButton
+      // instance, so find.widgetWithText(OutlinedButton, ...) can never
+      // match on this toolchain (it was normalized to OutlinedButton in a
+      // later Flutter release). The semantic contract is unchanged and is
+      // asserted in a version-agnostic way: the button carrying the exact
+      // manage-policies label must exist, be a style button, and be
+      // disabled for unverified actors.
+      // OutlinedButton.icon's internal structure differs between Flutter
+      // versions: on 3.35.7 the button is the private _OutlinedButtonWithIcon
+      // whose `child` is a _OutlinedButtonWithIconChild (not a Row/Text),
+      // while later versions return an OutlinedButton wrapping a Row.
+      // Locate the button by traversing its rendered label text, whichever
+      // structure is in use.
+      final managePoliciesFinder = find.byWidgetPredicate(
+        (widget) {
+          if (widget is! ButtonStyleButton) return false;
+          final child = widget.child;
+          if (child is Text) return child.data == 'إدارة السياسات';
+          if (child is Row) {
+            return child.children.whereType<Text>().any((t) => t.data == 'إدارة السياسات');
+          }
+          // _OutlinedButtonWithIconChild: its `label` field holds the text.
+          if (child != null && child.runtimeType.toString().contains('WithIconChild')) {
+            try {
+              final label = (child as dynamic).label;
+              return label is Text && label.data == 'إدارة السياسات';
+            } catch (_) {
+              return false;
+            }
+          }
+          return false;
+        },
+        description: 'button labeled إدارة السياسات',
+      );
+      final managePolicies = tester.widget<ButtonStyleButton>(managePoliciesFinder);
       expect(managePolicies.onPressed, isNull);
     });
 
