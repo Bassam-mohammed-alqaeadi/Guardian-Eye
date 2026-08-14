@@ -38,6 +38,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.app.usage.UsageEvents
@@ -99,7 +100,8 @@ class EnforcementService : Service() {
             .setContentTitle(getString(R.string.m8_fg_notification_title))
             .setContentText(getString(R.string.m8_fg_notification_text))
             .setOngoing(true)
-            .setSilent(true)
+            // Silence is inherited from the IMPORTANCE_MIN channel; the platform
+            // Notification.Builder has no setSilent (NotificationCompat only).
             .build()
     }
 
