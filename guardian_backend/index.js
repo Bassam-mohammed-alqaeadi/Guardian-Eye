@@ -1,87 +1,391 @@
+'use strict';
+
+/**
+ * Guardian Backend — trusted child provisioning service for Guardian Eye Pro.
+ *
+ * Replaces the Firebase Cloud Functions production dependency (which cannot be
+ * deployed while manus-guardian stays on the Spark plan) with a Render-hosted
+ * Express service using the Firebase Admin SDK. The Admin SDK is the ONLY
+ * trusted creator of child membership:
+ *
+ *   POST /api/provision-child  (parent, authenticated)
+ *     -> stores a pending provisioning session (SHA-256 code hash only)
+ *   POST /api/redeem-child     (child, authenticated)
+ *     -> atomically creates families/{familyId}/members/{childUid} and
+ *        families/{familyId}/devices/{deviceId} and enrolls the session
+ *
+ * Identity is always derived from the verified Firebase ID token
+ * (`request.auth.uid` equivalent via verifyIdToken). Never from the payload.
+ */
+
 const express = require('express');
-const { initializeApp, cert } = require('firebase-admin/app');
-const { getAuth } = require('firebase-admin/auth');
-const cors = require('cors');
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { getFirestore } = require('firebase-admin/firestore');
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const PROVISIONING_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_ATTEMPTS = 5;
+const PARENT_ROLES = new Set(['primaryParent', 'coParent']);
 
-// مسارات ملف المفتاح السري
-const renderSecretPath = '/etc/secrets/serviceAccountKey.json';
-const localSecretPath = path.join(__dirname, 'serviceAccountKey.json');
-
-let keyPath = null;
-if (fs.existsSync(renderSecretPath)) {
-    keyPath = renderSecretPath;
-} else if (fs.existsSync(localSecretPath)) {
-    keyPath = localSecretPath;
+function sha256Hex(value) {
+  return crypto.createHash('sha256').update(String(value), 'utf8').digest('hex');
 }
 
-// تهيئة Firebase Admin
-let authInstance = null;
-try {
-    if (keyPath) {
-        const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
-        const firebaseApp = initializeApp({
-            credential: cert(serviceAccount)
-        });
-        authInstance = getAuth(firebaseApp);
-        console.log(`✅ Firebase Admin SDK Initialized Successfully from: ${keyPath}`);
-    } else {
-        console.warn('⚠️ No Service Account key file found at:', keyPath);
+/** 6-digit numeric code matching the client's `^\d{6}$` pairing format. */
+function generateCode() {
+  return crypto.randomInt(0, 1000000).toString().padStart(6, '0');
+}
+
+class HttpError extends Error {
+  constructor(status, code, message) {
+    super(message || code);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+/**
+ * Builds the Express app against injected `auth` (Firebase Auth Admin) and
+ * `db` (Firestore Admin) so the routing/authorization logic is unit-testable
+ * without a real service account.
+ */
+function createApp({ auth, db }) {
+  const app = express();
+  app.use(cors());
+  app.use(express.json({ limit: '64kb' }));
+
+  /** Derives the authenticated UID from the Bearer Firebase ID token. */
+  async function requireAuth(req, res, next) {
+    const header = req.headers.authorization || '';
+    if (!header.startsWith('Bearer ')) {
+      return res
+        .status(401)
+        .json({ error: 'unauthenticated', message: 'Missing or invalid Authorization header' });
     }
-} catch (error) {
-    console.error('❌ Error initializing Firebase Admin:', error.message);
-}
-
-// فحص صحة السيرفر
-app.get('/', (req, res) => {
-    res.status(200).send('Guardian Eye Backend is Running 🚀');
-});
-
-// مسار الـ M5 Child Redemption
-app.post('/api/redeem-child', async(req, res) => {
+    const idToken = header.slice('Bearer '.length).trim();
+    if (!idToken) {
+      return res.status(401).json({ error: 'unauthenticated', message: 'Missing ID token' });
+    }
     try {
-        if (!authInstance) {
-            return res.status(500).json({ error: 'Firebase Admin not initialized on server' });
+      const decoded = await auth.verifyIdToken(idToken);
+      req.uid = decoded.uid;
+      next();
+    } catch (err) {
+      return res
+        .status(401)
+        .json({ error: 'invalid_token', message: 'ID token verification failed' });
+    }
+  }
+
+  app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', service: 'guardian-backend' });
+  });
+
+  /**
+   * POST /api/provision-child
+   * Parent requests a secure child provisioning session. The plaintext code is
+   * returned only here, to the authorized parent client; Firestore stores only
+   * its SHA-256 hash.
+   */
+  app.post('/api/provision-child', requireAuth, async (req, res, next) => {
+    try {
+      const parentUid = req.uid;
+      const { familyId, targetMemberId, displayName } = req.body || {};
+      if (!familyId || !targetMemberId || !displayName || !String(displayName).trim()) {
+        throw new HttpError(
+          400,
+          'invalid_request',
+          'familyId, targetMemberId and displayName are required'
+        );
+      }
+
+      const familyRef = db.collection('families').doc(familyId);
+      const familySnap = await familyRef.get();
+      if (!familySnap.exists) {
+        throw new HttpError(404, 'family_not_found', 'Family does not exist');
+      }
+
+      // Parent authorization: must be a member with device-manage authority.
+      const parentMemberSnap = await familyRef.collection('members').doc(parentUid).get();
+      if (!parentMemberSnap.exists) {
+        throw new HttpError(403, 'parent_not_member', 'Requester is not a member of this family');
+      }
+      const parentRole = parentMemberSnap.data().role;
+      if (!PARENT_ROLES.has(parentRole)) {
+        throw new HttpError(
+          403,
+          'parent_not_authorized',
+          'Requester is not authorized to provision devices'
+        );
+      }
+
+      // The target child is local-first: it does not exist in Firestore yet.
+      // Option D creates the remote member only during trusted redemption, so
+      // no remote child-membership check is possible or required here.
+
+      const code = generateCode();
+      const pairingId = crypto.randomUUID();
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + PROVISIONING_TTL_MS);
+
+      await db.collection('provisioningSessions').doc(pairingId).set({
+        familyId,
+        targetMemberId,
+        displayName: String(displayName).trim(),
+        codeHash: sha256Hex(code),
+        status: 'pending',
+        attemptCount: 0,
+        issuedByUid: parentUid,
+        createdAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      });
+
+      return res.status(201).json({
+        pairingId,
+        provisioningCode: code,
+        expiresAt: expiresAt.toISOString(),
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * POST /api/redeem-child
+   * Authenticated child device redeems a valid pending provisioning session.
+   * All state transitions happen inside a single Firestore transaction.
+   */
+  app.post('/api/redeem-child', requireAuth, async (req, res, next) => {
+    try {
+      const childUid = req.uid;
+      const { provisioningCode, deviceId, pairingId } = req.body || {};
+      if (!provisioningCode || !deviceId) {
+        throw new HttpError(
+          400,
+          'invalid_request',
+          'provisioningCode and deviceId are required'
+        );
+      }
+
+      const sessions = db.collection('provisioningSessions');
+      let sessionSnap = null;
+      if (pairingId) {
+        sessionSnap = await sessions.doc(pairingId).get();
+      } else {
+        const query = await sessions
+          .where('codeHash', '==', sha256Hex(provisioningCode))
+          .limit(1)
+          .get();
+        sessionSnap = query.docs.length ? query.docs[0] : null;
+      }
+      if (!sessionSnap || !sessionSnap.exists) {
+        throw new HttpError(400, 'invalid_code', 'Provisioning code is invalid');
+      }
+
+      const session = { id: sessionSnap.id, ...sessionSnap.data() };
+      const now = new Date();
+
+      // Wrong code on a pinned session -> count the attempt, lock after the limit.
+      if (sha256Hex(provisioningCode) !== session.codeHash) {
+        const nextAttempts = (session.attemptCount || 0) + 1;
+        if (nextAttempts >= MAX_ATTEMPTS) {
+          await sessionSnap.ref.update({ status: 'locked', attemptCount: nextAttempts });
+          throw new HttpError(
+            403,
+            'locked',
+            'Provisioning code locked after too many failed attempts'
+          );
         }
+        await sessionSnap.ref.update({ attemptCount: nextAttempts });
+        throw new HttpError(400, 'invalid_code', 'Provisioning code is invalid');
+      }
 
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
-        }
-
-        const idToken = authHeader.split('Bearer ')[1];
-
-        // التحقق من هوية الطفل
-        const decodedToken = await authInstance.verifyIdToken(idToken);
-        const childUid = decodedToken.uid;
-
-        const { provisioningCode, deviceId } = req.body;
-
-        if (!provisioningCode || !deviceId) {
-            return res.status(400).json({ error: 'Missing provisioningCode or deviceId' });
-        }
-
-        console.log(`[M5] Child Verified -> UID: ${childUid}, Device: ${deviceId}, Code: ${provisioningCode}`);
-
-        return res.status(200).json({
+      // Enrolled session: idempotent re-confirmation for the same child.
+      if (session.status === 'enrolled') {
+        if (session.redeemedByUid === childUid) {
+          return res.status(200).json({
             success: true,
-            message: 'Child device successfully provisioned',
-            childUid: childUid,
-            deviceId: deviceId
+            state: 'enrolled',
+            pairingId: session.id,
+            familyId: session.familyId,
+            childUid,
+            deviceId: session.deviceId,
+            targetMemberId: session.targetMemberId,
+          });
+        }
+        throw new HttpError(409, 'already_used', 'Provisioning session was already redeemed');
+      }
+
+      if (session.status === 'locked') {
+        throw new HttpError(403, 'locked', 'Provisioning code is locked');
+      }
+
+      if (new Date(session.expiresAt) < now) {
+        await sessionSnap.ref.update({ status: 'expired' });
+        throw new HttpError(410, 'expired', 'Provisioning code has expired');
+      }
+
+      // Atomic enrollment: re-validate inside the transaction, then create the
+      // child member (UID-keyed), the device, and enroll the session together.
+      const enrolled = await db.runTransaction(async (tx) => {
+        const freshSnap = await tx.get(sessionSnap.ref);
+        if (!freshSnap.exists) {
+          throw new HttpError(410, 'expired', 'Provisioning session no longer exists');
+        }
+        const fresh = freshSnap.data();
+        if (fresh.status === 'enrolled') {
+          if (fresh.redeemedByUid === childUid) return { idempotent: true };
+          throw new HttpError(409, 'already_used', 'Provisioning session was already redeemed');
+        }
+        if (fresh.status === 'locked') {
+          throw new HttpError(403, 'locked', 'Provisioning code is locked');
+        }
+        if (new Date(fresh.expiresAt) < new Date()) {
+          throw new HttpError(410, 'expired', 'Provisioning code has expired');
+        }
+        if (sha256Hex(provisioningCode) !== fresh.codeHash) {
+          throw new HttpError(400, 'invalid_code', 'Provisioning code is invalid');
+        }
+
+        // Parent authorization must still hold at redemption time.
+        const parentRef = db
+          .collection('families')
+          .doc(fresh.familyId)
+          .collection('members')
+          .doc(fresh.issuedByUid);
+        const parentSnap = await tx.get(parentRef);
+        if (!parentSnap.exists || !PARENT_ROLES.has(parentSnap.data().role)) {
+          throw new HttpError(
+            403,
+            'parent_not_authorized',
+            'Issuing parent is no longer authorized for this family'
+          );
+        }
+
+        const familyRef = db.collection('families').doc(fresh.familyId);
+        const memberRef = familyRef.collection('members').doc(childUid);
+        const deviceRef = familyRef.collection('devices').doc(deviceId);
+        const [memberSnap, deviceSnap] = await Promise.all([
+          tx.get(memberRef),
+          tx.get(deviceRef),
+        ]);
+
+        if (!memberSnap.exists) {
+          tx.set(memberRef, {
+            memberId: fresh.targetMemberId,
+            memberUid: childUid,
+            role: 'child',
+            status: 'active',
+            displayName: fresh.displayName,
+            familyId: fresh.familyId,
+            provisionedAt: new Date().toISOString(),
+          });
+        } else if (memberSnap.data().memberUid && memberSnap.data().memberUid !== childUid) {
+          throw new HttpError(409, 'member_conflict', 'Member already bound to a different account');
+        }
+
+        if (!deviceSnap.exists) {
+          tx.set(deviceRef, {
+            memberUid: childUid,
+            ownerUid: fresh.issuedByUid,
+            role: 'childDevice',
+            status: 'active',
+            familyId: fresh.familyId,
+            createdAt: new Date().toISOString(),
+          });
+        } else if (deviceSnap.data().memberUid && deviceSnap.data().memberUid !== childUid) {
+          throw new HttpError(409, 'device_conflict', 'Device already linked to a different member');
+        }
+
+        tx.update(sessionSnap.ref, {
+          status: 'enrolled',
+          redeemedByUid: childUid,
+          deviceId,
+          enrolledAt: new Date().toISOString(),
         });
 
-    } catch (error) {
-        console.error('[M5] Redemption Error:', error.message);
-        return res.status(500).json({ error: error.message });
-    }
-});
+        return { idempotent: false };
+      });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Guardian Backend server listening on port ${PORT}`);
-});
+      const deviceDocId = enrolled.idempotent ? session.deviceId : deviceId;
+      return res.status(200).json({
+        success: true,
+        state: 'enrolled',
+        pairingId: session.id,
+        familyId: session.familyId,
+        childUid,
+        deviceId: deviceDocId,
+        targetMemberId: session.targetMemberId,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Central error handler: honest, structured error codes.
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    if (err instanceof HttpError) {
+      return res.status(err.status).json({ error: err.code, message: err.message });
+    }
+    console.error('[guardian-backend] Unhandled error:', err);
+    return res
+      .status(500)
+      .json({ error: 'server_error', message: 'Internal server error' });
+  });
+
+  return app;
+}
+
+// ---- Production bootstrap (only when run directly) -------------------------
+if (require.main === module) {
+  const renderSecretPath = '/etc/secrets/serviceAccountKey.json';
+  const localSecretPath = path.join(__dirname, 'serviceAccountKey.json');
+
+  let keyPath = null;
+  if (fs.existsSync(renderSecretPath)) {
+    keyPath = renderSecretPath;
+  } else if (fs.existsSync(localSecretPath)) {
+    keyPath = localSecretPath;
+  }
+
+  if (!keyPath) {
+    console.error('❌ No Firebase Admin service account key found.');
+    console.error('   Expected /etc/secrets/serviceAccountKey.json (Render secret) or');
+    console.error(`   ${localSecretPath} (local development).`);
+    process.exit(1);
+  }
+
+  let auth = null;
+  let db = null;
+  try {
+    const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+    const firebaseApp = initializeApp({ credential: cert(serviceAccount) });
+    auth = getAuth(firebaseApp);
+    db = getFirestore(firebaseApp);
+    console.log(`✅ Firebase Admin SDK initialized from: ${keyPath}`);
+  } catch (error) {
+    console.error('❌ Firebase Admin initialization failed:', error.message);
+    process.exit(1);
+  }
+
+  const app = createApp({ auth, db });
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Guardian Backend listening on port ${PORT}`);
+  });
+}
+
+module.exports = {
+  createApp,
+  HttpError,
+  sha256Hex,
+  generateCode,
+  PARENT_ROLES,
+  PROVISIONING_TTL_MS,
+  MAX_ATTEMPTS,
+};

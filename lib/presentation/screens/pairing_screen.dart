@@ -29,6 +29,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
   PairingRequest? _request;
   String? _targetMemberId;
   bool _issuing = false;
+  String? _issueErrorKey;
 
   Future<void> _create() async {
     if (_targetMemberId == null) return;
@@ -36,9 +37,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
     setState(() => _issuing = true);
     try {
       // M5 Option D: the canonical production path issues through the trusted
-      // Functions callable, which no longer requires a remote child member to
-      // pre-exist. When Firebase is unconfigured, the local SQLite pairing
-      // flow remains the offline-first fallback.
+      // Guardian Backend (`POST /api/provision-child`), which no longer
+      // requires a remote child member to pre-exist. When Firebase is
+      // unconfigured, the local SQLite pairing flow remains the offline-first
+      // fallback. A reachable-but-failing backend is reported honestly — never
+      // silently downgraded to a local code.
       final members = await ref
           .read(familyMembershipRepositoryProvider)
           .membersForFamily(widget.familyId);
@@ -52,11 +55,14 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
                 targetMemberId: _targetMemberId!,
                 displayName: displayName);
         if (mounted) {
-          setState(() => _request = PairingRequest(
-              id: issue.pairingId,
-              code: issue.code,
-              expiresAt: issue.expiresAt,
-              targetMemberId: _targetMemberId));
+          setState(() {
+            _request = PairingRequest(
+                id: issue.pairingId,
+                code: issue.code,
+                expiresAt: issue.expiresAt,
+                targetMemberId: _targetMemberId);
+            _issueErrorKey = null;
+          });
         }
       } on RemoteProvisioningUnavailableException {
         final request = await ref
@@ -65,10 +71,33 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
                 familyId: widget.familyId,
                 requestedRole: DeviceRole.childDevice,
                 targetMemberId: _targetMemberId);
-        if (mounted) setState(() => _request = request);
+        if (mounted) {
+          setState(() {
+            _request = request;
+            _issueErrorKey = null;
+          });
+        }
+      } on RemoteProvisioningException catch (error) {
+        if (mounted) {
+          setState(() => _issueErrorKey = _errorKeyFor(error.reason));
+        }
+      } catch (_) {
+        if (mounted) setState(() => _issueErrorKey = 'unknownRedeemError');
       }
     } finally {
       if (mounted) setState(() => _issuing = false);
+    }
+  }
+
+  String _errorKeyFor(String reason) {
+    switch (reason) {
+      case 'server_unreachable':
+        return 'networkUnavailable';
+      case 'parent_not_authorized':
+      case 'unauthenticated':
+        return 'unauthorizedActorBody';
+      default:
+        return 'provisioningServerError';
     }
   }
 
@@ -113,6 +142,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
                       onChildChanged: (id) =>
                           setState(() => _targetMemberId = id),
                       issuing: _issuing,
+                      errorKey: _issueErrorKey,
                       onCreate: _create,
                     )
                   : _IssuedView(
@@ -144,6 +174,7 @@ class _IssuanceForm extends StatelessWidget {
     required this.onChildChanged,
     required this.issuing,
     required this.onCreate,
+    this.errorKey,
   });
 
   final List<FamilyMember> children;
@@ -151,6 +182,7 @@ class _IssuanceForm extends StatelessWidget {
   final ValueChanged<String> onChildChanged;
   final bool issuing;
   final VoidCallback onCreate;
+  final String? errorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -171,6 +203,15 @@ class _IssuanceForm extends StatelessWidget {
         },
       ),
       const SizedBox(height: 24),
+      if (errorKey != null) ...[
+        Text(AppLocalizations.of(context).t(errorKey!),
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.error)),
+        const SizedBox(height: 12),
+      ],
       FilledButton(
         onPressed: issuing ? null : onCreate,
         child: issuing

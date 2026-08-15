@@ -1,29 +1,75 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/firebase/guardian_firebase_bootstrap.dart';
 
-/// M5 Option D — canonical remote child provisioning path.
+/// M5 — canonical remote child provisioning path via the Guardian Backend.
 ///
 /// The parent issues a trusted provisioning session through
-/// `createChildDeviceProvisioning`; the child device redeems it through
-/// `redeemChildDeviceProvisioning`. The trusted backend creates the
-/// UID-keyed `members/{childUid}` and `devices/{deviceId}` documents inside a
-/// single atomic redemption transaction. This service is a thin, honest client
-/// over those two callables; it never performs Firestore writes itself and it
-/// never creates a child member document from the parent client.
+/// `POST /api/provision-child`; the child device redeems it through
+/// `POST /api/redeem-child`. The trusted backend (Firebase Admin SDK) creates
+/// the UID-keyed `members/{childUid}` and `devices/{deviceId}` documents inside
+/// a single atomic redemption transaction. This service is a thin, honest
+/// client over those endpoints; it never performs Firestore writes itself and
+/// it never creates a child member document from the parent client.
 ///
-/// When Firebase is not configured the callables are unavailable and the local
+/// Authentication uses the Firebase ID token of the CURRENT authenticated
+/// session (`Authorization: Bearer <idToken>`). The backend derives every
+/// identity (parentUid / childUid) from that verified token — never from the
+/// request payload.
+///
+/// When Firebase is not configured the service is unavailable and the local
 /// SQLite pairing machinery remains the offline-first fallback path.
 class RemoteProvisioningService {
-  const RemoteProvisioningService({FirebaseFunctions? functions})
-      : _functions = functions;
+  const RemoteProvisioningService({
+    Dio? client,
+    Future<String> Function()? idToken,
+    bool? available,
+    String? baseUrl,
+  })  : _client = client,
+        _idToken = idToken,
+        _availableOverride = available,
+        _baseUrl = baseUrl;
 
-  final FirebaseFunctions? _functions;
+  final Dio? _client;
+  final Future<String> Function()? _idToken;
+  final bool? _availableOverride;
+  final String? _baseUrl;
 
-  bool get _available => GuardianFirebaseBootstrap.current.isReady;
+  /// Production Guardian Backend. Overridable at build time with
+  /// `--dart-define=GUARDIAN_BACKEND_URL=...`.
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'GUARDIAN_BACKEND_URL',
+    defaultValue: 'https://guardian-eye-djg8.onrender.com',
+  );
 
-  FirebaseFunctions get _instance =>
-      _functions ?? FirebaseFunctions.instance;
+  bool get _available =>
+      _availableOverride ?? GuardianFirebaseBootstrap.current.isReady;
+
+  String get _url => _baseUrl ?? defaultBaseUrl;
+
+  Dio get _dio =>
+      _client ??
+      Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+        responseType: ResponseType.json,
+      ));
+
+  /// Resolves the Firebase ID token of the currently authenticated actor.
+  Future<String> _token() async {
+    final provider = _idToken;
+    if (provider != null) return provider();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw const RemoteProvisioningUnavailableException();
+    }
+    final token = await user.getIdToken();
+    if (token == null) {
+      throw const RemoteProvisioningUnavailableException();
+    }
+    return token;
+  }
 
   Future<RemoteProvisioningIssue> issue({
     required String familyId,
@@ -33,23 +79,50 @@ class RemoteProvisioningService {
     if (!_available) {
       throw const RemoteProvisioningUnavailableException();
     }
-    final callable = _instance.httpsCallable('createChildDeviceProvisioning');
-    final result = await callable.call({
-      'familyId': familyId,
-      'targetMemberId': targetMemberId,
-      'displayName': displayName,
-    });
-    final data = result.data as Map<dynamic, dynamic>;
-    final pairingId = data['pairingId'] as String?;
-    final code = data['code'] as String?;
-    final expiresAt = data['expiresAt'] as String?;
-    if (pairingId == null || code == null || expiresAt == null) {
-      throw const RemoteProvisioningException('issue_incomplete_result');
+    final token = await _token();
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '$_url/api/provision-child',
+        data: {
+          'familyId': familyId,
+          'targetMemberId': targetMemberId,
+          'displayName': displayName,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final data = response.data;
+      final pairingId = data?['pairingId'] as String?;
+      final code = data?['provisioningCode'] as String?;
+      final expiresAt = data?['expiresAt'] as String?;
+      if (pairingId == null || code == null || expiresAt == null) {
+        throw const RemoteProvisioningException('issue_incomplete_result');
+      }
+      return RemoteProvisioningIssue(
+          pairingId: pairingId,
+          code: code,
+          expiresAt: DateTime.parse(expiresAt).toUtc());
+    } on DioException catch (error) {
+      throw _mapIssueError(error);
     }
-    return RemoteProvisioningIssue(
-        pairingId: pairingId,
-        code: code,
-        expiresAt: DateTime.parse(expiresAt).toUtc());
+  }
+
+  RemoteProvisioningException _mapIssueError(DioException error) {
+    if (_isNetworkFailure(error)) {
+      return const RemoteProvisioningException('server_unreachable');
+    }
+    final code = _errorCode(error);
+    switch (code) {
+      case 'family_not_found':
+        return const RemoteProvisioningException('family_not_found');
+      case 'parent_not_member':
+      case 'parent_not_authorized':
+        return const RemoteProvisioningException('parent_not_authorized');
+      case 'unauthenticated':
+      case 'invalid_token':
+        return const RemoteProvisioningException('unauthenticated');
+      default:
+        return const RemoteProvisioningException('server_error');
+    }
   }
 
   Future<RemoteRedeemResult> redeem({
@@ -61,60 +134,67 @@ class RemoteProvisioningService {
     if (!_available) {
       throw const RemoteProvisioningUnavailableException();
     }
-    final callable = _instance.httpsCallable('redeemChildDeviceProvisioning');
+    final token = await _token();
     try {
-      final result = await callable.call({
-        'familyId': familyId,
-        'pairingId': pairingId,
-        'code': code,
-        'deviceId': deviceId,
-      });
-      final data = result.data as Map<dynamic, dynamic>;
-      final state = data['state'] as String?;
+      final response = await _dio.post<Map<String, dynamic>>(
+        '$_url/api/redeem-child',
+        data: {
+          'provisioningCode': code,
+          'deviceId': deviceId,
+          if (pairingId.isNotEmpty) 'pairingId': pairingId,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final data = response.data;
+      final state = data?['state'] as String?;
       if (state == 'enrolled') {
         return RemoteRedeemResult.enrolled(
-            deviceId: data['deviceId'] as String?,
-            targetMemberId: data['targetMemberId'] as String?);
+            deviceId: data?['deviceId'] as String?,
+            targetMemberId: data?['targetMemberId'] as String?);
       }
-      return RemoteRedeemResult.rejected(state: state ?? 'rejected');
-    } on FirebaseFunctionsException catch (error) {
-      return _mapError(error);
+      return const RemoteRedeemResult.rejected();
+    } on DioException catch (error) {
+      return _mapRedeemError(error);
     }
   }
 
-  RemoteRedeemResult _mapError(FirebaseFunctionsException error) {
-    final code = error.code;
-    final message = error.message ?? '';
+  bool _isNetworkFailure(DioException error) =>
+      error.type == DioExceptionType.connectionTimeout ||
+      error.type == DioExceptionType.sendTimeout ||
+      error.type == DioExceptionType.receiveTimeout ||
+      error.type == DioExceptionType.connectionError;
+
+  String? _errorCode(DioException error) {
+    final data = error.response?.data;
+    if (data is Map) return data['error'] as String?;
+    return null;
+  }
+
+  RemoteRedeemResult _mapRedeemError(DioException error) {
+    if (_isNetworkFailure(error)) {
+      return const RemoteRedeemResult.networkUnavailable();
+    }
+    final code = _errorCode(error);
     switch (code) {
-      case 'unauthenticated':
-        return const RemoteRedeemResult.unauthenticated();
-      case 'permission-denied':
-        if (message.contains('pairing_locked')) {
-          return const RemoteRedeemResult.locked();
-        }
-        if (message.contains('pairing_invalid_code') ||
-            message.contains('invalid_code')) {
-          return const RemoteRedeemResult.invalidCode();
-        }
-        return const RemoteRedeemResult.unauthorized();
-      case 'failed-precondition':
-        if (message.contains('pairing_expired') ||
-            message.contains('expired')) {
-          return const RemoteRedeemResult.expired();
-        }
-        if (message.contains('pairing_rejected') ||
-            message.contains('rejected')) {
-          return const RemoteRedeemResult.alreadyUsed();
-        }
-        if (message.contains('device_conflict')) {
-          return const RemoteRedeemResult.deviceConflict();
-        }
-        if (message.contains('member_conflict')) {
-          return const RemoteRedeemResult.memberConflict();
-        }
-        return const RemoteRedeemResult.rejected(state: 'failed-precondition');
-      case 'invalid-argument':
+      case 'invalid_code':
         return const RemoteRedeemResult.invalidCode();
+      case 'expired':
+        return const RemoteRedeemResult.expired();
+      case 'locked':
+        return const RemoteRedeemResult.locked();
+      case 'already_used':
+        return const RemoteRedeemResult.alreadyUsed();
+      case 'device_conflict':
+        return const RemoteRedeemResult.deviceConflict();
+      case 'member_conflict':
+        return const RemoteRedeemResult.memberConflict();
+      case 'unauthenticated':
+      case 'invalid_token':
+        return const RemoteRedeemResult.unauthenticated();
+      case 'parent_not_authorized':
+      case 'parent_not_member':
+      case 'family_not_found':
+        return const RemoteRedeemResult.unauthorized();
       default:
         return const RemoteRedeemResult.unknown();
     }
@@ -143,6 +223,7 @@ enum RemoteRedeemState {
   memberConflict,
   unauthorized,
   unauthenticated,
+  networkUnavailable,
   rejected,
   unknown,
 }
@@ -174,6 +255,9 @@ class RemoteRedeemResult {
 
   const RemoteRedeemResult.unauthenticated()
       : this._(RemoteRedeemState.unauthenticated);
+
+  const RemoteRedeemResult.networkUnavailable()
+      : this._(RemoteRedeemState.networkUnavailable);
 
   const RemoteRedeemResult.rejected({String? state})
       : this._(RemoteRedeemState.rejected);

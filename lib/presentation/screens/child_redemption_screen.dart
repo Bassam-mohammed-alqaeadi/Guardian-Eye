@@ -43,11 +43,11 @@ class _ChildRedemptionScreenState extends ConsumerState<ChildRedemptionScreen> {
       _submitting = true;
       _outcome = RedeemOutcome.validating;
     });
-    // M5 Option D: the canonical redemption path calls the trusted Functions
-    // callable, which creates `members/{childUid}` + `devices/{deviceId}` in
-    // one atomic server transaction and binds the child's own authenticated
-    // UID. When Firebase is unconfigured, the local SQLite pairing flow
-    // remains the offline-first fallback.
+    // M5 Option D: the canonical redemption path calls the trusted Guardian
+    // Backend (`POST /api/redeem-child`), which creates `members/{childUid}` +
+    // `devices/{deviceId}` in one atomic server transaction and binds the
+    // child's own authenticated UID. When Firebase is unconfigured, the local
+    // SQLite pairing flow remains the offline-first fallback.
     final pairingId = _pendingRequestId();
     RemoteRedeemResult? remote;
     try {
@@ -109,6 +109,8 @@ class _ChildRedemptionScreenState extends ConsumerState<ChildRedemptionScreen> {
         RemoteRedeemState.unauthorized ||
         RemoteRedeemState.unauthenticated =>
           RedeemOutcome.unauthorized,
+        RemoteRedeemState.networkUnavailable =>
+          RedeemOutcome.networkUnavailable,
         RemoteRedeemState.rejected || RemoteRedeemState.unknown =>
           RedeemOutcome.unknownError,
       };
