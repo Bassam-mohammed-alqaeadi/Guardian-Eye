@@ -69,17 +69,11 @@ class FamilyRepository {
         'role': child.role.storageKey,
         'created_at': child.createdAt.toIso8601String()
       });
-      await _enqueue(tx,
-          aggregateType: 'member',
-          aggregateId: child.id,
-          operation: 'member.created',
-          payload: {
-            'familyId': familyId,
-            'memberId': child.id,
-            'displayName': child.displayName,
-            'role': child.role.storageKey,
-            'createdAt': child.createdAt.toIso8601String()
-          });
+      // M5 Option D: a child is local-only until trusted device provisioning.
+      // No remote-syncable `member.created` operation is enqueued here — the
+      // UID-keyed remote member document is created by the trusted backend
+      // inside redeemChildDeviceProvisioning. This removes the previously
+      // doomed members/{localUuid} remote write that the deployed rules reject.
     });
     return child;
   }
@@ -265,6 +259,54 @@ class PairingRepository {
             'role': session['requested_role'],
             'createdAt': now.toIso8601String()
           });
+      return PairingEnrollmentResult(
+          state: PairingState.enrolled, deviceId: deviceId);
+    });
+  }
+
+  /// M5 Option D — mirrors a server-confirmed remote enrollment into local
+  /// SQLite so the child-device UI truthfully reflects the linked device.
+  ///
+  /// The trusted backend already created `members/{childUid}` and
+  /// `devices/{deviceId}` inside the redemption transaction, so no outbox
+  /// operation is enqueued here (delivery is already confirmed server-side).
+  /// The local device row is recorded with `synced` state and the child device
+  /// lifecycle is set to `enrolled`.
+  Future<PairingEnrollmentResult> recordRemoteEnrollment({
+    required String familyId,
+    required String deviceId,
+    required String memberId,
+    required String ownerMemberId,
+    required String role,
+  }) async {
+    final db = await _database.database;
+    return db.transaction((tx) async {
+      final existing = await tx.query('devices',
+          where: 'id = ?', whereArgs: [deviceId], limit: 1);
+      if (existing.isNotEmpty) {
+        return PairingEnrollmentResult(
+            state: PairingState.enrolled, deviceId: deviceId);
+      }
+      final now = DateTime.now().toUtc();
+      await tx.insert('devices', {
+        'id': deviceId,
+        'family_id': familyId,
+        'member_id': memberId,
+        'owner_member_id': ownerMemberId,
+        'role': role,
+        'sync_state': SyncState.synced.storageKey,
+        'created_at': now.toIso8601String()
+      });
+      if (role == DeviceRole.childDevice.storageKey) {
+        await tx.insert('child_device_states', {
+          'device_id': deviceId,
+          'family_id': familyId,
+          'member_id': memberId,
+          'lifecycle': 'enrolled',
+          'required_policy_version': 0,
+          'updated_at': now.toIso8601String()
+        });
+      }
       return PairingEnrollmentResult(
           state: PairingState.enrolled, deviceId: deviceId);
     });

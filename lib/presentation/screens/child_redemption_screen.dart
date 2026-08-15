@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
 import '../../application/device_link_service.dart';
 import '../../application/family_context_provider.dart';
 import '../../application/guardian_providers.dart';
+import '../../application/remote_provisioning_service.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../domain/guardian_models.dart';
 
 /// Canonical child-device redemption screen (M4).
 ///
@@ -40,11 +43,47 @@ class _ChildRedemptionScreenState extends ConsumerState<ChildRedemptionScreen> {
       _submitting = true;
       _outcome = RedeemOutcome.validating;
     });
-      final result = await ref.read(deviceLinkServiceProvider).redeem(
-          requestId: _pendingRequestId() ?? '',
-          code: _codeController.text,
-          targetMemberId: targetMemberId,
-        );
+    // M5 Option D: the canonical redemption path calls the trusted Functions
+    // callable, which creates `members/{childUid}` + `devices/{deviceId}` in
+    // one atomic server transaction and binds the child's own authenticated
+    // UID. When Firebase is unconfigured, the local SQLite pairing flow
+    // remains the offline-first fallback.
+    final pairingId = _pendingRequestId();
+    RemoteRedeemResult? remote;
+    try {
+      remote = await ref.read(remoteProvisioningServiceProvider).redeem(
+            familyId: widget.familyId,
+            pairingId: pairingId ?? '',
+            code: _codeController.text,
+            deviceId: _deviceId,
+          );
+    } on RemoteProvisioningUnavailableException {
+      remote = null;
+    }
+    if (!mounted) return;
+    if (remote != null) {
+      final result = remote;
+      setState(() {
+        _submitting = false;
+        _outcome = _remoteOutcome(result.state);
+        _enrolledDeviceId = result.deviceId;
+      });
+      if (result.succeeded && result.deviceId != null) {
+        await ref.read(pairingRepositoryProvider).recordRemoteEnrollment(
+              familyId: widget.familyId,
+              deviceId: result.deviceId!,
+              memberId: targetMemberId,
+              ownerMemberId: targetMemberId,
+              role: DeviceRole.childDevice.storageKey,
+            );
+      }
+      return;
+    }
+    final result = await ref.read(deviceLinkServiceProvider).redeem(
+        requestId: pairingId ?? '',
+        code: _codeController.text,
+        targetMemberId: targetMemberId,
+      );
     if (!mounted) return;
     setState(() {
       _submitting = false;
@@ -52,6 +91,27 @@ class _ChildRedemptionScreenState extends ConsumerState<ChildRedemptionScreen> {
       _enrolledDeviceId = result.deviceId;
     });
   }
+
+  /// Stable per-screen device identity used for remote redemption, so retries
+  /// on the same screen reuse the same device id (idempotent enrollment).
+  String get _deviceId => _screenDeviceId ??= const Uuid().v4();
+  String? _screenDeviceId;
+
+  RedeemOutcome _remoteOutcome(RemoteRedeemState state) => switch (state) {
+        RemoteRedeemState.enrolled => RedeemOutcome.success,
+        RemoteRedeemState.invalidCode => RedeemOutcome.codeInvalid,
+        RemoteRedeemState.expired => RedeemOutcome.codeExpired,
+        RemoteRedeemState.locked => RedeemOutcome.codeLocked,
+        RemoteRedeemState.alreadyUsed ||
+        RemoteRedeemState.deviceConflict ||
+        RemoteRedeemState.memberConflict =>
+          RedeemOutcome.codeAlreadyUsed,
+        RemoteRedeemState.unauthorized ||
+        RemoteRedeemState.unauthenticated =>
+          RedeemOutcome.unauthorized,
+        RemoteRedeemState.rejected || RemoteRedeemState.unknown =>
+          RedeemOutcome.unknownError,
+      };
 
   /// QR deep links (`guardian-eye://pair?request=...&code=...`) prefill the
   /// pending request id and code so the child can redeem by scanning without

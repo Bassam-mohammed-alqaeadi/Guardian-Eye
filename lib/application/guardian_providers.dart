@@ -11,6 +11,7 @@ import 'child_screen_time_coordinator.dart';
 import 'child_usage_measurement_provider.dart';
 import 'child_enforcement_coordinator.dart';
 import 'device_link_service.dart';
+import 'remote_provisioning_service.dart';
 import '../data/fcm_token_repository.dart';
 import '../data/child_device_repository.dart';
 import '../data/child_exception_request_repository.dart';
@@ -55,6 +56,11 @@ final childDeviceRepositoryProvider =
     Provider((ref) => ChildDeviceRepository(GuardianDatabase.instance));
 final deviceLinkServiceProvider = Provider(
     (ref) => DeviceLinkService(ref.watch(pairingRepositoryProvider)));
+/// M5 Option D — canonical remote child provisioning (Functions callables).
+/// When Firebase is unconfigured the service is unavailable and the local
+/// SQLite pairing flow remains the offline-first fallback.
+final remoteProvisioningServiceProvider = Provider(
+    (ref) => const RemoteProvisioningService());
 final childExceptionRequestRepositoryProvider = Provider((ref) =>
     ChildExceptionRequestRepository(GuardianDatabase.instance,
         ref.watch(policyRepositoryProvider)));

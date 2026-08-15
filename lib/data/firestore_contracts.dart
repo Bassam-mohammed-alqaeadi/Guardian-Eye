@@ -124,22 +124,13 @@ class FirestoreEventContract {
               'status': 'active'
             });
       case 'member.created':
-        final memberId = payload['memberId'] as String?;
-        final displayName = payload['displayName'] as String?;
-        final role = payload['role'] as String?;
-        if (memberId == null || displayName == null || role == null) {
-          throw const FormatException('member.created payload incomplete.');
-        }
-        return FirestoreMutation(
-            path: FirestorePaths.member(familyId, memberId),
-            idempotencyKey: idempotencyKey,
-            data: {
-              ...common,
-              'memberId': memberId,
-              'displayName': displayName,
-              'role': role,
-              'memberUid': null
-            });
+        // M5 Option D: child membership is local-only until trusted device
+        // provisioning. No `member.created` operation may ever be written
+        // remotely — the UID-keyed remote member document is created by the
+        // backend inside redeemChildDeviceProvisioning. A legacy row reaching
+        // this point is malformed and must be blocked, never delivered.
+        throw const FormatException(
+            'member.created is local-only; child membership is created by trusted provisioning.');
       case 'device.enrolled':
         final deviceId = payload['deviceId'] as String?;
         final memberId = payload['memberId'] as String?;

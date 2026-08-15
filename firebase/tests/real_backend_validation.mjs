@@ -156,6 +156,10 @@ try {
   requireStatus('family_read_back', readBack, [200]);
   record('family_read_back', 'parent can read own family', `HTTP ${readBack.status}`, 'PASS');
 
+  // M5 Option D: a parent client MUST NOT be able to create a child member
+  // document directly. The deployed rules deny third-party member creation;
+  // the remote child member is created only by the trusted backend inside
+  // redeemChildDeviceProvisioning. This assertion documents the denial.
   const childCreated = await firestore(`/${familyPath}/members?documentId=${childId}`, {
     token: parent.idToken,
     body: {
@@ -169,7 +173,8 @@ try {
       },
     },
   });
-  requireStatus('child_member_write', childCreated, [200]);
+  requireStatus('child_member_write_denied', childCreated, [403]);
+  record('child_member_write_denied', '403 direct parent child-member create denied', `HTTP ${childCreated.status}`, 'PASS');
 
   const roleEscalation = await firestore(`/${familyPath}/members/${childId}?updateMask.fieldPaths=role`, {
     method: 'PATCH',

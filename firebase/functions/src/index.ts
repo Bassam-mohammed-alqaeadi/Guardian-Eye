@@ -36,12 +36,13 @@ export const createChildDeviceProvisioning = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'authentication_required');
   const familyId = requiredString(request.data?.familyId, 'familyId');
   const targetMemberId = requiredString(request.data?.targetMemberId, 'targetMemberId');
+  const displayName = requiredString(request.data?.displayName, 'displayName', 64);
   await requireParent(familyId, request.auth.uid);
+  // The child member is local-only until redemption: the pairing targets the
+  // parent's local child UUID (targetMemberId) and the trusted backend creates
+  // the UID-keyed member document inside the redemption transaction. No remote
+  // child member is required to exist before issuance (Option D architecture).
   const db = getFirestore();
-  const child = await db.doc(`families/${familyId}/members/${targetMemberId}`).get();
-  if (!child.exists || child.get('role') !== 'child') {
-    throw new HttpsError('failed-precondition', 'target_child_member_required');
-  }
   const pairingId = randomUUID();
   const code = randomInt(0, 1000000).toString().padStart(6, '0');
   const expiresAt = new Date(Date.now() + pairingLifetimeMs);
@@ -49,7 +50,9 @@ export const createChildDeviceProvisioning = onCall(async (request) => {
     familyId,
     pairingId,
     targetMemberId,
+    displayName,
     ownerUid: request.auth.uid,
+    issuedByUid: request.auth.uid,
     requestedRole: 'childDevice',
     codeHash: hashPairingCode(code),
     status: 'pending',
@@ -88,22 +91,32 @@ export const redeemChildDeviceProvisioning = onCall(async (request) => {
     }
     const targetMemberId = session.get('targetMemberId') as string;
     const ownerUid = session.get('ownerUid') as string;
-    const childRef = db.doc(`families/${familyId}/members/${targetMemberId}`);
+    const displayName = session.get('displayName') as string | undefined;
+    const childMemberRef = db.doc(`families/${familyId}/members/${request.auth!.uid}`);
     const deviceRef = db.doc(`families/${familyId}/devices/${deviceId}`);
-    const [child, existingDevice] = await Promise.all([transaction.get(childRef), transaction.get(deviceRef)]);
-    if (!child.exists || child.get('role') !== 'child') return {state: 'target_missing'};
+    const [childMember, existingDevice] = await Promise.all([transaction.get(childMemberRef), transaction.get(deviceRef)]);
+    // The remote child member document is UID-keyed and created here by the
+    // trusted backend (Option D). A parent can never write it; an attacker can
+    // never bind a victim's UID because the key is the redeeming account's own
+    // request.auth.uid. Idempotent: an existing matching child member is reused.
+    if (childMember.exists) {
+      if (childMember.get('role') !== 'child' || childMember.get('memberUid') !== request.auth!.uid || childMember.get('familyId') !== familyId) {
+        return {state: 'member_conflict'};
+      }
+    } else {
+      transaction.set(childMemberRef, {
+        familyId,
+        memberId: targetMemberId,
+        memberUid: request.auth!.uid,
+        displayName: displayName ?? 'Child',
+        role: 'child',
+        status: 'active',
+        provisionedAt: FieldValue.serverTimestamp(),
+      });
+    }
     if (existingDevice.exists && (existingDevice.get('familyId') !== familyId || existingDevice.get('memberId') !== targetMemberId || existingDevice.get('ownerUid') !== ownerUid || existingDevice.get('role') !== 'childDevice')) {
       return {state: 'device_conflict'};
     }
-    transaction.set(db.doc(`families/${familyId}/members/${request.auth!.uid}`), {
-      familyId,
-      memberId: targetMemberId,
-      memberUid: request.auth!.uid,
-      displayName: child.get('displayName'),
-      role: 'child',
-      status: 'active',
-      provisionedAt: FieldValue.serverTimestamp(),
-    }, {merge: true});
     transaction.set(deviceRef, {
       familyId,
       deviceId,

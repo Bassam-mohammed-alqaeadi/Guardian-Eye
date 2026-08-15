@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../application/family_context_provider.dart';
 import '../../application/guardian_providers.dart';
+import '../../application/remote_provisioning_service.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/family_authorization.dart';
 import '../../domain/guardian_models.dart';
@@ -34,13 +35,38 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
     if (_issuing) return;
     setState(() => _issuing = true);
     try {
-      final request = await ref
-          .read(pairingRepositoryProvider)
-          .createParentAuthorizedRequest(
-              familyId: widget.familyId,
-              requestedRole: DeviceRole.childDevice,
-              targetMemberId: _targetMemberId);
-      if (mounted) setState(() => _request = request);
+      // M5 Option D: the canonical production path issues through the trusted
+      // Functions callable, which no longer requires a remote child member to
+      // pre-exist. When Firebase is unconfigured, the local SQLite pairing
+      // flow remains the offline-first fallback.
+      final members = await ref
+          .read(familyMembershipRepositoryProvider)
+          .membersForFamily(widget.familyId);
+      final displayName =
+          members.firstWhere((m) => m.id == _targetMemberId).displayName;
+      try {
+        final issue = await ref
+            .read(remoteProvisioningServiceProvider)
+            .issue(
+                familyId: widget.familyId,
+                targetMemberId: _targetMemberId!,
+                displayName: displayName);
+        if (mounted) {
+          setState(() => _request = PairingRequest(
+              id: issue.pairingId,
+              code: issue.code,
+              expiresAt: issue.expiresAt,
+              targetMemberId: _targetMemberId));
+        }
+      } on RemoteProvisioningUnavailableException {
+        final request = await ref
+            .read(pairingRepositoryProvider)
+            .createParentAuthorizedRequest(
+                familyId: widget.familyId,
+                requestedRole: DeviceRole.childDevice,
+                targetMemberId: _targetMemberId);
+        if (mounted) setState(() => _request = request);
+      }
     } finally {
       if (mounted) setState(() => _issuing = false);
     }

@@ -7,7 +7,7 @@ import 'test_database.dart';
 
 void main() {
   test(
-      'family and child persistence create durable outbox events in one local database',
+      'family persistence creates a durable family outbox event; addChild is local-only',
       () async {
     final database = await openTestDatabase();
     final families = FamilyRepository(database);
@@ -17,7 +17,11 @@ void main() {
     final db = await database.database;
     expect((await db.query('families')).length, 1);
     expect((await db.query('family_members')).length, 2);
-    expect((await db.query('outbox')).length, 2);
+    // M5 Option D: only `family.created` is syncable; a child is local-only
+    // until trusted provisioning, so no `member.created` outbox row exists.
+    final outbox = await db.query('outbox');
+    expect(outbox.length, 1);
+    expect(outbox.single['operation'], 'family.created');
     await database.close();
   });
 
