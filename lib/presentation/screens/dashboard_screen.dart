@@ -227,6 +227,15 @@ class _Dashboard extends ConsumerWidget {
                 icon: const Icon(Icons.qr_code_2),
                 label: Text(l10n.t('pairDevice')),
               ),
+              // M5: a child (or any family actor) redeems a pairing code issued
+              // by the parent — available even before actor verification, since
+              // redemption is exactly how an unverified child device becomes
+              // trusted (Guardian Backend /api/redeem-child).
+              OutlinedButton.icon(
+                onPressed: () => context.push('/device-link/$familyId'),
+                icon: const Icon(Icons.qr_code_scanner),
+                label: Text(l10n.t('redeemPairingCode')),
+              ),
             ],
           ),
           const SizedBox(height: 12),
