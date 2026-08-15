@@ -1,5 +1,6 @@
 const express = require('express');
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -8,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// مسارات المفتاح السري
+// مسارات ملف المفتاح السري
 const renderSecretPath = '/etc/secrets/serviceAccountKey.json';
 const localSecretPath = path.join(__dirname, 'serviceAccountKey.json');
 
@@ -19,16 +20,15 @@ if (fs.existsSync(renderSecretPath)) {
     keyPath = localSecretPath;
 }
 
+// تهيئة Firebase Admin
+let authInstance = null;
 try {
     if (keyPath) {
         const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
-
-        // استخدام credential مباشرة بطريقة آمنة
-        const credential = admin.credential ?
-            admin.credential.cert(serviceAccount) :
-            admin.default.credential.cert(serviceAccount);
-
-        admin.initializeApp({ credential });
+        const firebaseApp = initializeApp({
+            credential: cert(serviceAccount)
+        });
+        authInstance = getAuth(firebaseApp);
         console.log(`✅ Firebase Admin SDK Initialized Successfully from: ${keyPath}`);
     } else {
         console.warn('⚠️ No Service Account key file found at:', keyPath);
@@ -37,7 +37,7 @@ try {
     console.error('❌ Error initializing Firebase Admin:', error.message);
 }
 
-// فحص صحة السيرفر (Health Check)
+// فحص صحة السيرفر
 app.get('/', (req, res) => {
     res.status(200).send('Guardian Eye Backend is Running 🚀');
 });
@@ -45,15 +45,19 @@ app.get('/', (req, res) => {
 // مسار الـ M5 Child Redemption
 app.post('/api/redeem-child', async(req, res) => {
     try {
+        if (!authInstance) {
+            return res.status(500).json({ error: 'Firebase Admin not initialized on server' });
+        }
+
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Unauthorized: Missing Token' });
+            return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
         }
 
         const idToken = authHeader.split('Bearer ')[1];
 
-        // التحقق من هوية الطفل عبر Firebase
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        // التحقق من هوية الطفل
+        const decodedToken = await authInstance.verifyIdToken(idToken);
         const childUid = decodedToken.uid;
 
         const { provisioningCode, deviceId } = req.body;
@@ -79,5 +83,5 @@ app.post('/api/redeem-child', async(req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
+    console.log(`Guardian Backend server listening on port ${PORT}`);
 });
