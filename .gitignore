@@ -6,5 +6,8 @@ android/.gradle/
 android/local.properties
 ios/Flutter/ephemeral/
 
+# Backend ignores
+guardian_backend/node_modules/
+guardian_backend/serviceAccountKey.json
 # Firebase platform configuration is committed with every push (project owner policy).
 # firebase_options.dart, google-services.json, GoogleService-Info.plist are included in Git.
