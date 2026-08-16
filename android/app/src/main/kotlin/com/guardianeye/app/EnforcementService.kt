@@ -21,13 +21,14 @@
  *    (default 5 minutes), with Doze-compatible scheduling preferred via the
  *    workmanager plugin on top of this service.
  *
- * Android 14+ note (HUMAN ACTION REQUIRED):
+ * Android 14+ note (M8C closure, 2026-08-16):
  *  On Android 14+ (API 34+) a foreground service MUST declare a
- *  foregroundServiceType. This service intentionally declares NO type here so
- *  it works on pre-14 devices; declaring a legitimate type for this use case
- *  (e.g., "dataSync") and verifying on a physical device requires a human
- *  device test before the app can be distributed. See the M8 completion
- *  report for the exact required action.
+ *  foregroundServiceType. This service declares `dataSync` (in the manifest
+ *  and passed to startForeground) because its real workload is collecting
+ *  usage observations that feed the family policy/outbox sync pipeline.
+ *  Before this fix, no startForeground was ever called on API 34+ (the
+ *  failure was only recorded), so a service started via startForegroundService
+ *  hit ForegroundServiceDidNotStartInTimeException and crashed the app.
  */
 
 package com.guardianeye.app
@@ -106,17 +107,28 @@ class EnforcementService : Service() {
     }
 
     private fun startForegroundSafe(notification: Notification) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // Android 14+ requires a service type; without one, startForeground
-            // throws. We record the failure so the Flutter side can report it
-            // honestly instead of crashing the app.
-            recordFailure("foreground_type_required_android_14")
-            return
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // M8C closure: dataSync is the legitimate type for this
+                // workload (usage observations collected for the family
+                // policy/outbox sync pipeline). It matches the manifest
+                // declaration and is required on Android 14+ (API 34+); on
+                // Android 15+ (API 35+) the FOREGROUND_SERVICE_DATA_SYNC
+                // permission is declared in the manifest.
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (exception: Exception) {
+            // Never crash the app: record the honest failure so the Flutter
+            // layer can surface it (missing permission, policy rejection, or
+            // an OS-level restriction) instead of the process dying with
+            // ForegroundServiceDidNotStartInTimeException.
+            recordFailure("service_start_failed:${exception.javaClass.simpleName}")
         }
     }
 

@@ -308,6 +308,34 @@ class FirestoreEventContract {
               if (operation == 'child.policy.delivered')
                 'lastDeliveredPolicyVersion': payload['policyVersion']
             });
+      case 'child.enforcement.applied':
+        // M8 — device enforcement status. Written to the rules-authorized
+        // `/devices/{deviceId}/enforcement_status/current` path (deployed
+        // rules: create/update only for the device's own `memberUid`, and
+        // only for `statusId == 'current'`). Previously this operation fell
+        // through to `sync_metadata`, which no rule allows — every such
+        // write was permanently `permission-denied`.
+        final enforcementDeviceId = payload['deviceId'] as String?;
+        if (enforcementDeviceId == null) {
+          throw const FormatException(
+              'child.enforcement.applied payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.deviceEnforcementStatus(
+                familyId, enforcementDeviceId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'familyId': familyId,
+              'deviceId': enforcementDeviceId,
+              'memberUid': identity.uid,
+              'lastEnforcementState': payload['state'],
+              'lastOutcome': payload['outcome'],
+              'lastAppliedReason': payload['reason'],
+              'policyVersion': payload['policyVersion'],
+              'evaluatedAtClient': payload['decidedAt'],
+              'appliedAtClient': payload['appliedAt']
+            });
       case 'child.usage.observed':
         final deviceId = payload['deviceId'] as String?;
         final usageId = payload['usageId'] as String?;

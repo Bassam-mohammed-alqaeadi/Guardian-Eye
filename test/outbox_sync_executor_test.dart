@@ -113,4 +113,53 @@ void main() {
     expect(row['last_error'], 'firebase_not_configured');
     await database.close();
   });
+  test(
+      'executor recovers a stale syncing claim (killed run) and delivers it',
+      () async {
+    final database = await openTestDatabase();
+    await FamilyRepository(database)
+        .createFamily(familyName: 'Family', parentName: 'Parent');
+    final db = await database.database;
+    final now = DateTime.now().toUtc();
+    // Simulate a run that claimed the row (state=syncing) then died before
+    // completing the write, 10 minutes ago. next_attempt_at is the enqueue
+    // time and is well past the staleness watermark.
+    await db.update('outbox',
+        {'state': 'syncing', 'next_attempt_at': now
+            .subtract(const Duration(minutes: 10))
+            .toIso8601String()});
+    final writer = _Writer();
+    final executor = OutboxSyncExecutor(
+        database,
+        const _Auth(AuthSession(
+            status: AuthSessionStatus.authenticated, identity: identity)),
+        writer);
+    final report = await executor.executeDue();
+    expect(report.synced, 1);
+    expect(writer.idempotencyKeys.length, 1);
+    final row = (await db.query('outbox')).single;
+    expect(row['state'], 'synced');
+    expect(row['last_error'], isNull);
+    await database.close();
+  });
+  test('executor does not steal a fresh in-flight syncing claim', () async {
+    final database = await openTestDatabase();
+    await FamilyRepository(database)
+        .createFamily(familyName: 'Family', parentName: 'Parent');
+    final db = await database.database;
+    final now = DateTime.now().toUtc();
+    await db.update('outbox',
+        {'state': 'syncing', 'next_attempt_at': now.toIso8601String()});
+    final writer = _Writer();
+    final executor = OutboxSyncExecutor(
+        database,
+        const _Auth(AuthSession(
+            status: AuthSessionStatus.authenticated, identity: identity)),
+        writer);
+    final report = await executor.executeDue();
+    expect(report.processed, 0);
+    expect(writer.idempotencyKeys, isEmpty);
+    expect((await db.query('outbox')).single['state'], 'syncing');
+    await database.close();
+  });
 }

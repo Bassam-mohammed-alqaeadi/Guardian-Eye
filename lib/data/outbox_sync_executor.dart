@@ -95,7 +95,12 @@ class FirestoreOutboxRemoteWriter implements OutboxRemoteWriter {
             },
             SetOptions(merge: true));
       }
-      await batch.commit();
+      // Bounded commit: a hung network must never leave the row stuck in
+      // 'syncing' forever. On timeout the op is re-scheduled (retryable);
+      // the write is idempotent (idempotencyKey), so a retry is safe.
+      await batch
+          .commit()
+          .timeout(const Duration(seconds: 20));
       try {
         await _firestore
             .waitForPendingWrites()
@@ -162,6 +167,17 @@ class OutboxSyncExecutor {
     }
     final now = _clock().toUtc();
     final db = await _database.database;
+    // Recover stale 'syncing' claims left behind by a run that died mid-write
+    // (process kill, force-stop, network hang, crash). Without this, such rows
+    // are never re-claimed and stay 'syncing' forever, poisoning the pending
+    // count and silently blocking retry. Re-queueing is safe because every
+    // remote write is idempotent (idempotencyKey) and the claim is atomic.
+    // A healthy write completes in well under a minute (commit 20s + ack
+    // 15s timeouts), so 3 minutes is a conservative staleness watermark.
+    await db.rawUpdate(
+        "UPDATE outbox SET state = 'queued', last_error = 'stale_syncing_recovered' "
+        "WHERE state = 'syncing' AND next_attempt_at <= ?",
+        [now.subtract(const Duration(minutes: 3)).toIso8601String()]);
     final rows = await db.query('outbox',
         where: "state IN ('queued','failed') AND next_attempt_at <= ?",
         whereArgs: [now.toIso8601String()],

@@ -123,6 +123,36 @@ void main() {
     expect(usage.data['memberUid'], 'child-uid');
     expect(usage.data['totalMilliseconds'], 3600000);
   });
+  test('child.enforcement.applied writes to the rules-allowed enforcement_status path',
+      () {
+    final mutation = const FirestoreEventContract().businessMutation(
+        operation: 'child.enforcement.applied',
+        payload: {
+          'familyId': 'family-1',
+          'deviceId': 'device-1',
+          'state': 'policyStale',
+          'outcome': 'policyStale',
+          'reason': 'policy_requires_fresh_delivery',
+          'decidedAt': '2026-08-16T18:41:09.555659Z',
+          'appliedAt': null,
+          'policyVersion': null,
+        },
+        identity: const AuthenticatedIdentity(
+            uid: 'child-uid', email: 'child@example.test', isAnonymous: false),
+        idempotencyKey: 'enforcement-event');
+    // The deployed rules allow create/update ONLY on
+    // /devices/{deviceId}/enforcement_status/current and ONLY for the
+    // device's own memberUid. Previously this operation fell through to
+    // sync_metadata, which no rule permits — every write was permanently
+    // permission-denied.
+    expect(mutation.path,
+        'families/family-1/devices/device-1/enforcement_status/current');
+    expect(mutation.data['memberUid'], 'child-uid');
+    expect(mutation.data['lastEnforcementState'], 'policyStale');
+    expect(mutation.data['lastOutcome'], 'policyStale');
+    expect(mutation.data['lastAppliedReason'], 'policy_requires_fresh_delivery');
+    expect(mutation.data['evaluatedAtClient'], '2026-08-16T18:41:09.555659Z');
+  });
   test('exception request and approved override retain child identity and device scope',
       () {
     const child = AuthenticatedIdentity(

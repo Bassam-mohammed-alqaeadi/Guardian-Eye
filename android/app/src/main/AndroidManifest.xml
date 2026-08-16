@@ -3,7 +3,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
-        <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required on Android 15+ (API 35+) when a foreground service uses the
+         dataSync type; declared for the M8 monitoring service (M8C closure). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 <application
@@ -37,13 +40,16 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- M8 screen-time enforcement: transparent foreground monitoring service
-             (foregroundServiceType intentionally omitted; Android 14+ requires an
-             explicit type declaration — see HUMAN ACTION REQUIRED note in
-             docs/UX_SPRINT_01_M8_COMPLETION_REPORT.md). -->
+        <!-- M8 screen-time enforcement: transparent foreground monitoring service.
+             foregroundServiceType="dataSync" (M8C closure, 2026-08-16): the service's
+             real workload is collecting usage observations that feed the family
+             policy/outbox sync pipeline, which maps to the legitimate dataSync type
+             required by Android 14+ (API 34+). See
+             docs/UX_SPRINT_01_M8_ENFORCEMENT_DECISION.md path A. -->
         <service
             android:name=".EnforcementService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
         <!-- M8 boot resilience: restart enforcement monitoring after reboot.
              WorkManager periodic rescheduling after boot is handled by the
              workmanager Flutter plugin. -->
