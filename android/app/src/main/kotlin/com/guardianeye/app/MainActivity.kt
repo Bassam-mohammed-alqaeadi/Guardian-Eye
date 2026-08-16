@@ -173,6 +173,54 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * Expands a policy target into the concrete Android packages it measures.
+     *
+     * Policy targets are category identifiers ('video', 'social', 'games',
+     * 'browser') chosen in the M6 editor, but UsageStats is keyed by package
+     * name. Without this expansion a category policy could never match a real
+     * app, so `queryPolicyUsage` would always report a measured zero. A target
+     * that is already a concrete package id (per-package policy, see the
+     * `policyPackageId` localization) is used as-is.
+     */
+    private fun targetPackages(targets: Set<String>): Set<String> {
+        val categories = mapOf(
+            "video" to setOf(
+                "com.google.android.youtube",
+                "com.google.android.apps.youtube.music",
+                "com.netflix.mediaclient",
+                "com.samsung.android.video",
+                "org.videolan.vlc",
+                "video.player.videoplayer",
+                "com.google.android.videos"
+            ),
+            "social" to setOf(
+                "com.facebook.katana",
+                "com.facebook.lite",
+                "com.facebook.orca",
+                "com.whatsapp",
+                "com.instagram.android",
+                "com.tiktok.tiktok",
+                "com.snapchat.android"
+            ),
+            "games" to setOf(
+                "com.supercell.clashofclans",
+                "com.supercell.royale",
+                "com.roblox.client",
+                "com.nianticlabs.pokemongo"
+            ),
+            "browser" to setOf(
+                "com.android.chrome",
+                "com.sec.android.app.sbrowser",
+                "org.mozilla.firefox",
+                "com.kiwibrowser.browser",
+                "com.opera.browser",
+                "com.brave.browser"
+            )
+        )
+        return targets.flatMap { categories[it] ?: setOf(it) }.toSet()
+    }
+
     private fun queryPolicyUsage(targets: Set<String>): Map<String, Any?> {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             return mapOf("status" to "unsupported", "reason" to "usage_stats_api_unavailable", "summaries" to emptyList<Map<String, Any?>>())
@@ -188,14 +236,45 @@ class MainActivity : FlutterActivity() {
         val zone = ZoneId.systemDefault()
         val start = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
         val captured = System.currentTimeMillis()
-        val usage = manager.queryAndAggregateUsageStats(start, captured)
-        val summaries = usage.entries
-            .filter { targets.contains(it.key) && it.value.totalTimeInForeground >= 0L }
-            .map { entry ->
+        // queryAndAggregateUsageStats returns a corrupted map on this Android
+        // 16 / Samsung build (every entry keyed as one system app), so
+        // aggregate from the raw queryUsageStats rows instead.
+        val rows = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, captured)
+        val usage = rows
+            .filter { !it.packageName.isNullOrBlank() }
+            .groupBy { it.packageName }
+            .mapValues { (_, list) ->
+                UsageStatsAggregate(
+                    totalTimeInForeground = list.sumOf { it.totalTimeInForeground },
+                    lastTimeUsed = list.maxOfOrNull { it.lastTimeUsed } ?: 0L
+                )
+            }
+        // UsageStats is keyed by package name, but the Dart coordinator looks
+        // up summaries by the policy TARGET ('video', a concrete package id,
+        // ...). Aggregate each target's member packages into one summary row
+        // keyed by the target so `byTarget[target]` resolves on the Flutter
+        // side. `lastUsedAt` is the most recent use among the members.
+        val packages = targetPackages(targets)
+        val packageToTarget = targets
+            .flatMap { target -> targetPackages(setOf(target)).map { it to target } }
+            .toMap()
+        val matches = usage.entries
+            .filter { packages.contains(it.key) && it.value.totalTimeInForeground >= 0L }
+        val summaries = matches
+            .groupBy { packageToTarget[it.key] ?: it.key }
+            .map { (target, entries) ->
                 mapOf(
-                    "packageName" to entry.key,
-                    "totalMilliseconds" to entry.value.totalTimeInForeground,
-                    "lastUsedAt" to if (entry.value.lastTimeUsed > 0L) Instant.ofEpochMilli(entry.value.lastTimeUsed).toString() else null
+                    "packageName" to target,
+                    "totalMilliseconds" to entries.sumOf { it.value.totalTimeInForeground },
+                    "lastUsedAt" to entries
+                        .mapNotNull { entry ->
+                            if (entry.value.lastTimeUsed > 0L) {
+                                Instant.ofEpochMilli(entry.value.lastTimeUsed).toString()
+                            } else {
+                                null
+                            }
+                        }
+                        .maxOrNull()
                 )
             }
         return mapOf(
@@ -207,3 +286,10 @@ class MainActivity : FlutterActivity() {
         )
     }
 }
+
+/// Lightweight per-package aggregation built from raw UsageStats rows
+/// (queryAndAggregateUsageStats is unreliable on Android 16 / Samsung).
+private data class UsageStatsAggregate(
+    val totalTimeInForeground: Long,
+    val lastTimeUsed: Long
+)

@@ -1,8 +1,9 @@
 # UX Sprint 01 — M6/M7/M8 Closure Sweep (2026-08-16)
 
-**Status:** M8 fully closed on the physical device; M6 child-delivery wiring
-closed; M6 parent-leg and M7 real-usage acceptance **BLOCKED on parent
-credentials** (single remaining owner action). Quality gates all GREEN.
+**Status (final):** M6, M7 and M8 all closed on the physical device with
+real-Firebase evidence. The parent password was provided on 2026-08-17, which
+unblocked the full M6 parent-leg and the M7 real-usage acceptance. Quality
+gates all GREEN.
 
 **Device:** SM-S906U / RFCT420YY9B / Android 16 / API 36
 **Firebase:** `manus-guardian` | **Render:** `guardian-eye-djg8.onrender.com`
@@ -68,7 +69,24 @@ observations that feed the family policy/outbox sync pipeline → legitimate
 multiple launches and restarts. This is the documented path A of
 `docs/UX_SPRINT_01_M8_ENFORCEMENT_DECISION.md` — not a random type.
 
-### 1.4 Stale incremental kernel poisoning APK builds
+### 1.4 M7 category policies never matched a real app (two native gaps)
+
+**Root cause 1:** `queryPolicyUsage` filtered UsageStats by `targets.contains(package)` —
+category targets (`video`, `social`, …) were compared against package names, so a real
+app never matched and every category policy measured a constant zero.
+
+**Root cause 2:** on this Android 16 / Samsung build, `queryAndAggregateUsageStats`
+returns a **corrupted map** (every entry keyed as one system app with 0ms), so even a
+concrete-package target could not be measured.
+
+**Fix** (`MainActivity.kt`): added `targetPackages()` (category → canonical package
+sets, concrete package targets pass through) and switched to raw `queryUsageStats`
+rows aggregated manually, keyed by the policy target.
+
+**Verified:** VLC used ~2:46 on the child device; the child context measured
+`video = 166,624 ms` and the summary synced to real Firestore (see §3).
+
+### 1.5 Stale incremental kernel poisoning APK builds
 
 **Root cause:** `flutter build` re-packaged a stale `app.dill` kernel
 (01:51) that predated all Dart edits — my M6 wiring and executor/contract
@@ -93,25 +111,52 @@ fixes were compiled nowhere. Only the Kotlin M8C fix made it into APKs
   family `/policies` collection that member rules allow a child to read;
   parent-only overrides are never read (GA-22 preserved).
 
-**Verified:** delivery executes on the physical device against real
-Firestore (0 policies exist for the current family, so the honest local
-state stays "0 policies / decision allowed"). The parent-leg acceptance —
-parent creates policy → Firestore → child receives → effective policy — is
-**BLOCKED on the parent password** (`alibrother402@gmail.com`), which was
-requested twice and not provided. The code path is unit-tested and the
-child-read side is proven against the deployed ruleset.
+**Verified (parent-leg + child-leg, 2026-08-17):** with the parent password
+(`123456`, verified against Firebase Auth) the full vertical ran on the
+physical device:
+
+1. Parent signed in as `alibrother402@gmail.com` (M5Parent, owner of family
+   `ff70cf2b-…` containing the child device).
+2. Parent created policy **VideoPolicy** (video target, 60-min daily limit,
+   05:30–22:00) through the app's policy editor → outbox `policy.created`
+   (`queued` → `synced`).
+3. Verified in **real Firestore**: `families/ff70cf2b-…/policies/86975ce8-…`
+   with `enabled=true, dailyLimitMinutes=60, version=1,
+   restrictedTargets=[video]`.
+4. Restored the child session; the startup delivery pulled the policy into
+   the child device (`child_device_policies` row, version 1) and the state
+   machine transitioned the device `enrolled → active` with
+   `requiredPolicyVersion=1`; `child.policy.delivered` synced to Firestore
+   and appears on the child's safety timeline as `timelinePolicyDelivered`.
+5. The child context shows "آخر سياسة صالحة · 2026-08-16" and the effective
+   policy decision. The child-read side of the delivery path was already
+   proven against the deployed ruleset.
 
 ## 3. M7 — Usage measurement: code path GREEN, needs a policy target
 
 - Usage access is **granted** on the physical device
   (`GET_USAGE_STATS: allow`).
-- The measurement path is consent-gated and honest: `observeDailyUsage`
-  returns `noObservation` with reason `no_policy_targets` when no policy
-  restricts any target — the child context correctly shows "no measurement
-  data" rather than a fabricated zero.
-- M7 therefore cannot produce a real measured summary until M6 delivers at
-  least one policy with a restricted target — same parent-leg blocker.
-- No seeded/fake usage data anywhere; zero-as-data invariant preserved.
+- **Two real gaps closed this sweep** so category policies actually measure:
+  1. `queryPolicyUsage` matched policy targets ('video' etc.) against
+     package names, so a real app never matched. Added `targetPackages()`:
+     category targets expand to their canonical packages (video → YouTube,
+     Samsung Video, VLC, …; social → WhatsApp/Facebook/…; browser →
+     Chrome/Samsung Internet/…), and a concrete package target is used as-is.
+  2. On this Android 16 / Samsung build `queryAndAggregateUsageStats`
+     returns a **corrupted map** (every entry keyed as one system app with
+     0ms). Switched to raw `queryUsageStats` rows aggregated manually, and
+     summaries are keyed by the policy target so the Dart coordinator's
+     `byTarget[target]` lookup resolves.
+- **Verified end-to-end with REAL usage:** launched VLC (a video target
+  package) on the child device for ~2:46 of foreground time; the system
+  aggregate recorded `org.videolan.vlc totalTimeUsed="02:46"`. The child
+  context measured **video = 166,624 ms (2 min)** — the displayed value is a
+  real device observation, never seeded. A `child.usage.observed` outbox op
+  synced and the doc was verified in real Firestore at
+  `devices/798b21e3-…/usage_summaries/4eb484d1-…` with `target=video,
+  totalMilliseconds=166624, memberUid=<child uid>`.
+- Zero-as-data invariant preserved (a measured zero is distinct from
+  absence; absence shows "لا توجد بيانات قياس").
 
 ## 4. M8 — Device enforcement/monitoring: closed to the maximum legal level
 
@@ -157,8 +202,7 @@ child-read side is proven against the deployed ruleset.
 
 | Item | Why it remains open |
 |---|---|
-| M6 parent-leg device acceptance (create policy → Firestore → child) | Requires the parent password for `alibrother402@gmail.com`; requested twice, not provided. The child-read/delivery side is fully verified. |
-| M7 real measured summary on device | Requires a delivered policy (M6 parent leg); measurement code path and permission are verified. |
+| M6/M7 device acceptance | **CLOSED** on 2026-08-17 with the parent password: policy created → Firestore → child delivery → effective policy (M6), and real usage measured → summary → Firestore (M7). |
 | Trigger D (WorkManager background sync) | Pre-existing owner decision recorded in `docs/UX_SPRINT_01_M9_SYNC_GATE_REPORT.md`; unchanged. |
 | OS-level package suspension | Not legally available to consumer Android without device-owner; honestly classified as monitoring + notification surface only. |
 | iOS / APNs | BLOCKED — no macOS/iPhone in environment (unchanged). |
