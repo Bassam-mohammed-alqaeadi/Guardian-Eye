@@ -41,3 +41,27 @@ M9 (Production Sync Gate) has NOT started and will not start without explicit ow
 ## Truth-Gate Audit Addendum (2026-08-14, Workstream A)
 
 A post-implementation code-level audit reclassified `applyEnforcement()` as **MONITORING-ONLY**. The actual OS actions performed are `UsageStatsManager` foreground observation, a transparent foreground service with a persistent family notification, and a durable local record; no consumer-legal API call blocks, kills, or restricts a third-party app. The feature is honestly classified as the **"M8 Enforcement Foundation"** with `Actual Consumer-App Restriction = NOT PROVEN` (register GA-08, BLOCKED — ENFORCEMENT TRUTH GATE). On API 34+ the service lacks `foregroundServiceType` and therefore **cannot start** on the owner's SM-S906U (Android 16 / API 36) until an owner-approved service-type path is applied (`docs/UX_SPRINT_01_M8_PHYSICAL_VALIDATION_PLAN.md`). Gate 13 physical evidence for all twelve enforcement scenarios remains **HUMAN ACTION REQUIRED**; nothing in this document elevates any enforcement claim beyond monitoring evidence.
+
+## M8C Closure Addendum (2026-08-16, physical-device evidence)
+
+The two HUMAN-ACTION gaps recorded above were closed on the physical device
+(SM-S906U / Android 16 / API 36):
+
+1. **`foregroundServiceType` applied (path A of the enforcement decision doc):**
+   `android:foregroundServiceType="dataSync"` + `FOREGROUND_SERVICE_DATA_SYNC`
+   permission added; the service's real workload (usage observation feeding the
+   family policy/outbox sync pipeline) maps to the legitimate `dataSync` type.
+   Verified running: `isForeground=true`, `types=0x00000001`, no
+   `ForegroundServiceDidNotStartInTimeException` across repeated launches.
+2. **Enforcement sync closed:** `child.enforcement.applied` was routed through
+   the contract `default` case to `/sync_metadata/{eventId}` (no rule allows
+   it) → `permission-denied`. Fixed to write
+   `devices/{deviceId}/enforcement_status/current` with `memberUid`; a fresh
+   op synced and the document was verified in real Firestore.
+3. **Outbox executor resilience:** stale `syncing` rows (killed/hung runs) are
+   now recovered after a 3-minute watermark, and remote commits are bounded
+   (20s commit + 15s ack timeouts).
+
+Full sweep record: `docs/UX_SPRINT_01_M6_M8_CLOSURE_SWEEP.md`. The remaining
+M6/M7 device-acceptance legs are blocked only on the parent account password
+(owner action); everything else in this report stands as verified.
