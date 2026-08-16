@@ -89,6 +89,20 @@ final childContextProvider =
     }
   }
 
+  // M6 closure — child-device policy delivery. When the child has an
+  // enrolled device, refresh the local policy snapshot from the family's
+  // Firestore `/policies` before composing the context, so the effective
+  // policy and enforcement sections reflect the family's current policies
+  // instead of a forever-stale local store. The delivery service is
+  // offline-safe (a network failure transitions the device honestly and
+  // keeps the previous local snapshot) and never reads parent-only
+  // overrides. No-op when Firebase is unconfigured.
+  if (deviceState != null) {
+    await ref
+        .read(childPolicyDeliveryServiceProvider)
+        .synchronize(deviceState.deviceId);
+  }
+
   final incidents = await ref.watch(
       recentIncidentsProvider(normalizedFamilyId).future);
 

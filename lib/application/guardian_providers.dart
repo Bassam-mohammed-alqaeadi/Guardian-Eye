@@ -14,6 +14,7 @@ import 'device_link_service.dart';
 import 'remote_provisioning_service.dart';
 import '../data/fcm_token_repository.dart';
 import '../data/child_device_repository.dart';
+import '../data/child_policy_delivery_service.dart';
 import '../data/child_exception_request_repository.dart';
 import '../data/firebase_auth_context.dart';
 import '../data/family_safety_experience_repository.dart';
@@ -54,6 +55,28 @@ final childOverridesProvider =
 
 final childDeviceRepositoryProvider =
     Provider((ref) => ChildDeviceRepository(GuardianDatabase.instance));
+/// M6 — child-device policy delivery. Pulls the family's policy snapshot
+/// from Firestore into the local child-device store so the effective policy
+/// and enforcement state reflect the family's current policies (members may
+/// read `/policies` per the deployed rules; parent-only overrides are never
+/// read — GA-22 preserved). When Firebase is unconfigured the source is a
+/// safe no-op so the service never fabricates remote state.
+final childPolicyDeliveryServiceProvider =
+    Provider<ChildPolicyDeliveryService>((ref) {
+  final source = GuardianFirebaseBootstrap.current.isReady
+      ? FirestoreChildPolicySource(FirebaseFirestore.instance)
+          as ChildPolicySource
+      : const _UnavailableChildPolicySource();
+  return ChildPolicyDeliveryService(
+      ref.watch(childDeviceRepositoryProvider), source);
+});
+
+class _UnavailableChildPolicySource implements ChildPolicySource {
+  const _UnavailableChildPolicySource();
+  @override
+  Future<List<RemoteChildPolicyMutation>> fetchPolicies(String familyId) async =>
+      const [];
+}
 final deviceLinkServiceProvider = Provider(
     (ref) => DeviceLinkService(ref.watch(pairingRepositoryProvider)));
 /// M5 Option D — canonical remote child provisioning (Functions callables).

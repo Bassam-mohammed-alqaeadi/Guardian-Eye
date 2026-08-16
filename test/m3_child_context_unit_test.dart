@@ -78,6 +78,10 @@ class _StubDeviceRepository implements ChildDeviceRepository {
       states.where((s) => s.familyId == familyId).toList();
 
   @override
+  Future<ChildDeviceState?> getState(String deviceId) async =>
+      states.where((s) => s.deviceId == deviceId).cast<ChildDeviceState?>().firstOrNull;
+
+  @override
   Future<List<DailyUsageSummary>> usageForDeviceDay(
       {required String deviceId, required DateTime day}) async =>
       states

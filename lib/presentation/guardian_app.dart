@@ -51,6 +51,31 @@ class _GuardianAppState extends ConsumerState<GuardianApp> {
         .listen((online) {
       if (online) _triggerSync();
     }, onError: (_) {});
+    // M6 — child-device policy delivery at startup. After the first frame,
+    // refresh the enrolled child device's local policy snapshot from the
+    // family's Firestore `/policies` so the effective policy and enforcement
+    // state are fresh without waiting for the child context to open. Safe
+    // when logged out, unconfigured, or without an enrolled device.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _triggerPolicyDelivery());
+  }
+
+  Future<void> _triggerPolicyDelivery() async {
+    try {
+      final dashboard =
+          await ref.read(familyRepositoryProvider).loadDashboard();
+      final familyId = dashboard.family?.id;
+      if (familyId == null || familyId.isEmpty) return;
+      final repository = ref.read(childDeviceRepositoryProvider);
+      final states = await repository.statesForFamily(familyId);
+      final delivery = ref.read(childPolicyDeliveryServiceProvider);
+      for (final state in states) {
+        await delivery.synchronize(state.deviceId);
+      }
+    } catch (_) {
+      // Delivery is best-effort; the child context re-triggers on open and
+      // the service records offline/revoked states honestly.
+    }
   }
 
   @override
