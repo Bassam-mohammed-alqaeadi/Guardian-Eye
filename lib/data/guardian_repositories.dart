@@ -78,6 +78,17 @@ class FamilyRepository {
     return child;
   }
 
+  /// All non-archived families (insertion order). Used by startup services
+  /// that must consider every family the device may belong to — the dashboard
+  /// resolves a single family, but a registration/notification service must
+  /// not assume the first family is the actor's family.
+  Future<List<GuardianFamily>> allFamilies() async {
+    final db = await _database.database;
+    final rows = await db.query('families',
+        where: 'archived_at IS NULL', orderBy: 'created_at ASC');
+    return rows.map(GuardianFamily.fromMap).toList(growable: false);
+  }
+
   Future<GuardianDashboard> loadDashboard() async {
     final db = await _database.database;
     final rows =
@@ -309,6 +320,60 @@ class PairingRepository {
       }
       return PairingEnrollmentResult(
           state: PairingState.enrolled, deviceId: deviceId);
+    });
+  }
+
+  /// M9/FCM — enrolls THIS device as a parent-role device so the parent can
+  /// receive push notifications through the trusted backend (`/api/notify`).
+  ///
+  /// Creates a local `devices` row (role `parentDevice`) and enqueues
+  /// `device.enrolled` (no `memberUid` — parent-created devices are
+  /// `memberUid == null` per the deployed rules). The FCM token is registered
+  /// separately via `notification.token.registered`; both flow through the
+  /// same durable outbox and are rules-valid.
+  Future<String> enrollParentDevice({
+    required String familyId,
+    required String memberId,
+    required String ownerMemberId,
+  }) async {
+    final db = await _database.database;
+    return db.transaction((tx) async {
+      final existing = await tx.query('devices',
+          where:
+              'family_id = ? AND member_id = ? AND role = ? AND revoked_at IS NULL',
+          whereArgs: [
+            familyId,
+            memberId,
+            DeviceRole.parentDevice.name
+          ],
+          limit: 1);
+      if (existing.isNotEmpty) {
+        return existing.single['id']! as String;
+      }
+      final deviceId = _uuid.v4();
+      final now = DateTime.now().toUtc();
+      await tx.insert('devices', {
+        'id': deviceId,
+        'family_id': familyId,
+        'member_id': memberId,
+        'owner_member_id': ownerMemberId,
+        'role': DeviceRole.parentDevice.name,
+        'sync_state': SyncState.queued.storageKey,
+        'created_at': now.toIso8601String()
+      });
+      await _enqueue(tx,
+          aggregateType: 'device',
+          aggregateId: deviceId,
+          operation: 'device.enrolled',
+          payload: {
+            'familyId': familyId,
+            'deviceId': deviceId,
+            'memberId': memberId,
+            'ownerMemberId': ownerMemberId,
+            'role': DeviceRole.parentDevice.name,
+            'createdAt': now.toIso8601String()
+          });
+      return deviceId;
     });
   }
 

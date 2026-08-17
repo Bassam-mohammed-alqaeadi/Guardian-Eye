@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/child_context_provider.dart';
 import '../../application/family_context_provider.dart';
+import '../../data/family_actor_binding_service.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/child_device_enforcement.dart';
@@ -79,11 +80,28 @@ class ChildContextScreen extends ConsumerWidget {
             final canAct = contextRef.valueOrNull
                     ?.can(FamilyPermission.viewChildStatus) ??
                 false;
+            // SOS is a child emergency action: any verified active member of
+            // the family may raise it (Firestore rules authorize `activeMember`
+            // and `activeOwnedDevice` writes). Unlike parent-only management
+            // permissions, the child itself must be able to trigger SOS.
+            final memberVerified =
+                contextRef.valueOrNull?.isVerified ?? false;
+            // SOS is a child emergency action. The Trusted Actor Binding
+            // deliberately refuses child roles (children are trusted through
+            // their owned device), so a verified parent OR the child member
+            // themselves (binding failure `remoteChildIdentity`) may raise it;
+            // the Firestore rules enforce `activeMember`/`activeOwnedDevice`
+            // on the actual write either way.
+            final actorIsChildMember =
+                contextRef.valueOrNull?.bindingFailure ==
+                FamilyActorBindingFailure.remoteChildIdentity;
             return _ChildContextBody(
                 familyId: familyId,
                 childId: childId,
                 snapshot: data,
-                canAct: canAct);
+                canAct: canAct,
+                memberVerified: memberVerified,
+                actorIsChildMember: actorIsChildMember);
           },
         ),
       ),
@@ -96,11 +114,21 @@ class _ChildContextBody extends ConsumerWidget {
       {required this.familyId,
       required this.childId,
       required this.snapshot,
-      required this.canAct});
+      required this.canAct,
+      required this.memberVerified,
+      required this.actorIsChildMember});
   final String familyId;
   final String childId;
   final ChildContextSnapshot snapshot;
   final bool canAct;
+
+  /// Verified active member of the family (any role) — SOS gate.
+  final bool memberVerified;
+
+  /// Authenticated actor is a child member of this family (the child on
+  /// their own device) — the binding reports `remoteChildIdentity` for
+  /// child roles by design, so this is the child-side SOS gate.
+  final bool actorIsChildMember;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,6 +157,12 @@ class _ChildContextBody extends ConsumerWidget {
         const SizedBox(height: 12),
         _SafetyCard(
             incidents: snapshot.recentIncidents, canAct: canAct),
+        const SizedBox(height: 12),
+        if (snapshot.deviceState != null)
+          _SosCard(
+              familyId: familyId,
+              deviceId: snapshot.deviceState!.deviceId,
+              canSend: memberVerified || actorIsChildMember),
         const SizedBox(height: 12),
         if (snapshot.deviceState != null)
           _UsageMeasurementSection(
@@ -321,6 +355,70 @@ class _SafetyCard extends StatelessWidget {
               Text(l10n.t('actorVerificationRequired'),
                   style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.error)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// SOS — genuine emergency entry point for the child device.
+///
+/// Opens the safety-actions surface, which persists the SOS locally and
+/// queues it through the outbox (`sos.created`); sync and delivery are the
+/// same honest pipeline as every other mutation. The deviceId + authenticated
+/// actorUid are carried into the payload so the Firestore document belongs to
+/// the correct family/device and passes the deployed rules.
+class _SosCard extends ConsumerWidget {
+  const _SosCard(
+      {required this.familyId, required this.deviceId, required this.canSend});
+  final String familyId;
+  final String deviceId;
+  final bool canSend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final session = ref.watch(firebaseAuthSessionProvider);
+    final actorUid = session.valueOrNull?.identity?.uid;
+    return Card(
+      color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.sos, color: Colors.redAccent),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(l10n.t('sosAlerts'),
+                      style: theme.textTheme.titleMedium),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(l10n.t('sosDescription'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 10),
+            FilledButton.tonalIcon(
+              onPressed: !canSend
+                  ? null
+                  : () => context.push('/safety/actions/$familyId',
+                      extra: {'deviceId': deviceId, 'actorUid': actorUid}),
+              icon: const Icon(Icons.sos),
+              label: Text(l10n.t('sendSos')),
+            ),
+            if (!canSend)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(l10n.t('actorVerificationRequired'),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.error)),
+              ),
           ],
         ),
       ),

@@ -9,6 +9,7 @@ import '../screens/child_context_screen.dart';
 import '../screens/screen_time_policies_screen.dart';
 import '../screens/family_safety_experience_screens.dart';
 import '../screens/settings_screen.dart';
+import '../screens/safety_actions_screen.dart';
 import '../screens/pairing_screen.dart';
 import '../screens/child_redemption_screen.dart';
 import '../screens/permissions_screen.dart';
@@ -57,6 +58,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'safetyPolicies',
         builder: (context, state) =>
             SafetyPoliciesScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/actions/:familyId',
+        name: 'safetyActions',
+        builder: (context, state) {
+          final Map<String, String?>? extra =
+              state.extra is Map<String, String?>
+                  ? state.extra! as Map<String, String?>
+                  : null;
+          return SafetyActionsScreen(
+              familyId: state.pathParameters['familyId']!,
+              deviceId: extra?['deviceId'],
+              actorUid: extra?['actorUid']);
+        },
       ),
       GoRoute(
         path: '/safety/device-status/:familyId',

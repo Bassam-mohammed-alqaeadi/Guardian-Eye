@@ -130,6 +130,7 @@ class SosRepository {
   Future<String> createOfflineEvent(
       {required String familyId,
       String? deviceId,
+      String? actorUid,
       double? latitude,
       double? longitude,
       double? accuracyMeters}) async {
@@ -151,6 +152,10 @@ class SosRepository {
         'familyId': familyId,
         'sosEventId': id,
         'deviceId': deviceId,
+        // Canonical identity: the authenticated writer (Firebase Auth UID).
+        // Firestore rules authorize the write via activeMember OR
+        // activeOwnedDevice — this field identifies who triggered it.
+        if (actorUid != null) 'actorUid': actorUid,
         'status': SosState.pendingSync.storageKey,
         'latitude': latitude,
         'longitude': longitude,
@@ -188,6 +193,15 @@ class SosRepository {
   }
 }
 
+/// Records a durable LOCAL notification request (status `pendingBackend`).
+///
+/// No `notification.requested` outbox operation is enqueued here, and none may
+/// be: the Firestore `notification_events` collection is backend-only
+/// (`allow create, update, delete: if false`) and the deployed backend
+/// functions (`requestIncidentNotification`, `requestSosNotification`)
+/// produce the remote notification event via triggers on the incident/SOS
+/// document. A client-side outbox op for this aggregate would fall through to
+/// `sync_metadata`, which no rule permits, and block forever.
 Future<void> _requestNotification(Transaction tx,
     {required String familyId,
     String? incidentId,
@@ -205,8 +219,6 @@ Future<void> _requestNotification(Transaction tx,
     'status': NotificationState.pendingBackend.storageKey,
     'requested_at': now.toIso8601String()
   });
-  await _enqueueOutbox(tx, uuid, 'notification', id, 'notification.requested',
-      {'familyId': familyId, 'notificationId': id, 'kind': kind});
 }
 
 Future<void> _enqueueOutbox(Transaction tx, Uuid uuid, String aggregateType,

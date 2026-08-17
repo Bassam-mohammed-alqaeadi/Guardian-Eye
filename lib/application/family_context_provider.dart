@@ -38,6 +38,7 @@ class FamilyRuntimeContext {
     required this.family,
     required this.actor,
     required this.isVerified,
+    this.bindingFailure,
     required this.permissionsFor,
     required this.allMembers,
     required this.children,
@@ -56,6 +57,14 @@ class FamilyRuntimeContext {
   /// `true` only when the Trusted Actor Binding verified the authenticated
   /// account to an active local member. Never `true` when `actor` is `null`.
   final bool isVerified;
+
+  /// Why the binding failed closed, or `null` when verified. The special
+  /// `remoteChildIdentity` case means the authenticated actor is a child
+  /// member of this family — the Trusted Actor Binding deliberately refuses
+  /// child roles (children are trusted through their owned device instead),
+  /// so screens that must work for the child actor (e.g. SOS) can recognize
+  /// this exact case rather than treating it as an unauthenticated outsider.
+  final FamilyActorBindingFailure? bindingFailure;
 
   /// Permission resolution function. Delegated verbatim to the single
   /// [FamilyAuthorization] matrix (role-based) — never a second mechanism.
@@ -122,6 +131,8 @@ class FamilyContextResolver {
     // Canonical actor resolution (fail-closed).
     final bindingResult = await _actorBinding.resolveForFamily(normalizedFamilyId);
     final actor = bindingResult.isVerified ? bindingResult.binding?.member : null;
+    final bindingFailure =
+        bindingResult.isVerified ? null : bindingResult.failure;
 
     // Canonical members (all), canonical children (role-filtered),
     // canonical device runtime states.
@@ -139,6 +150,7 @@ class FamilyContextResolver {
       family: null,
       actor: actor,
       isVerified: verified,
+      bindingFailure: bindingFailure,
       permissionsFor: _authorization.permissionsFor,
       allMembers: allMembers,
       children: children,
@@ -152,6 +164,7 @@ class FamilyContextResolver {
       family: null,
       actor: null,
       isVerified: false,
+      bindingFailure: FamilyActorBindingFailure.invalidFamilyId,
       permissionsFor: _authorization.permissionsFor,
       allMembers: const [],
       children: const [],

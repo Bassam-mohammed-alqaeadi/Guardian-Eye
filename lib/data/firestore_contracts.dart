@@ -208,6 +208,39 @@ class FirestoreEventContract {
               'accuracyMeters': payload['accuracyMeters'],
               'createdAtClient': payload['createdAt']
             });
+      case 'sos.synced' || 'sos.notified' || 'sos.failed' ||
+          'sos.cancelled' || 'sos.acknowledged':
+        // SOS lifecycle transitions map to the rules-allowed sos document
+        // update (rules: `allow update: if parent(familyId) &&
+        // resource.data.familyId == familyId`). Previously these fell through
+        // to `sync_metadata`, which no rule permits — every such write was
+        // permanently permission-denied and blocked the outbox forever.
+        final transitionSosId = payload['sosEventId'] as String?;
+        if (transitionSosId == null) {
+          throw const FormatException('sos transition payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.sos(familyId, transitionSosId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'sosId': transitionSosId,
+              'status': operation.split('.').last
+            });
+      case 'incident.acknowledged':
+        // Maps to the rules-allowed incident document update
+        // (rules: `allow update: if parent(familyId) &&
+        // resource.data.familyId == familyId`). Previously fell through to
+        // `sync_metadata` and was permanently permission-denied.
+        final acknowledgedIncidentId = payload['incidentId'] as String?;
+        if (acknowledgedIncidentId == null) {
+          throw const FormatException(
+              'incident.acknowledged payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.incident(familyId, acknowledgedIncidentId),
+            idempotencyKey: idempotencyKey,
+            data: {...common, 'status': 'acknowledged'});
       case 'notification.token.registered':
         final deviceId = payload['deviceId'] as String?;
         final token = payload['token'] as String?;

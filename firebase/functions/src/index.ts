@@ -67,15 +67,36 @@ export const createChildDeviceProvisioning = onCall(async (request) => {
 export const redeemChildDeviceProvisioning = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'authentication_required');
   const familyId = requiredString(request.data?.familyId, 'familyId');
-  const pairingId = requiredString(request.data?.pairingId, 'pairingId');
   const code = requiredString(request.data?.code, 'code', 6);
   const deviceId = requiredString(request.data?.deviceId, 'deviceId');
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(deviceId)) {
     throw new HttpsError('invalid-argument', 'deviceId is invalid.');
   }
   const db = getFirestore();
+  // A pairingId is preferred (pinned session), but a child device redeeming
+  // a code typed from memory has no id — mirror the production backend by
+  // resolving the pending session from the SHA-256 code hash.
+  const rawPairingId = request.data?.pairingId;
+  const pairingId =
+    typeof rawPairingId === 'string' && rawPairingId.trim().length > 0
+      ? rawPairingId
+      : null;
+  const sessions = db.collection(`families/${familyId}/device_pairings`);
+  let sessionRef: FirebaseFirestore.DocumentReference;
+  if (pairingId) {
+    sessionRef = sessions.doc(pairingId);
+  } else {
+    const query = await sessions
+      .where('codeHash', '==', hashPairingCode(code))
+      .where('status', '==', 'pending')
+      .limit(1)
+      .get();
+    if (query.empty) {
+      throw new HttpsError('permission-denied', 'pairing_invalid_code');
+    }
+    sessionRef = query.docs[0].ref;
+  }
   const result = await db.runTransaction(async (transaction) => {
-    const sessionRef = db.doc(`families/${familyId}/device_pairings/${pairingId}`);
     const session = await transaction.get(sessionRef);
     if (!session.exists || session.get('status') !== 'pending') return {state: 'rejected'};
     const expiresAt = session.get('expiresAt')?.toDate?.() as Date | undefined;

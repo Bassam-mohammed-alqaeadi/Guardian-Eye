@@ -40,7 +40,14 @@ class _GuardianAppState extends ConsumerState<GuardianApp> {
     // produces no authenticated session, so no stale-identity write can
     // happen (the executor reads the current session on every run).
     ref.listenManual(firebaseAuthSessionProvider, (previous, next) {
-      if (next.valueOrNull?.isAuthenticated ?? false) _triggerSync();
+      if (next.valueOrNull?.isAuthenticated ?? false) {
+        _triggerSync();
+        // M9/FCM — the parent device + FCM token registration depends on the
+        // authenticated session (the actor binding resolves the verified
+        // parent). The startup post-frame attempt may run before the session
+        // is restored, so registration is retried whenever sign-in completes.
+        _triggerNotificationRegistration();
+      }
     });
     // M9 Trigger B — connectivity restoration (offline → online). The
     // service emits only genuine transitions; concurrent triggers are
@@ -58,6 +65,23 @@ class _GuardianAppState extends ConsumerState<GuardianApp> {
     // when logged out, unconfigured, or without an enrolled device.
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _triggerPolicyDelivery());
+    // M9/FCM — parent device + FCM token registration at startup (after the
+    // auth session is initialized). Ensures THIS device is registered as a
+    // parent-role device with its FCM token so the trusted backend can
+    // deliver parent notifications. Safe when logged out / unconfigured / no
+    // family: the service resolves the verified binding and returns a no-op.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _triggerNotificationRegistration());
+  }
+
+  Future<void> _triggerNotificationRegistration() async {
+    try {
+      await ref.read(parentNotificationRegistrationProvider).ensureRegistered();
+      _triggerSync();
+    } catch (_) {
+      // Registration is best-effort; the child context and startup re-trigger
+      // on open and the outbox carries the honest sync state.
+    }
   }
 
   Future<void> _triggerPolicyDelivery() async {

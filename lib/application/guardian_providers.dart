@@ -11,8 +11,10 @@ import 'child_screen_time_coordinator.dart';
 import 'child_usage_measurement_provider.dart';
 import 'child_enforcement_coordinator.dart';
 import 'device_link_service.dart';
+import 'parent_notification_registration.dart';
 import 'remote_provisioning_service.dart';
 import '../data/fcm_token_repository.dart';
+import '../data/notification_contract.dart';
 import '../data/child_device_repository.dart';
 import '../data/child_policy_delivery_service.dart';
 import '../data/child_exception_request_repository.dart';
@@ -184,6 +186,33 @@ final familyPendingSyncProvider = FutureProvider.autoDispose.family<bool, String
         ref.watch(outboxSyncStatusProvider).hasPendingForFamily(familyId));
 final deviceTokenRepositoryProvider =
     Provider((ref) => DeviceTokenRepository(GuardianDatabase.instance));
+/// M9/FCM — canonical FCM token service. `register()` obtains the platform
+/// token and enqueues `notification.token.registered` through the durable
+/// outbox; the trusted backend reads it when delivering parent notifications.
+final fcmTokenServiceProvider = Provider((ref) => FcmTokenService(
+    ref.watch(firebaseAuthContextProvider),
+    ref.watch(deviceTokenRepositoryProvider)));
+/// M9/FCM — production parent-notification gateway. Calls the trusted
+/// Guardian Backend `POST /api/notify` with the current Firebase ID token.
+/// Falls back to the guarded stub (honest `not accepted`) when Firebase is
+/// not configured so tests and unconfigured builds never fake delivery.
+final parentNotificationGatewayProvider =
+    Provider<ParentNotificationGateway>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return const GuardedFcmNotificationGateway();
+  }
+  return const RenderNotificationGateway();
+});
+/// M9/FCM — app-side registration of this device as a parent-role device so
+/// the backend can deliver push notifications to the parent. Safe no-op when
+/// logged out / unconfigured / without a family.
+final parentNotificationRegistrationProvider = Provider((ref) =>
+    ParentNotificationRegistration(
+        families: ref.watch(familyRepositoryProvider),
+        pairing: ref.watch(pairingRepositoryProvider),
+        binding: ref.watch(familyActorBindingServiceProvider),
+        fcm: ref.watch(fcmTokenServiceProvider),
+        platform: 'android'));
 final capabilityGatewayProvider = Provider((ref) => const CapabilityGateway());
 final androidObservationGatewayProvider =
     Provider((ref) => const AndroidObservationGateway());
