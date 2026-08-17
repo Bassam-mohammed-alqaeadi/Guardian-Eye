@@ -44,12 +44,14 @@ Dio _dio(HttpClientAdapter adapter) => Dio(BaseOptions(baseUrl: 'https://backend
 RemoteProvisioningService _service(
   _FakeAdapter adapter, {
   bool available = true,
+  bool callableBackend = false,
 }) =>
     RemoteProvisioningService(
       client: _dio(adapter),
       idToken: () async => 'firebase-id-token-1',
       available: available,
       baseUrl: 'https://backend.test',
+      callableBackend: callableBackend,
     );
 
 void main() {
@@ -207,6 +209,104 @@ void main() {
 
       expect(result.state, RemoteRedeemState.networkUnavailable);
       expect(result.succeeded, isFalse);
+    });
+  });
+
+  group('RemoteProvisioningService (Functions emulator callable)', () {
+    test('issue speaks the callable protocol and unwraps the result',
+        () async {
+      final adapter = _FakeAdapter((options) async {
+        expect(options.uri.path,
+            '/manus-guardian/us-central1/createChildDeviceProvisioning');
+        expect(options.headers['Authorization'], 'Bearer firebase-id-token-1');
+        final envelope = _bodyOf(options.data);
+        final body = envelope['data'] as Map;
+        expect(body['familyId'], 'fam-1');
+        expect(body['targetMemberId'], 'child-local-1');
+        expect(body['displayName'], 'KidA');
+        return _json(200, {
+          'result': {
+            'pairingId': 'pair-1',
+            'code': '654321',
+            'expiresAt': '2026-08-16T12:00:00.000Z',
+          }
+        });
+      });
+      final service = _service(adapter, callableBackend: true);
+
+      final issue = await service.issue(
+        familyId: 'fam-1',
+        targetMemberId: 'child-local-1',
+        displayName: 'KidA',
+      );
+
+      expect(issue.pairingId, 'pair-1');
+      expect(issue.code, '654321');
+      expect(issue.expiresAt.isUtc, isTrue);
+    });
+
+    test('redeem wraps the body and unwraps the enrolled result', () async {
+      final adapter = _FakeAdapter((options) async {
+        expect(options.uri.path,
+            '/manus-guardian/us-central1/redeemChildDeviceProvisioning');
+        final envelope = _bodyOf(options.data);
+        final body = envelope['data'] as Map;
+        expect(body['familyId'], 'fam-1');
+        expect(body['pairingId'], 'pair-1');
+        expect(body['code'], '123456');
+        expect(body['deviceId'], 'device-1');
+        return _json(200, {
+          'result': {
+            'state': 'enrolled',
+            'deviceId': 'device-1',
+            'targetMemberId': 'child-local-1',
+          }
+        });
+      });
+      final service = _service(adapter, callableBackend: true);
+
+      final result = await service.redeem(
+        familyId: 'fam-1',
+        pairingId: 'pair-1',
+        code: '123456',
+        deviceId: 'device-1',
+      );
+
+      expect(result.succeeded, isTrue);
+      expect(result.deviceId, 'device-1');
+    });
+
+    test('redeem maps callable HttpsError messages honestly', () async {
+      Future<RemoteRedeemState> redeemReturning(String message) async {
+        final adapter = _FakeAdapter((_) async => _json(400, {
+              'error': {'status': 'PERMISSION_DENIED', 'message': message}
+            }));
+        final service = _service(adapter, callableBackend: true);
+        final result = await service.redeem(
+          familyId: 'fam-1',
+          pairingId: 'pair-1',
+          code: '123456',
+          deviceId: 'device-1',
+        );
+        return result.state;
+      }
+
+      expect(await redeemReturning('pairing_invalid_code'),
+          RemoteRedeemState.invalidCode);
+      expect(await redeemReturning('pairing_locked'), RemoteRedeemState.locked);
+      expect(await redeemReturning('pairing_expired'),
+          RemoteRedeemState.expired);
+      expect(await redeemReturning('pairing_already_used'),
+          RemoteRedeemState.alreadyUsed);
+      expect(await redeemReturning('pairing_device_conflict'),
+          RemoteRedeemState.deviceConflict);
+      expect(await redeemReturning('pairing_member_conflict'),
+          RemoteRedeemState.memberConflict);
+      expect(await redeemReturning('authentication_required'),
+          RemoteRedeemState.unauthenticated);
+      expect(await redeemReturning('family_parent_role_required'),
+          RemoteRedeemState.unauthorized);
+      expect(await redeemReturning('unexpected'), RemoteRedeemState.unknown);
     });
   });
 }

@@ -184,8 +184,16 @@ test('parent may register a token only for an owned parent device', async () => 
 
 test('active device can create incident while revoked device cannot', async () => {
   const child = environment.authenticatedContext('child-a').firestore();
+  // An active child-owned device may create an incident (AI/detection path).
   await assertSucceeds(setDoc(doc(child, 'families/family-a/incidents/incident-a'), {familyId: 'family-a', deviceId: 'device-a', status: 'queued'}));
-  await assertFails(setDoc(doc(child, 'families/family-a/incidents/incident-r'), {familyId: 'family-a', deviceId: 'revoked-a', status: 'queued'}));
+  // An active family member may create an incident (parent-side observation),
+  // per the rules contract documented in commit 0caa405. The revoked-device
+  // denial below therefore uses a NON-member writer so the write is rejected
+  // by BOTH branches (not activeMember, device revoked).
+  await assertSucceeds(setDoc(doc(child, 'families/family-a/incidents/incident-m'), {familyId: 'family-a', status: 'queued'}));
+  const outsider = environment.authenticatedContext('outsider-a').firestore();
+  await assertFails(setDoc(doc(outsider, 'families/family-a/incidents/incident-r'), {familyId: 'family-a', deviceId: 'revoked-a', status: 'queued'}));
+  await assertFails(setDoc(doc(outsider, 'families/family-a/incidents/incident-d'), {familyId: 'family-a', deviceId: 'device-a', status: 'queued'}));
 });
 
 test('only the active child device can report its scoped enforcement status', async () => {

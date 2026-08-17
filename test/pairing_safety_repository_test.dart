@@ -1,10 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:guardian_ai/data/guardian_repositories.dart';
 import 'package:guardian_ai/data/safety_repositories.dart';
 import 'package:guardian_ai/domain/guardian_models.dart';
 import 'package:guardian_ai/domain/incident_engine.dart';
 import 'test_database.dart';
-
 void main() {
   test(
       'pairing locks after five invalid codes, enrolls exactly once, enforces owner revocation',
@@ -96,12 +97,53 @@ void main() {
         await sos.transition(sosId: sosId, next: SosState.notified), isFalse);
     expect(await sos.transition(sosId: sosId, next: SosState.synced), isTrue);
     final db = await database.database;
+    // Local-first: the request is recorded durably as a pendingBackend row,
+    // and NO notification outbox op is enqueued — the backend produces the
+    // remote notification event via triggers on the incident/SOS document
+    // (Firestore `notification_events` is backend-only by rule).
     expect((await db.query('notification_events')).length, 2);
     expect(
         (await db.query('outbox',
                 where: 'operation = ?', whereArgs: ['notification.requested']))
             .length,
-        2);
+        0);
+    await database.close();
+  });
+
+  test(
+      'enrollParentDevice creates a parentDevice row and queues device.enrolled exactly once',
+      () async {
+    final database = await openTestDatabase();
+    final families = FamilyRepository(database);
+    final family =
+        await families.createFamily(familyName: 'Family', parentName: 'Parent');
+    final parentMember =
+        (await database.database).query('family_members', limit: 1);
+    final members = await parentMember;
+    final parentId = members.single['id']! as String;
+    final pairing = PairingRepository(database);
+    final deviceId = await pairing.enrollParentDevice(
+        familyId: family.id,
+        memberId: parentId,
+        ownerMemberId: parentId);
+    // Idempotent: a second call returns the same device row.
+    expect(
+        await pairing.enrollParentDevice(
+            familyId: family.id,
+            memberId: parentId,
+            ownerMemberId: parentId),
+        deviceId);
+    final db = await database.database;
+    final devices = await db.query('devices',
+        where: 'id = ?', whereArgs: [deviceId]);
+    expect(devices.single['role'], DeviceRole.parentDevice.name);
+    expect(devices.single['member_id'], parentId);
+    expect(devices.single['sync_state'], SyncState.queued.name);
+    final enqueued = await db.query('outbox',
+        where: 'operation = ?', whereArgs: ['device.enrolled']);
+    expect(enqueued.length, 1);
+    expect(jsonDecode(enqueued.single['payload_json'] as String)['role'],
+        DeviceRole.parentDevice.name);
     await database.close();
   });
 }

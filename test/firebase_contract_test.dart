@@ -254,4 +254,33 @@ void main() {
             idempotencyKey: 'accept-event-invalid'),
         throwsA(isA<FormatException>()));
   });
+  test('SOS transitions and incident acknowledgement map to rules-allowed document updates',
+      () {
+    const child = AuthenticatedIdentity(
+        uid: 'child-uid', email: 'child@example.test', isAnonymous: false);
+    final contract = FirestoreEventContract();
+    // SOS lifecycle transitions update the sos document itself (rules:
+    // `allow update: if parent(familyId) && resource.data.familyId == familyId`).
+    final sosSynced = contract.businessMutation(
+        operation: 'sos.synced',
+        payload: {'familyId': 'family-1', 'sosEventId': 'sos-1'},
+        identity: child,
+        idempotencyKey: 'sos-sync-event');
+    expect(sosSynced.path, 'families/family-1/sos/sos-1');
+    expect(sosSynced.data['status'], 'synced');
+    final sosNotified = contract.businessMutation(
+        operation: 'sos.notified',
+        payload: {'familyId': 'family-1', 'sosEventId': 'sos-1'},
+        identity: child,
+        idempotencyKey: 'sos-notify-event');
+    expect(sosNotified.data['status'], 'notified');
+    // Incident acknowledgement updates the incident document status.
+    final acknowledged = contract.businessMutation(
+        operation: 'incident.acknowledged',
+        payload: {'familyId': 'family-1', 'incidentId': 'incident-1'},
+        identity: child,
+        idempotencyKey: 'incident-ack-event');
+    expect(acknowledged.path, 'families/family-1/incidents/incident-1');
+    expect(acknowledged.data['status'], 'acknowledged');
+  });
 }
