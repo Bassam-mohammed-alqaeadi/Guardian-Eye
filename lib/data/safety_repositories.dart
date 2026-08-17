@@ -25,7 +25,9 @@ class IncidentRepository {
         confidence: observation.confidence,
         status: IncidentState.localPending,
         observedAt: observation.observedAt,
-        modelVersion: observation.modelVersion);
+        modelVersion: observation.modelVersion,
+        deviceId: observation.deviceId,
+        actorUid: observation.actorUid);
     final db = await _database.database;
     await db.transaction((tx) async {
       await tx.insert('incidents', {
@@ -38,6 +40,8 @@ class IncidentRepository {
         'status': incident.status.storageKey,
         'observed_at': incident.observedAt.toIso8601String(),
         'model_version': incident.modelVersion,
+        'device_id': incident.deviceId,
+        'actor_uid': incident.actorUid,
         'created_at': DateTime.now().toUtc().toIso8601String()
       });
       await _enqueue(tx,
@@ -52,7 +56,10 @@ class IncidentRepository {
             'confidence': incident.confidence,
             'source': observation.source,
             'observedAt': incident.observedAt.toIso8601String(),
-            'modelVersion': incident.modelVersion
+            'modelVersion': incident.modelVersion,
+            // Identity fields — required for Firestore authorization:
+            if (incident.deviceId != null) 'deviceId': incident.deviceId,
+            if (incident.actorUid != null) 'actorUid': incident.actorUid,
           });
       await _requestNotification(tx,
           familyId: familyId, incidentId: incident.id, kind: 'incident');

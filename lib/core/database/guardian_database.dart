@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 13,
+        version: 14,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -56,7 +56,7 @@ class GuardianDatabase {
     batch.execute(
         'CREATE TABLE policy_overrides(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), target TEXT NOT NULL, allowed INTEGER NOT NULL, expires_at TEXT NOT NULL, revoked_at TEXT, created_by_member_id TEXT NOT NULL, child_device_id TEXT REFERENCES devices(id), created_at TEXT NOT NULL)');
     batch.execute(
-        'CREATE TABLE incidents(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), category TEXT NOT NULL, severity TEXT NOT NULL, confidence REAL NOT NULL, source TEXT NOT NULL, evidence_reference TEXT, status TEXT NOT NULL, observed_at TEXT NOT NULL, model_version TEXT NOT NULL, created_at TEXT NOT NULL)');
+        'CREATE TABLE incidents(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), category TEXT NOT NULL, severity TEXT NOT NULL, confidence REAL NOT NULL, source TEXT NOT NULL, evidence_reference TEXT, status TEXT NOT NULL, observed_at TEXT NOT NULL, model_version TEXT NOT NULL, device_id TEXT, actor_uid TEXT, created_at TEXT NOT NULL)');
     batch.execute(
         'CREATE TABLE pairing_sessions(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), target_member_id TEXT, code_hash TEXT NOT NULL, requested_role TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', failure_count INTEGER NOT NULL DEFAULT 0, verified_at TEXT, enrolled_device_id TEXT, expires_at TEXT NOT NULL, revoked_at TEXT, created_at TEXT NOT NULL)');
     batch.execute(
@@ -215,6 +215,13 @@ class GuardianDatabase {
           'CREATE TABLE child_enforcement_states(id TEXT PRIMARY KEY, device_id TEXT NOT NULL REFERENCES devices(id), family_id TEXT NOT NULL REFERENCES families(id), state TEXT NOT NULL, outcome TEXT, reason TEXT NOT NULL, decided_at TEXT NOT NULL, applied_at TEXT, policy_version INTEGER, enqueued_for_sync INTEGER NOT NULL DEFAULT 0)');
       await db.execute(
           'CREATE INDEX idx_enforcement_states_device_time ON child_enforcement_states(device_id, decided_at DESC)');
+    }
+    if (oldVersion < 14) {
+      // Add device identity fields to incidents for Firestore authorization.
+      // SQLite ALTER TABLE only supports ADD COLUMN — no-op if already present
+      // (new installs hit onCreate, not onUpgrade).
+      await db.execute('ALTER TABLE incidents ADD COLUMN device_id TEXT');
+      await db.execute('ALTER TABLE incidents ADD COLUMN actor_uid TEXT');
     }
   }
 }

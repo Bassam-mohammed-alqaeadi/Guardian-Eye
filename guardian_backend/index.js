@@ -326,7 +326,118 @@ function createApp({ auth, db }) {
     }
   });
 
+  /**
+   * POST /api/notify
+   * Delivers a push notification to all active parent devices in a family.
+   *
+   * Request body:
+   *   { familyId, kind, incidentId?, sosId?, title, body }
+   *
+   * Authorization: caller must be an active member of the family (verified
+   * via Firebase ID token + Firestore member check).
+   *
+   * Delivery:
+   *   1. Reads all active FCM tokens from families/{familyId}/devices/{*}/notification_tokens
+   *   2. Filters to parent-role devices (parentDevice, coParentDevice, spouseDevice)
+   *   3. Sends via Firebase Admin Messaging (sendEachForMulticast)
+   *   4. Removes tokens that Firebase reports as invalid/unregistered
+   *   5. Returns delivery evidence: { sent, failed, invalidTokensRemoved }
+   */
+  app.post('/api/notify', requireAuth, async (req, res, next) => {
+    try {
+      const callerUid = req.uid;
+      const { familyId, kind, title, body, incidentId, sosId } = req.body || {};
+      if (!familyId || !kind || !title || !body) {
+        throw new HttpError(400, 'invalid_request', 'familyId, kind, title, and body are required');
+      }
+
+      // Authorization: caller must be an active member of this family.
+      const memberRef = db.collection('families').doc(familyId).collection('members').doc(callerUid);
+      const memberSnap = await memberRef.get();
+      if (!memberSnap.exists || memberSnap.data().status !== 'active') {
+        throw new HttpError(403, 'not_a_member', 'Caller is not an active member of this family');
+      }
+
+      // Collect all active FCM tokens for parent-role devices in this family.
+      const PARENT_DEVICE_ROLES = new Set(['parentDevice', 'coParentDevice', 'spouseDevice']);
+      const devicesSnap = await db.collection('families').doc(familyId).collection('devices').get();
+
+      const tokenEntries = []; // { token, tokenDocPath }
+      await Promise.all(
+        devicesSnap.docs
+          .filter(d => PARENT_DEVICE_ROLES.has(d.data().role) && d.data().status === 'active')
+          .map(async deviceDoc => {
+            const tokensSnap = await deviceDoc.ref.collection('notification_tokens')
+              .where('status', '==', 'active')
+              .get();
+            tokensSnap.docs.forEach(t => {
+              if (t.data().token) {
+                tokenEntries.push({ token: t.data().token, tokenDocRef: t.ref });
+              }
+            });
+          })
+      );
+
+      if (tokenEntries.length === 0) {
+        return res.status(200).json({ sent: 0, failed: 0, invalidTokensRemoved: 0, reason: 'no_tokens' });
+      }
+
+      const messaging = require('firebase-admin/messaging').getMessaging();
+      const multicastMessage = {
+        tokens: tokenEntries.map(e => e.token),
+        notification: { title: String(title), body: String(body) },
+        data: {
+          kind,
+          familyId,
+          ...(incidentId ? { incidentId } : {}),
+          ...(sosId ? { sosId } : {}),
+        },
+        android: { priority: kind === 'sos' ? 'high' : 'normal' },
+        apns: { headers: { 'apns-priority': kind === 'sos' ? '10' : '5' } },
+      };
+
+      const response = await messaging.sendEachForMulticast(multicastMessage);
+
+      // Remove stale tokens reported as invalid by FCM.
+      const STALE_CODES = new Set(['messaging/invalid-registration-token', 'messaging/registration-token-not-registered']);
+      let invalidTokensRemoved = 0;
+      const removeOps = [];
+      response.responses.forEach((r, idx) => {
+        if (!r.success && r.error && STALE_CODES.has(r.error.code)) {
+          removeOps.push(
+            tokenEntries[idx].tokenDocRef.update({ status: 'invalid', invalidatedAt: new Date().toISOString() })
+          );
+          invalidTokensRemoved++;
+        }
+      });
+      await Promise.all(removeOps);
+
+      // Record delivery evidence in Firestore for audit.
+      const evidenceRef = db.collection('families').doc(familyId).collection('notification_events').doc();
+      await evidenceRef.set({
+        familyId,
+        kind,
+        ...(incidentId ? { incidentId } : {}),
+        ...(sosId ? { sosId } : {}),
+        callerUid,
+        sentCount: response.successCount,
+        failedCount: response.failureCount,
+        invalidTokensRemoved,
+        deliveredAt: new Date().toISOString(),
+      });
+
+      return res.status(200).json({
+        sent: response.successCount,
+        failed: response.failureCount,
+        invalidTokensRemoved,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // Central error handler: honest, structured error codes.
+
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
     if (err instanceof HttpError) {

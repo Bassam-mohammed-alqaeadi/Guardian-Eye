@@ -187,7 +187,9 @@ class GuardianIncident {
       required this.confidence,
       required this.status,
       required this.observedAt,
-      required this.modelVersion});
+      required this.modelVersion,
+      this.deviceId,
+      this.actorUid});
   final String id;
   final String familyId;
   final SafetyCategory category;
@@ -196,6 +198,11 @@ class GuardianIncident {
   final IncidentState status;
   final DateTime observedAt;
   final String modelVersion;
+  /// Local SQLite device UUID that produced this incident.
+  /// Required by Firestore security rules for activeOwnedDevice authorization.
+  final String? deviceId;
+  /// Firebase Auth UID of the actor writing the incident to Firestore.
+  final String? actorUid;
   factory GuardianIncident.fromMap(Map<String, Object?> map) =>
       GuardianIncident(
           id: map['id']! as String,
@@ -205,7 +212,9 @@ class GuardianIncident {
           confidence: (map['confidence']! as num).toDouble(),
           status: IncidentState.values.byName(map['status']! as String),
           observedAt: DateTime.parse(map['observed_at']! as String),
-          modelVersion: map['model_version']! as String);
+          modelVersion: map['model_version']! as String,
+          deviceId: map['device_id'] as String?,
+          actorUid: map['actor_uid'] as String?);
 }
 
 class PairingRequest {
@@ -270,10 +279,17 @@ class SafetyObservation {
       required this.confidence,
       required this.source,
       required this.observedAt,
-      required this.modelVersion});
+      required this.modelVersion,
+      this.deviceId,
+      this.actorUid});
   final SafetyCategory category;
   final double confidence;
   final String source;
   final DateTime observedAt;
   final String modelVersion;
+  /// SQLite device UUID of the child device producing this observation.
+  /// Required for Firestore activeOwnedDevice authorization.
+  final String? deviceId;
+  /// Firebase Auth UID of the actor submitting this observation to Firestore.
+  final String? actorUid;
 }

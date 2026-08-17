@@ -89,7 +89,34 @@ class FakeStore {
               },
             };
           },
+          async get() {
+            const docs = [];
+            for (const [id, data] of store._col(name)) {
+              if (op === '==' && data[field] === value) {
+                docs.push({
+                  exists: true,
+                  id,
+                  data: () => ({ ...data }),
+                  ref: store.collection(name).doc(id),
+                });
+              }
+            }
+            return { docs, empty: docs.length === 0 };
+          },
         };
+      },
+      async get() {
+        const docs = [];
+        for (const [id, data] of store._col(name)) {
+          const ref = store.collection(name).doc(id);
+          docs.push({
+            exists: true,
+            id,
+            data: () => ({ ...data }),
+            ref,
+          });
+        }
+        return { docs, empty: docs.length === 0 };
       },
     };
   }
@@ -124,20 +151,55 @@ class FakeStore {
   }
 }
 
+/**
+ * Fake Firebase Messaging for /api/notify tests.
+ * inject via module-level mock before createApp().
+ */
+class FakeMessaging {
+  constructor({ responses } = {}) {
+    // responses: array of { success, error? } per token
+    this.responses = responses || [];
+    this.lastMulticast = null;
+  }
+
+  async sendEachForMulticast(message) {
+    this.lastMulticast = message;
+    const responses = this.responses.length
+      ? this.responses
+      : message.tokens.map(() => ({ success: true, messageId: 'msg-1' }));
+    const successCount = responses.filter(r => r.success).length;
+    const failureCount = responses.length - successCount;
+    return { responses, successCount, failureCount };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Harness
 // ---------------------------------------------------------------------------
 
-async function withServer(fn) {
+async function withServer(fn, { messagingResponses } = {}) {
   const auth = new FakeAuth();
   const db = new FakeStore();
+  const fakeMessaging = new FakeMessaging({ responses: messagingResponses });
+
+  // Patch require('firebase-admin/messaging') for the notify endpoint.
+  const Module = await import('node:module');
+  const originalLoad = Module.default._load;
+  Module.default._load = function(request, ...rest) {
+    if (request === 'firebase-admin/messaging') {
+      return { getMessaging: () => fakeMessaging };
+    }
+    return originalLoad.call(this, request, ...rest);
+  };
+
   const app = createApp({ auth, db });
   const server = app.listen(0);
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
-    await fn({ base, auth, db });
+    await fn({ base, auth, db, fakeMessaging });
   } finally {
+    Module.default._load = originalLoad;
     server.close();
   }
 }
@@ -556,4 +618,124 @@ test('generateCode always returns a 6-digit code', () => {
   for (let i = 0; i < 500; i++) {
     assert.match(generateCode(), /^\d{6}$/);
   }
+});
+
+// ---------------------------------------------------------------------------
+// /api/notify tests
+// ---------------------------------------------------------------------------
+
+test('POST /api/notify — rejects unauthenticated request', async () => {
+  await withServer(async ({ base }) => {
+    const res = await post(base, '/api/notify', {
+      body: { familyId: 'fam-1', kind: 'incident', title: 'Alert', body: 'Test' },
+    });
+    assert.equal(res.status, 401);
+  });
+});
+
+test('POST /api/notify — rejects non-member caller', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    const strangerToken = auth.addUser('stranger-uid');
+    const res = await post(base, '/api/notify', {
+      token: strangerToken,
+      body: { familyId: 'fam-1', kind: 'incident', title: 'Alert', body: 'Test' },
+    });
+    assert.equal(res.status, 403);
+    assert.equal((await res.json()).error, 'not_a_member');
+  });
+});
+
+test('POST /api/notify — returns no_tokens when family has no FCM registrations', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'incident', title: 'Alert', body: 'Incident detected' },
+    });
+    assert.equal(res.status, 200);
+    const json = await res.json();
+    assert.equal(json.sent, 0);
+    assert.equal(json.reason, 'no_tokens');
+  });
+});
+
+test('POST /api/notify — delivers to parent device FCM token', async () => {
+  await withServer(async ({ base, auth, db, fakeMessaging }) => {
+    seedFamily(db);
+    // Register a parent device with an active FCM token.
+    const familyDevicesCol = `families/fam-1/devices`;
+    db.collection(familyDevicesCol).doc('dev-parent').set({
+      role: 'parentDevice',
+      status: 'active',
+      memberUid: 'parent-1',
+    });
+    db.collection(`${familyDevicesCol}/dev-parent/notification_tokens`).doc('tok-1').set({
+      token: 'fcm-token-abc',
+      status: 'active',
+      userUid: 'parent-1',
+    });
+
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: {
+        familyId: 'fam-1',
+        kind: 'incident',
+        incidentId: 'inc-1',
+        title: 'Safety Alert',
+        body: 'A safety incident was detected.',
+      },
+    });
+    assert.equal(res.status, 200);
+    const json = await res.json();
+    assert.equal(json.sent, 1);
+    assert.equal(json.failed, 0);
+    // Verify the multicast message was sent with the correct token.
+    assert.deepEqual(fakeMessaging.lastMulticast.tokens, ['fcm-token-abc']);
+    assert.equal(fakeMessaging.lastMulticast.data.kind, 'incident');
+    assert.equal(fakeMessaging.lastMulticast.data.incidentId, 'inc-1');
+  });
+});
+
+test('POST /api/notify — marks stale tokens invalid after FCM rejection', async () => {
+  await withServer(
+    async ({ base, auth, db }) => {
+      seedFamily(db);
+      db.collection('families/fam-1/devices').doc('dev-parent').set({
+        role: 'parentDevice',
+        status: 'active',
+        memberUid: 'parent-1',
+      });
+      db.collection('families/fam-1/devices/dev-parent/notification_tokens').doc('tok-stale').set({
+        token: 'stale-fcm-token',
+        status: 'active',
+        userUid: 'parent-1',
+      });
+
+      const parentToken = auth.addUser('parent-1');
+      const res = await post(base, '/api/notify', {
+        token: parentToken,
+        body: { familyId: 'fam-1', kind: 'sos', title: 'SOS', body: 'Child needs help!' },
+      });
+      assert.equal(res.status, 200);
+      const json = await res.json();
+      assert.equal(json.invalidTokensRemoved, 1);
+      assert.equal(json.sent, 0);
+
+      // Verify the token document was marked invalid.
+      const tokenSnap = await db
+        .collection('families/fam-1/devices/dev-parent/notification_tokens')
+        .doc('tok-stale')
+        .get();
+      assert.equal(tokenSnap.data().status, 'invalid');
+    },
+    {
+      messagingResponses: [{
+        success: false,
+        error: { code: 'messaging/registration-token-not-registered' },
+      }],
+    }
+  );
 });

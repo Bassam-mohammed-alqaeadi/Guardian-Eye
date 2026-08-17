@@ -183,6 +183,10 @@ class FirestoreEventContract {
               'source': payload['source'],
               'observedAtClient': payload['observedAt'],
               'modelVersion': payload['modelVersion'],
+              // deviceId — required by Firestore activeOwnedDevice rule.
+              // actorUid — identifies the authenticated writer for audit.
+              if (payload['deviceId'] != null) 'deviceId': payload['deviceId'],
+              if (payload['actorUid'] != null) 'actorUid': payload['actorUid'],
               'status': 'queued'
             });
       case 'sos.created':
@@ -197,6 +201,7 @@ class FirestoreEventContract {
               ...common,
               'sosId': sosId,
               'deviceId': payload['deviceId'],
+              'actorUid': payload['actorUid'],
               'status': 'queued',
               'latitude': payload['latitude'],
               'longitude': payload['longitude'],

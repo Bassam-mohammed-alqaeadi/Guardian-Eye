@@ -158,13 +158,29 @@ service cloud.firestore {
       match /device_pairings/{pairingId} { allow read, write: if false; }
       match /incidents/{incidentId} {
         allow read: if parent(familyId);
-        allow create: if activeOwnedDevice(familyId, request.resource.data.deviceId);
+        // Incidents may be written by:
+        //   a) A child device that owns itself (activeOwnedDevice) — AI/detection path.
+        //   b) Any active family member (activeMember) — parent-side observation.
+        // Family isolation is enforced in both branches via familyId field.
+        allow create: if (
+            activeMember(familyId)
+            && request.resource.data.familyId == familyId
+          ) || (
+            activeOwnedDevice(familyId, request.resource.data.deviceId)
+          );
         allow update: if parent(familyId) && resource.data.familyId == familyId;
         allow delete: if owner(familyId);
       }
       match /sos/{sosId} {
         allow read: if parent(familyId);
-        allow create: if activeOwnedDevice(familyId, request.resource.data.deviceId);
+        // SOS may be written by an active child-owned device OR any active member.
+        allow create: if (
+            activeMember(familyId)
+            && request.resource.data.familyId == familyId
+          ) || (
+            request.resource.data.deviceId is string
+            && activeOwnedDevice(familyId, request.resource.data.deviceId)
+          );
         allow update: if parent(familyId) && resource.data.familyId == familyId;
         allow delete: if false;
       }
