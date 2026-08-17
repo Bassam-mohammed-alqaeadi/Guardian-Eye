@@ -24,6 +24,7 @@ class AppLocalizations {
       'permissions': 'الأذونات',
       'noChildren': 'لم تُضف ملفات أطفال بعد.',
       'noFamily': 'ابدأ بإعداد عائلتك. لا تُنشأ أي بيانات تجريبية.',
+      'familyDecisionCenter': 'مركز القرار العائلي',
       'offlineFirst':
           'البيانات تُحفظ محليًا أولًا، وتبقى المزامنة متوقفة حتى إعداد Firebase.',
       'pairingRequest': 'طلب ربط محلي',
@@ -430,6 +431,11 @@ class AppLocalizations {
       ,'m8SyncedNow': 'آخر مزامنة: الآن'
       ,'m8SyncPending': 'بانتظار المزامنة'
       ,'m8SyncFailed': 'فشلت المزامنة'
+      ,'loading': 'جارٍ التحميل...'
+      ,'nothingHereYet': 'لا يوجد شيء هنا بعد.'
+      ,'offlineMode': 'أنت غير متصل بالإنترنت حاليًا.'
+      ,'offlineChangesSaved': 'تُسجَّل التغييرات محليًا وتُزامن تلقائيًا عند العودة.'
+      ,'somethingWentWrong': 'حدث خطأ غير متوقع. جرّب مرة أخرى.'
     },
     'en': {
       'appTitle': 'Guardian Eye Pro',
@@ -448,6 +454,7 @@ class AppLocalizations {
       'permissions': 'Permissions',
       'noChildren': 'No child profiles have been added.',
       'noFamily': 'Start by setting up your family. No sample data is created.',
+      'familyDecisionCenter': 'Family Decision Center',
       'offlineFirst':
           'Data is stored locally first. Sync remains unavailable until Firebase is configured.',
       'pairingRequest': 'Local pairing request',
@@ -856,6 +863,11 @@ class AppLocalizations {
       ,'m8SyncedNow': 'Last sync: now'
       ,'m8SyncPending': 'Pending sync'
       ,'m8SyncFailed': 'Sync failed'
+      ,'loading': 'Loading...'
+      ,'nothingHereYet': 'Nothing here yet.'
+      ,'offlineMode': 'You are currently offline.'
+      ,'offlineChangesSaved': 'Changes are saved locally and sync automatically when you are back.'
+      ,'somethingWentWrong': 'Something went wrong. Please try again.'
     },
   };
   String t(String key) => _values[locale.languageCode]?[key] ?? key;

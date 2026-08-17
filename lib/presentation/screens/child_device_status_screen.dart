@@ -7,7 +7,7 @@ import '../../core/platform/capability_gateway.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../domain/guardian_models.dart';
 import '../../application/family_context_provider.dart';
-import 'permissions_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class ChildDeviceStatusScreen extends ConsumerWidget {
   const ChildDeviceStatusScreen({required this.familyId, super.key});
@@ -55,9 +55,7 @@ class ChildDeviceStatusScreen extends ConsumerWidget {
                             _DeviceCard(state: state, familyId: familyId)),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
-                          onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const PermissionsScreen())),
+                          onPressed: () => context.push('/safety/permissions'),
                           icon: const Icon(Icons.tune),
                           label: Text(l10n.t('permissions')))
                     ])))));

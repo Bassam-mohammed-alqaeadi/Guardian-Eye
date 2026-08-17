@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
-import 'firebase_session_screen.dart';
 import 'package:go_router/go_router.dart';
 
 /// The single settings surface for Guardian Eye Pro.
@@ -29,8 +28,7 @@ class SettingsScreen extends ConsumerWidget {
             Card.filled(
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const FirebaseSessionScreen())),
+                onTap: () => context.push('/firebase-session'),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(children: [

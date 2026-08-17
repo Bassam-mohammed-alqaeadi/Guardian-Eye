@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/child_device_enforcement.dart';
@@ -26,8 +28,7 @@ class FamilyDailySafetyScreen extends ConsumerWidget {
                 actions: [
                   IconButton(
                       tooltip: l10n.t('safetyTimeline'),
-                      onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => FamilySafetyTimelineScreen(familyId: familyId))),
+                      onPressed: () => context.push('/timeline/$familyId'),
                       icon: const Icon(Icons.history_outlined))
                 ]),
             body: snapshots.when(
@@ -43,8 +44,7 @@ class FamilyDailySafetyScreen extends ConsumerWidget {
                       _Notice(text: l10n.t('exceptionUnsupportedNotice')),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
-                          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => ParentExceptionRequestsScreen(familyId: familyId))),
+                      onPressed: () => context.push('/requests/$familyId'),
                           icon: const Icon(Icons.inbox_outlined),
                           label: Text(l10n.t('reviewRequests'))),
                       const SizedBox(height: 12),

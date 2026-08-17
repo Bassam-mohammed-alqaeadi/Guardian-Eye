@@ -117,8 +117,10 @@ void main() {
         (tester) async {
       await _pump(tester);
       // The shell theme is the canonical AppTheme (Cairo, Material3),
-      // never an inline theme.
-      final ThemeData theme = Theme.of(tester.element(find.byType(Scaffold)));
+      // never an inline theme. The platform shell (GuardianBottomNav)
+      // now wraps screens in its own Scaffold, so the screen scaffold
+      // is the last one in the tree.
+      final ThemeData theme = Theme.of(tester.element(find.byType(Scaffold).last));
       expect(theme.textTheme.bodyMedium?.fontFamily ?? theme.textTheme.titleMedium?.fontFamily,
           'Cairo');
       expect(find.text('Guardian Eye Pro'), findsOneWidget);

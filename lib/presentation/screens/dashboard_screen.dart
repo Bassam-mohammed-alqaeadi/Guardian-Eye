@@ -7,6 +7,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../domain/guardian_models.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../application/family_context_provider.dart';
+import '../widgets/guardian_primitives.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -144,11 +145,30 @@ class _Dashboard extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(data.family!.name,
-              style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 4),
-          Text(l10n.t('offlineFirst'),
-              style: Theme.of(context).textTheme.bodyMedium),
+          GuardianHeroCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.t('familyDecisionCenter'),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(color: Colors.white)),
+                const SizedBox(height: 6),
+                Text(data.family!.name,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(color: Colors.white)),
+                const SizedBox(height: 6),
+                Text(l10n.t('offlineFirst'),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: Colors.white70)),
+              ],
+            ),
+          ),
           if (!verifiedActor) ...[
             const SizedBox(height: 12),
             Card(
@@ -162,23 +182,31 @@ class _Dashboard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                  child: _Metric(
-                      icon: Icons.people_outline,
-                      label: l10n.t('children'),
-                      value: '${data.children.length}')),
+                child: GuardianStatTile(
+                    icon: Icons.people_outline,
+                    value: '${data.children.length}',
+                    label: l10n.t('children')),
+              ),
               const SizedBox(width: 12),
               Expanded(
-                  child: _Metric(
-                      icon: Icons.warning_amber_rounded,
-                      label: l10n.t('incidentsToday'),
-                      value: '${data.incidentsToday}')),
+                child: GuardianStatTile(
+                    icon: Icons.warning_amber_rounded,
+                    value: '${data.incidentsToday}',
+                    label: l10n.t('incidentsToday'),
+                    kind: data.incidentsToday > 0
+                        ? GuardianStatusKind.watch
+                        : GuardianStatusKind.safe),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          _Metric(
+          GuardianStatTile(
               icon: Icons.sync_problem_outlined,
+              value: '${data.queuedOperations}',
               label: l10n.t('syncQueue'),
-              value: '${data.queuedOperations}'),
+              kind: data.queuedOperations > 0
+                  ? GuardianStatusKind.watch
+                  : GuardianStatusKind.safe),
           const SizedBox(height: 12),
           _FamilyIdentityCard(
               family: data.family!,
@@ -364,25 +392,22 @@ class _Metric extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: Theme.of(context).textTheme.bodyMedium),
-                    Text(value,
-                        style: Theme.of(context).textTheme.headlineSmall)
-                  ],
-                ),
+  Widget build(BuildContext context) => GuardianCard(
+        child: Row(
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: Theme.of(context).textTheme.bodyMedium),
+                  Text(value,
+                      style: Theme.of(context).textTheme.headlineSmall)
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
 }
@@ -397,17 +422,10 @@ class _NavGroup extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelLarge
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 10, runSpacing: 10, children: children),
-        ],
+  Widget build(BuildContext context) => GuardianSection(
+        title: label,
+        spacing: 10,
+        children: [Wrap(spacing: 10, runSpacing: 10, children: children)],
       );
 }
 
@@ -426,12 +444,10 @@ class _FamilyIdentityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return Card(
+    return GuardianCard(
       child: Semantics(
         label: l10n.t('familyIdentity'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(l10n.t('familyIdentity'),
@@ -459,7 +475,6 @@ class _FamilyIdentityCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -523,21 +538,9 @@ class _SafetySignalError extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              const Icon(Icons.error_outline),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: Text(AppLocalizations.of(context).t('noData'))),
-              TextButton(
-                  onPressed: onRetry,
-                  child: Text(AppLocalizations.of(context).t('retry'))),
-            ],
-          ),
-        ),
+  Widget build(BuildContext context) => GuardianStateView(
+        state: GuardianViewState.error,
+        onRetry: onRetry,
       );
 }
 
@@ -572,10 +575,10 @@ class _ChildOverview extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 8),
         if (children.isEmpty)
-          Card(
-              child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Text(l10n.t('noChildren'))))
+          GuardianStateView(
+            state: GuardianViewState.empty,
+            message: l10n.t('noChildren'),
+          )
         else
           ...children.map((child) {
             ChildDeviceState? state;
@@ -587,7 +590,8 @@ class _ChildOverview extends StatelessWidget {
             }
             final devicePresent = state != null;
             final lifecycleName = state?.lifecycle.name ?? '';
-            return Card(
+            return GuardianCard(
+              onTap: () => onOpenChild(child),
               child: Semantics(
                 label: '${child.displayName} '
                     '${devicePresent ? lifecycleName : l10n.t('noDevicesLinked')}',
@@ -619,7 +623,8 @@ class _Failure extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Center(
-      child:
-          FilledButton(onPressed: onRetry, child: const Icon(Icons.refresh)));
+  Widget build(BuildContext context) => GuardianStateView(
+        state: GuardianViewState.error,
+        onRetry: onRetry,
+      );
 }

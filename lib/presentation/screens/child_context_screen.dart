@@ -12,6 +12,7 @@ import '../../application/child_usage_measurement.dart';
 import '../../domain/guardian_models.dart';
 import '../../domain/screen_time.dart';
 import '../../domain/policy_engine.dart';
+import '../../core/theme/guardian_tokens.dart';
 
 /// The child-context vertical (M3).
 ///
@@ -231,8 +232,8 @@ class _DeviceCard extends StatelessWidget {
                       style: theme.textTheme.titleMedium),
                 ),
                 if (!canAct)
-                  const Icon(Icons.lock_outline,
-                      size: 18, color: Colors.orange),
+                  Icon(Icons.lock_outline,
+                      size: 18, color: GuardianTokens.statusWatch),
               ],
             ),
             const SizedBox(height: 10),
@@ -520,8 +521,8 @@ class _UsageMeasurementSection extends ConsumerWidget {
                     child: Text(l10n.t('m7UsageToday'),
                         style: theme.textTheme.titleMedium)),
                 if (!canAct)
-                  const Icon(Icons.lock_outline,
-                      size: 18, color: Colors.orange),
+                  Icon(Icons.lock_outline,
+                      size: 18, color: GuardianTokens.statusWatch),
               ],
             ),
             const SizedBox(height: 10),
@@ -581,8 +582,8 @@ class _EnforcementSection extends ConsumerWidget {
                     child: Text(l10n.t('m8EnforcementTitle'),
                         style: theme.textTheme.titleMedium)),
                 if (!canAct)
-                  const Icon(Icons.lock_outline,
-                      size: 18, color: Colors.orange),
+                  Icon(Icons.lock_outline,
+                      size: 18, color: GuardianTokens.statusWatch),
               ],
             ),
             const SizedBox(height: 10),
@@ -637,8 +638,8 @@ class _EnforcementCard extends StatelessWidget {
             padding: const EdgeInsets.only(top: 6),
             child: Row(
               children: [
-                const Icon(Icons.verified_outlined, size: 16,
-                    color: Colors.green),
+                Icon(Icons.verified_outlined, size: 16,
+                    color: GuardianTokens.statusSafe),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
