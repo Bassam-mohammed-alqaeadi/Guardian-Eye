@@ -912,16 +912,23 @@ Future<void> _openOverrideDialog({
                                 .textTheme
                                 .labelMedium),
                         const SizedBox(height: 8),
-                        ...durations.map((duration) => RadioListTile<
-                            Duration>(
-                                key: ValueKey('duration_${duration.inMinutes}'),
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(_durationLabel(
-                                    l10n, duration)),
-                                value: duration,
-                                groupValue: selectedDuration,
-                                onChanged: (value) => setDialogState(
-                                    () => selectedDuration = value))),
+                        RadioGroup<Duration>(
+                          groupValue: selectedDuration,
+                          onChanged: (value) => setDialogState(
+                              () => selectedDuration = value),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: durations
+                                .map((duration) => RadioListTile<Duration>(
+                                    key: ValueKey(
+                                        'duration_${duration.inMinutes}'),
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(
+                                        _durationLabel(l10n, duration)),
+                                    value: duration))
+                                .toList(),
+                          ),
+                        ),
                       ]),
                 ),
                 actions: [
