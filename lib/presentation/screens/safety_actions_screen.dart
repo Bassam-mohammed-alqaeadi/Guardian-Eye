@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 
 class SafetyActionsScreen extends ConsumerStatefulWidget {
   const SafetyActionsScreen({super.key, required this.familyId});
@@ -95,33 +97,36 @@ class _SafetyActionsScreenState extends ConsumerState<SafetyActionsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(Icons.sos,
-                      size: 48, color: Theme.of(context).colorScheme.error),
-                  const SizedBox(height: 12),
-                  Text(l10n.t('sosTitle'),
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 8),
-                  Text(l10n.t('sosDescription'), textAlign: TextAlign.center),
-                  const SizedBox(height: 18),
+          GuardianCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: GuardianIconBadge(
+                      icon: Icons.sos,
+                      background: GuardianTokens.statusSOS,
+                      size: 56),
+                ),
+                const SizedBox(height: 12),
+                Text(l10n.t('sosTitle'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                Text(l10n.t('sosDescription'), textAlign: TextAlign.center),
+                const SizedBox(height: 18),
                   FilledButton.tonalIcon(
                       onPressed: _working ? null : _sendSos,
                       icon: const Icon(Icons.sos),
                       label: Text(l10n.t('sendSos'))),
-                ],
-              ),
+              ],
             ),
           ),
           const SizedBox(height: 14),
-          Card(
+          GuardianCard(
             child: ListTile(
-              leading: const Icon(Icons.sync),
+              leading: GuardianIconBadge(
+                  icon: Icons.sync,
+                  background: GuardianTokens.guardianNavy),
               title: Text(l10n.t('syncNow')),
               subtitle: Text(l10n.t('offlineFirst')),
               trailing: FilledButton(

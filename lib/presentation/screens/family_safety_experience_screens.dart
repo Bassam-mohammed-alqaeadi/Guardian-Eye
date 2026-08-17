@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../domain/child_exception_request.dart';
 import '../../domain/family_safety_experience.dart';
@@ -68,16 +70,28 @@ class _ParentChildDailyCard extends ConsumerWidget {
         .where((override) => override.childDeviceId == null ||
             snapshot.devices.any((device) => device.deviceId == override.childDeviceId))
         .toList(growable: false);
-    return Card(
-        child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(snapshot.child.displayName, style: theme.textTheme.titleLarge),
+    return GuardianCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                GuardianIconBadge(
+                    icon: Icons.child_care_outlined,
+                    background: GuardianTokens.guardianNavy,
+                    size: 40),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(snapshot.child.displayName,
+                        style: theme.textTheme.titleLarge)),
+                GuardianStatusChip(
+                    label: '${snapshot.pendingRequests.length} '
+                        '${l10n.t('pendingRequests')}',
+                    kind: snapshot.pendingRequests.isEmpty
+                        ? GuardianStatusKind.neutral
+                        : GuardianStatusKind.watch),
+              ]),
               const SizedBox(height: 8),
               _Line(label: l10n.t('currentPolicy'), value: snapshot.policies.isEmpty
                   ? l10n.t('noActivePolicy')
                   : snapshot.policies.where((item) => item.enabled).map((item) => item.name).join(', ')),
-              _Line(label: l10n.t('pendingRequests'), value: '${snapshot.pendingRequests.length}'),
               _Line(label: l10n.t('syncQueue'), value: '${snapshot.queuedOperations}'),
               _Line(label: l10n.t('activeException'), value: overrides.isEmpty
                   ? l10n.t('noActiveException')
@@ -87,7 +101,7 @@ class _ParentChildDailyCard extends ConsumerWidget {
                 Text(l10n.t('noChildDevices'))
               else
                 ...snapshot.devices.map((device) => _ParentDeviceSummary(device: device)),
-            ])));
+            ]));
   }
 }
 
@@ -199,16 +213,30 @@ class _ParentRequestCardState extends ConsumerState<_ParentRequestCard> {
   Widget build(BuildContext context) {
     final request = widget.request;
     final l10n = AppLocalizations.of(context);
-    return Card(
-        child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(request.target, style: Theme.of(context).textTheme.titleMedium),
+    return GuardianCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                GuardianIconBadge(
+                    icon: Icons.request_quote_outlined,
+                    background: GuardianTokens.statusWatch,
+                    size: 36),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(request.target,
+                        style: Theme.of(context).textTheme.titleMedium)),
+                GuardianStatusChip(
+                    label: _requestStatusText(l10n, request.status),
+                    kind: request.status ==
+                            ChildExceptionRequestStatus.approved
+                        ? GuardianStatusKind.safe
+                        : request.status == ChildExceptionRequestStatus.pending
+                            ? GuardianStatusKind.watch
+                            : GuardianStatusKind.alert),
+              ]),
               _Line(label: l10n.t('requestDuration'), value: '${request.requestedDuration.inMinutes} min'),
               _Line(label: l10n.t('requestReason'), value: _reasonText(l10n, request.reason)),
               if (request.reasonDetail?.isNotEmpty == true)
                 _Line(label: l10n.t('reasonDetail'), value: request.reasonDetail!),
-              _Line(label: l10n.t('statusReason'), value: _requestStatusText(l10n, request.status)),
               _Line(label: l10n.t('syncQueue'), value: _syncText(l10n, request.syncState)),
               if (request.status == ChildExceptionRequestStatus.approved && request.expiresAt != null)
                 _Line(label: l10n.t('temporaryExceptionUntil'), value: request.expiresAt!.toLocal().toString()),
@@ -222,9 +250,8 @@ class _ParentRequestCardState extends ConsumerState<_ParentRequestCard> {
                   Expanded(child: FilledButton(
                       onPressed: _saving ? null : () => _review(true),
                       child: _saving ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text(l10n.t('approveRequest'))))
-                ])
-              ]
-            ])));
+                                ])              ]
+            ]));
   }
 }
 
@@ -354,13 +381,13 @@ class _PolicyExplanationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return GuardianCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(policy.name, style: Theme.of(context).textTheme.titleMedium),
       _Line(label: l10n.t('policyVersion'), value: '${policy.version}'),
       _Line(label: l10n.t('dailyLimitMinutes'), value: policy.dailyLimitMinutes == null ? l10n.t('noData') : '${policy.dailyLimitMinutes} min'),
       _Line(label: l10n.t('policyTargets'), value: policy.restrictedTargets.join(', ')),
       _Line(label: l10n.t('policyConfigured'), value: policy.enabled ? l10n.t('policyDelivered') : l10n.t('noActivePolicy'))
-    ])));
+    ]));
   }
 }
 
@@ -371,7 +398,7 @@ class _UsageExplanationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return GuardianCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(l10n.t('screenTimeToday'), style: Theme.of(context).textTheme.titleMedium),
       if (usage.isEmpty) Text(l10n.t('notMeasuredYet')) else ...usage.map((item) {
         final limit = policies.where((policy) => policy.restrictedTargets.contains(item.target) && policy.dailyLimitMinutes != null).map((policy) => policy.dailyLimitMinutes!).fold<int?>(null, (current, value) => current == null || value < current ? value : current);
@@ -381,7 +408,7 @@ class _UsageExplanationCard extends StatelessWidget {
           _Line(label: l10n.t('remainingTime'), value: remaining == null ? l10n.t('noData') : '${remaining < 0 ? 0 : remaining} min')
         ]);
       })
-    ])));
+    ]));
   }
 }
 
@@ -399,7 +426,7 @@ class _RequestForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return GuardianCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(l10n.t('requestAdditionalTime'), style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
       DropdownButtonFormField<String>(initialValue: target, decoration: InputDecoration(labelText: l10n.t('policyTargets')), items: targets.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(), onChanged: onTargetChanged),
@@ -408,7 +435,7 @@ class _RequestForm extends StatelessWidget {
       if (reason == ChildExceptionReason.other) TextField(controller: detail, decoration: InputDecoration(labelText: l10n.t('reasonDetail'))),
       const SizedBox(height: 12),
       FilledButton(onPressed: saving ? null : onSubmit, child: saving ? const CircularProgressIndicator() : Text(l10n.t('submitRequest')))
-    ])));
+    ]));
   }
 }
 
@@ -421,7 +448,7 @@ class _RequestList extends StatelessWidget {
     if (items.isEmpty) return _Notice(text: l10n.t('noRequests'));
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(l10n.t('pendingRequests'), style: Theme.of(context).textTheme.titleMedium),
-      ...items.map((item) => Card(child: ListTile(
+      ...items.map((item) => GuardianCard(child: ListTile(
           title: Text(item.target),
           subtitle: Text('${_requestStatusText(l10n, item.status)} · ${_syncText(l10n, item.syncState)}${item.expiresAt == null ? '' : ' · ${l10n.t('temporaryExceptionUntil')} ${item.expiresAt!.toLocal()}'}'))))
     ]);
@@ -476,7 +503,16 @@ class _Notice extends StatelessWidget {
   const _Notice({required this.text});
   final String text;
   @override
-  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(text)));
+  Widget build(BuildContext context) => GuardianCard(
+      color: GuardianTokens.statusWatchSoft,
+      child: Row(children: [
+        GuardianIconBadge(
+            icon: Icons.info_outline,
+            background: GuardianTokens.statusWatch,
+            size: 32),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text)),
+      ]));
 }
 
 class _Line extends StatelessWidget {
@@ -491,7 +527,9 @@ class _Retry extends StatelessWidget {
   const _Retry({required this.onRetry});
   final VoidCallback onRetry;
   @override
-  Widget build(BuildContext context) => Center(child: FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: Text(AppLocalizations.of(context).t('retry'))));
+  Widget build(BuildContext context) => GuardianStateView(
+      state: GuardianViewState.error,
+      onRetry: onRetry);
 }
 
 String _syncText(AppLocalizations l10n, SyncState state) => switch (state) {

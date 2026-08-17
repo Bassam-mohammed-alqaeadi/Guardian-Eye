@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 import '../../core/platform/capability_gateway.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../domain/guardian_models.dart';
@@ -24,32 +26,32 @@ class ChildDeviceStatusScreen extends ConsumerWidget {
             appBar: AppBar(title: Text(l10n.t('childDeviceStatus'))),
             body: states.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => Center(
-                    child: FilledButton.icon(
-                        onPressed: () =>
-                            ref.invalidate(childDeviceStatesProvider(familyId)),
-                        icon: const Icon(Icons.refresh),
-                        label: Text(l10n.t('retry')))),
+                error: (_, __) => GuardianStateView(
+                    state: GuardianViewState.error,
+                    onRetry: () =>
+                        ref.invalidate(childDeviceStatesProvider(familyId))),
                 data: (devices) => RefreshIndicator(
                     onRefresh: () async =>
                         ref.invalidate(childDeviceStatesProvider(familyId)),
                     child:
                         ListView(padding: const EdgeInsets.all(16), children: [
-                      Card(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(l10n.t('childEnforcementNotice')))),
+                      GuardianCard(
+                          color: GuardianTokens.statusWatchSoft,
+                          child: Row(children: [
+                            GuardianIconBadge(
+                                icon: Icons.info_outline,
+                                background: GuardianTokens.statusWatch,
+                                size: 36),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(l10n.t('childEnforcementNotice'))),
+                          ])),
                       const SizedBox(height: 16),
                       _CapabilitySummary(capabilities: capabilities),
                       const SizedBox(height: 16),
                       if (devices.isEmpty)
-                        Card(
-                            child: Padding(
-                                padding: const EdgeInsets.all(18),
-                                child: Text(l10n.t('noChildDevices'))))
+                        GuardianStateView(
+                            state: GuardianViewState.empty,
+                            message: l10n.t('noChildDevices'))
                       else
                         ...devices.map((state) =>
                             _DeviceCard(state: state, familyId: familyId)),
@@ -73,23 +75,24 @@ class _CapabilitySummary extends StatelessWidget {
         loading: () => const Card(
             child: Padding(
                 padding: EdgeInsets.all(16), child: LinearProgressIndicator())),
-        error: (_, __) => Card(
-            child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(l10n.t('capabilityNotReady')))),
+        error: (_, __) => GuardianCard(
+            color: GuardianTokens.statusAlertSoft,
+            child: Text(l10n.t('capabilityNotReady'))),
         data: (items) {
           final usage = items.where(
               (item) => item.capability == GuardianCapability.usageStats);
           final ready = usage.isNotEmpty &&
               usage.single.granted &&
               usage.single.supported;
-          return Card(
+          return GuardianCard(
               child: ListTile(
-                  leading: Icon(
-                      ready ? Icons.verified_outlined : Icons.info_outline,
-                      color: ready
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.tertiary),
+                  leading: GuardianIconBadge(
+                      icon: ready
+                          ? Icons.verified_outlined
+                          : Icons.info_outline,
+                      background: ready
+                          ? GuardianTokens.statusSafe
+                          : GuardianTokens.statusWatch),
                   title: Text(l10n.t('usageStats')),
                   subtitle: Text(ready
                       ? l10n.t('usageStatsReady')
@@ -120,14 +123,14 @@ class _DeviceCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final usage = ref.watch(childUsageForTodayProvider(state.deviceId));
-    return Card(
-        child: Padding(
-            padding: const EdgeInsets.all(16),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return GuardianCard(
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Icon(Icons.phonelink_lock_outlined,
-                    color: theme.colorScheme.primary),
+                GuardianIconBadge(
+                    icon: Icons.phonelink_lock_outlined,
+                    background: GuardianTokens.guardianNavy,
+                    size: 36),
                 const SizedBox(width: 8),
                 Expanded(
                     child: Text(_lifecycle(l10n),
@@ -195,7 +198,7 @@ class _DeviceCard extends ConsumerWidget {
               if (state.failureCode != null)
                 _StatusLine(
                     label: l10n.t('statusReason'), value: state.failureCode!)
-            ])));
+            ]));
   }
 }
 

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 import '../../domain/guardian_models.dart';
 import '../../domain/policy_engine.dart';
 
@@ -325,22 +327,23 @@ class _SafetyPoliciesScreenState extends ConsumerState<SafetyPoliciesScreen> {
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: FilledButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: Text(l10n.t('retry'))))
+                ? GuardianStateView(
+                    state: GuardianViewState.error,
+                    onRetry: _load)
                 : RefreshIndicator(
                     onRefresh: _load,
                     child:
                         ListView(padding: const EdgeInsets.all(16), children: [
-                      Card(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(l10n.t('policyNotDeviceEnforced')))),
+                      GuardianCard(
+                          color: GuardianTokens.statusWatchSoft,
+                          child: Row(children: [
+                            GuardianIconBadge(
+                                icon: Icons.info_outline,
+                                background: GuardianTokens.statusWatch,
+                                size: 36),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(l10n.t('policyNotDeviceEnforced'))),
+                          ])),
                       const SizedBox(height: 16),
                       Text(l10n.t('policyExplanation'),
                           style: Theme.of(context).textTheme.titleLarge),
@@ -355,25 +358,40 @@ class _SafetyPoliciesScreenState extends ConsumerState<SafetyPoliciesScreen> {
                           onChanged: (value) => setState(() =>
                               _decisionTarget = value ?? _decisionTarget)),
                       const SizedBox(height: 8),
-                      Card(
-                          child: ListTile(
-                              leading: Icon(
-                                  decision.restricted
-                                      ? Icons.block
-                                      : Icons.verified_outlined,
-                                  color: decision.restricted
-                                      ? Theme.of(context).colorScheme.error
-                                      : Theme.of(context).colorScheme.primary),
-                              title:
-                                  Text(decision.reason == 'temporary_override'
-                                      ? l10n.t('allowedByOverride')
-                                      : decision.restricted
-                                          ? l10n.t('restrictedByPolicy')
-                                          : l10n.t('noActivePolicy')),
-                              subtitle: override == null
-                                  ? null
-                                  : Text(
-                                      '${l10n.t('overrideUntil')}: ${override.expiresAt.toLocal()}'))),
+                      GuardianCard(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  GuardianIconBadge(
+                                      icon: decision.restricted
+                                          ? Icons.block
+                                          : Icons.verified_outlined,
+                                      background: decision.restricted
+                                          ? GuardianTokens.statusAlert
+                                          : GuardianTokens.statusSafe,
+                                      size: 36),
+                                  const SizedBox(width: 10),
+                                  GuardianStatusChip(
+                                      label: decision.reason ==
+                                              'temporary_override'
+                                          ? l10n.t('allowedByOverride')
+                                          : decision.restricted
+                                              ? l10n.t('restrictedByPolicy')
+                                              : l10n.t('noActivePolicy'),
+                                      kind: decision.restricted
+                                          ? GuardianStatusKind.alert
+                                          : GuardianStatusKind.safe),
+                                ]),
+                                if (override != null) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                      '${l10n.t('overrideUntil')}: ${override.expiresAt.toLocal()}',
+                                      style: l10n.isRtl
+                                          ? null
+                                          : null),
+                                ],
+                              ])),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                           onPressed: _createOneHourOverride,
@@ -384,17 +402,18 @@ class _SafetyPoliciesScreenState extends ConsumerState<SafetyPoliciesScreen> {
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       if (_policies.isEmpty)
-                        Card(
-                            child: Padding(
-                                padding: const EdgeInsets.all(18),
-                                child: Text(l10n.t('noPolicies'))))
+                        GuardianStateView(
+                            state: GuardianViewState.empty,
+                            message: l10n.t('noPolicies'))
                       else
-                        ..._policies.map((policy) => Card(
+                        ..._policies.map((policy) => GuardianCard(
                             child: ListTile(
                                 onTap: () => _openEditor(policy),
-                                leading: Icon(policy.enabled
-                                    ? Icons.shield_outlined
-                                    : Icons.shield_outlined),
+                                leading: GuardianIconBadge(
+                                    icon: Icons.shield_outlined,
+                                    background: policy.enabled
+                                        ? GuardianTokens.guardianNavy
+                                        : GuardianTokens.statusOffline),
                                 title: Text(policy.name),
                                 subtitle: Text(
                                     '${_timeLabel(context, policy.startMinute)} – ${_timeLabel(context, policy.endMinute)} · ${l10n.t('priority')}: ${policy.priority}${policy.dailyLimitMinutes == null ? '' : ' · ${l10n.t('dailyLimitMinutes')}: ${policy.dailyLimitMinutes}'}\n${policy.restrictedTargets.map((target) => _targetLabel(l10n, target)).join(', ')} · ${_syncLabel(l10n, policy.syncState)}'),

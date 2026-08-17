@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 import '../../domain/family_authorization.dart';
 import '../../domain/guardian_models.dart';
 
@@ -44,7 +46,8 @@ class FamilyMembersScreen extends ConsumerWidget {
         ),
         body: members.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => _Failure(
+          error: (_, __) => GuardianStateView(
+              state: GuardianViewState.error,
               onRetry: () => ref.invalidate(familyMembersProvider(familyId))),
           data: (items) {
             final actor = _activeActor(items);
@@ -61,10 +64,9 @@ class FamilyMembersScreen extends ConsumerWidget {
                   if (actor == null)
                     ..._unauthorizedSection(context),
                   if (items.isEmpty)
-                    Card(
-                        child: Padding(
-                            padding: const EdgeInsets.all(18),
-                            child: Text(l10n.t('noMembers'))))
+                    GuardianStateView(
+                        state: GuardianViewState.empty,
+                        message: l10n.t('noMembers'))
                   else
                     ...items.map((member) => _MemberTile(
                         member: member,
@@ -87,10 +89,9 @@ class FamilyMembersScreen extends ConsumerWidget {
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (_, __) => Text(l10n.t('error')),
                     data: (items) => items.isEmpty
-                        ? Card(
-                            child: Padding(
-                                padding: const EdgeInsets.all(18),
-                                child: Text(l10n.t('pendingInvitations'))))
+                        ? GuardianStateView(
+                            state: GuardianViewState.empty,
+                            message: l10n.t('pendingInvitations'))
                         : Column(
                             children: items
                                 .map((invitation) => _InvitationTile(
@@ -364,14 +365,20 @@ class _MemberTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(
+    return GuardianCard(
       child: ListTile(
-        leading: CircleAvatar(child: Icon(_memberIcon(member.role))),
+        leading: GuardianIconBadge(
+            icon: _memberIcon(member.role),
+            background: GuardianTokens.guardianNavy),
         title: Text(member.displayName),
-        subtitle: Text('${_roleLabel(l10n, member.role)} · '
-            '${_statusLabel(l10n, member.status)} · '
-            '${_syncStateLabel(l10n, syncState)}\n'
-            '${deviceCount == 0 ? l10n.t('notConnected') : '$deviceCount ${l10n.t('memberDevices')}'}'),
+        subtitle: Row(mainAxisSize: MainAxisSize.min, children: [
+            Flexible(child: Text('${_roleLabel(l10n, member.role)} · '
+                '${_statusLabel(l10n, member.status)} · '
+                '${_syncStateLabel(l10n, syncState)}')),
+            const SizedBox(width: 4),
+            Flexible(child: Text(
+                deviceCount == 0 ? l10n.t('notConnected') : '$deviceCount ${l10n.t('memberDevices')}')),
+          ],),
         isThreeLine: true,
         trailing: onChangeRole == null && onRevoke == null
             ? null
@@ -401,9 +408,11 @@ class _InvitationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Card(
+    return GuardianCard(
       child: ListTile(
-        leading: const Icon(Icons.mark_email_unread_outlined),
+        leading: GuardianIconBadge(
+            icon: Icons.mark_email_unread_outlined,
+            background: GuardianTokens.statusWatch),
         title: Text(invitation.targetEmail),
         subtitle: Text('${_roleLabel(l10n, invitation.proposedRole)} · '
             '${_invitationStatusLabel(l10n, invitation.status)}\n'
@@ -417,17 +426,7 @@ class _InvitationTile extends StatelessWidget {
   }
 }
 
-class _Failure extends StatelessWidget {
-  const _Failure({required this.onRetry});
-  final VoidCallback onRetry;
 
-  @override
-  Widget build(BuildContext context) => Center(
-      child: FilledButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh),
-          label: Text(AppLocalizations.of(context).t('retry'))));
-}
 
 IconData _memberIcon(FamilyRole role) => switch (role) {
       FamilyRole.primaryParent => Icons.admin_panel_settings_outlined,
@@ -508,46 +507,47 @@ List<Widget> _familyOverviewSection(
   // pending in the outbox.
   final pendingSync = familyPendingSync || memberPending;
   return [
-    Card(
+    GuardianCard(
       child: Semantics(
         label: l10n.t('familyOverview'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            GuardianIconBadge(
+                icon: Icons.group_outlined,
+                background: GuardianTokens.guardianNavy,
+                size: 36),
+            const SizedBox(width: 10),
             Text(l10n.t('familyOverview'),
                 style: theme.textTheme.labelLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            Row(children: [
-              const Icon(Icons.group_outlined, size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                  child: Text('${l10n.t('memberCount')}: $adultMembers · '
-                      '${l10n.t('childCount')}: $children')),
-            ]),
-            const SizedBox(height: 4),
-            Row(children: [
-              const Icon(Icons.devices_outlined, size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                  child: Text(
-                      '${l10n.t('deviceCount')}: $totalDevices')),
-            ]),
-            const SizedBox(height: 4),
-            Row(children: [
-              Icon(
-                  pendingSync
-                      ? Icons.cloud_upload_outlined
-                      : Icons.cloud_done_outlined,
-                  size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                  child: Text(pendingSync
-                      ? l10n.t('memberPendingSync')
-                      : l10n.t('memberSynced'))),
-            ]),
           ]),
-        ),
+          const SizedBox(height: 10),
+          Text(l10n.t('familyOverview')),
+          Row(children: [
+            Icon(Icons.people_outline, size: 16),
+            const SizedBox(width: 6),
+            Expanded(
+                child: Text('${l10n.t('memberCount')}: $adultMembers · '
+                    '${l10n.t('childCount')}: $children')),
+          ]),
+          const SizedBox(height: 4),
+          Row(children: [
+            Icon(Icons.devices_outlined, size: 16),
+            const SizedBox(width: 6),
+            Expanded(
+                child: Text('${l10n.t('deviceCount')}: $totalDevices')),
+          ]),
+          const SizedBox(height: 4),
+          Row(children: [
+            GuardianStatusChip(
+                label: pendingSync
+                    ? l10n.t('memberPendingSync')
+                    : l10n.t('memberSynced'),
+                kind: pendingSync
+                    ? GuardianStatusKind.watch
+                    : GuardianStatusKind.safe),
+          ]),
+        ]),
       ),
     ),
     const SizedBox(height: 16),
@@ -560,31 +560,22 @@ List<Widget> _familyOverviewSection(
 List<Widget> _unauthorizedSection(BuildContext context) {
   final l10n = AppLocalizations.of(context);
   return [
-    Card(
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.person_off_outlined,
-                color: Theme.of(context).colorScheme.onErrorContainer),
-            const SizedBox(width: 8),
-            Text(l10n.t('unauthorizedActor'),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(
-                        color: Theme.of(context).colorScheme.onErrorContainer)),
-          ]),
-          const SizedBox(height: 8),
-          Text(l10n.t('actorVerificationRequired'),
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(
-                      color: Theme.of(context).colorScheme.onErrorContainer)),
+    GuardianCard(
+      color: GuardianTokens.statusAlertSoft,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          GuardianIconBadge(
+              icon: Icons.person_off_outlined,
+              background: GuardianTokens.statusAlert,
+              size: 36),
+          const SizedBox(width: 8),
+          Text(l10n.t('unauthorizedActor'),
+              style: Theme.of(context).textTheme.titleSmall),
         ]),
-      ),
+        const SizedBox(height: 8),
+        Text(l10n.t('actorVerificationRequired'),
+            style: Theme.of(context).textTheme.bodySmall),
+      ]),
     ),
     const SizedBox(height: 16),
   ];
@@ -628,10 +619,9 @@ class _InvitationHistorySectionState extends State<_InvitationHistorySection> {
       Text(l10n.t('invitationHistory'), style: theme.textTheme.titleLarge),
       const SizedBox(height: 8),
       if (nonPending == 0 && _isClosed)
-        Card(
-            child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Text(l10n.t('invitationHistoryEmpty'))))
+        GuardianStateView(
+            state: GuardianViewState.empty,
+            message: l10n.t('invitationHistoryEmpty'))
       else
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

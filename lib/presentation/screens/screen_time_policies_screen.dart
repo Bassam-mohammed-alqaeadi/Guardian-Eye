@@ -6,6 +6,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/family_context_provider.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 import '../../domain/child_exception_request.dart';
 import '../../domain/guardian_models.dart';
 import '../../domain/policy_engine.dart';
@@ -69,28 +71,27 @@ class ScreenTimePoliciesScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: 8),
               if (auth.valueOrNull == null)
-                Card(
-                    color: theme.colorScheme.errorContainer,
-                    child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                  l10n.t('screenTimeAdminUnavailable'),
-                                  style: theme.textTheme.titleMedium
-                                      ?.copyWith(
-                                          color: theme.colorScheme
-                                              .onErrorContainer),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                  l10n.t('screenTimeAdminUnavailableBody'),
-                                  style: theme.textTheme.bodyMedium
-                                      ?.copyWith(
-                                          color: theme.colorScheme
-                                              .onErrorContainer)),
-                            ]))),
+                GuardianCard(
+                    color: GuardianTokens.statusAlertSoft,
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            GuardianIconBadge(
+                                icon: Icons.error_outline,
+                                background: GuardianTokens.statusAlert,
+                                size: 40),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: Text(
+                                    l10n.t('screenTimeAdminUnavailable'),
+                                    style: theme.textTheme.titleMedium)),
+                          ]),
+                          const SizedBox(height: 8),
+                          Text(
+                              l10n.t('screenTimeAdminUnavailableBody'),
+                              style: theme.textTheme.bodyMedium),
+                        ])),
               if (auth.valueOrNull != null &&
                   !auth.value!.can(FamilyPermission.managePolicies))
                 const _ReadOnlyParentBanner(),
@@ -125,25 +126,24 @@ class _ReadOnlyParentBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return Card(
-        color: theme.colorScheme.surfaceContainerHighest
-            .withValues(alpha: 0.5),
-        child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(children: [
-              const Icon(Icons.visibility_outlined),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.t('screenTimeAdminUnavailable'),
-                            style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 6),
-                        Text(l10n.t('screenTimeAdminUnavailableBody'),
-                            style: theme.textTheme.bodyMedium),
-                      ]))
-            ])));
+    return GuardianCard(
+        child: Row(children: [
+          GuardianIconBadge(
+              icon: Icons.visibility_outlined,
+              background: GuardianTokens.statusWatch,
+              size: 40),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.t('screenTimeAdminUnavailable'),
+                        style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 6),
+                    Text(l10n.t('screenTimeAdminUnavailableBody'),
+                        style: theme.textTheme.bodyMedium),
+                  ]))
+        ]));
   }
 }
 
@@ -156,6 +156,13 @@ class _ManageBar extends ConsumerWidget {
   const _ManageBar({required this.familyId, required this.childId});
   final String familyId;
   final String childId;
+
+  static Future<void> openEditor(
+      BuildContext context, WidgetRef ref,
+      {required String familyId, required String childId}) async {
+    await _openPolicyEditor(
+        context: context, ref: ref, familyId: familyId, existing: null);
+  }
 
   Future<void> _openEditor(BuildContext context, WidgetRef ref) async {
     await _openPolicyEditor(
@@ -231,21 +238,24 @@ class _EffectiveDecisionCardState
             : activeOverride.firstWhere(
                 (o) => o.target == _target,
                 orElse: () => activeOverride.first));
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              const Icon(Icons.check_circle_outline),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: Text(l10n.t('effectiveDecisionNow'),
-                      style: theme.textTheme.titleMedium)),
-            ]),
-            const SizedBox(height: 12),
-            Wrap(
+    return GuardianCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            GuardianIconBadge(
+                icon: Icons.check_circle_outline,
+                background: decision.restricted
+                    ? GuardianTokens.statusAlert
+                    : GuardianTokens.statusSafe,
+                size: 40),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(l10n.t('effectiveDecisionNow'),
+                    style: theme.textTheme.titleMedium)),
+          ]),
+          const SizedBox(height: 12),
+          Wrap(
               spacing: 8,
               children: _previewTargets
                   .map((target) => ChoiceChip(
@@ -260,38 +270,27 @@ class _EffectiveDecisionCardState
             ),
             const SizedBox(height: 12),
             Row(children: [
-              Icon(
-                  decision.restricted
-                      ? Icons.block_outlined
-                      : Icons.check_outlined,
-                  color: decision.restricted
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.primary),
+              GuardianStatusChip(
+                  label: decision.restricted
+                      ? l10n.t('effectiveDecisionRestricted')
+                      : l10n.t('effectiveDecisionAllowed'),
+                  kind: decision.restricted
+                      ? GuardianStatusKind.alert
+                      : GuardianStatusKind.safe),
               const SizedBox(width: 10),
               Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                            decision.restricted
-                                ? l10n.t('effectiveDecisionRestricted')
-                                : l10n.t('effectiveDecisionAllowed'),
-                            style: theme.textTheme.titleSmall),
-                        const SizedBox(height: 2),
-                        Text(
-                            '${_decisionReasonLabel(l10n, decision.reason)}'
-                            ' — ${_decisionPolicyName(l10n, decision, policies)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color:
-                                    theme.colorScheme.onSurfaceVariant)),
-                      ]))
+                  child: Text(
+                      '${_decisionReasonLabel(l10n, decision.reason)}'
+                      ' — ${_decisionPolicyName(l10n, decision, policies)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurfaceVariant))),
             ]),
             const SizedBox(height: 10),
             Text(l10n.t('decisionSampleNote'),
                 style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -352,54 +351,58 @@ class _PoliciesCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final policies = ref.watch(childPoliciesProvider(familyId));
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              const Icon(Icons.rule_outlined),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: Text(l10n.t('policiesSummary'),
-                      style: theme.textTheme.titleMedium)),
-            ]),
-            const SizedBox(height: 12),
-            policies.when(
-              loading: () => const Center(
-                  child: SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator())),
-              error: (error, _) =>
-                  _SectionError(retry: () =>
-                      ref.invalidate(childPoliciesProvider(familyId))),
-              data: (items) {
-                final active =
-                    items.where((policy) => policy.enabled).length;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        '$active ${active == 1 ? l10n.t('policiesActiveCount') : l10n.t('policiesActiveCountPlural')}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color:
-                                theme.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 8),
-                    if (items.isEmpty)
-                      Text(l10n.t('noPoliciesForChild'),
-                          style: theme.textTheme.bodyMedium)
-                    else
-                      ...items.map((policy) => _PolicyTile(
-                          policy: policy,
-                          familyId: familyId,
-                          childId: childId)),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+    return GuardianCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            GuardianIconBadge(
+                icon: Icons.rule_outlined,
+                background: GuardianTokens.guardianNavy,
+                size: 40),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(l10n.t('policiesSummary'),
+                    style: theme.textTheme.titleMedium)),
+          ]),
+          const SizedBox(height: 12),
+          policies.when(
+            loading: () => const GuardianStateView(
+                state: GuardianViewState.loading),
+            error: (error, _) => GuardianStateView(
+                state: GuardianViewState.error,
+                onRetry: () =>
+                    ref.invalidate(childPoliciesProvider(familyId))),
+            data: (items) {
+              if (items.isEmpty) {
+                return GuardianStateView(
+                    state: GuardianViewState.empty,
+                    message: l10n.t('noPoliciesForChild'),
+                    onPrimaryAction: () =>
+                        _ManageBar.openEditor(context, ref,
+                            familyId: familyId, childId: childId),
+                    primaryActionLabel: l10n.t('createPolicy'));
+              }
+              final active =
+                  items.where((policy) => policy.enabled).length;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      '$active ${active == 1 ? l10n.t('policiesActiveCount') : l10n.t('policiesActiveCountPlural')}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 8),
+                  ...items.map((policy) => _PolicyTile(
+                      policy: policy,
+                      familyId: familyId,
+                      childId: childId)),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -434,24 +437,35 @@ class _PolicyTile extends ConsumerWidget {
               children: [
                 Row(children: [
                   Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(policy.name.isEmpty
-                                ? policy.id
-                                : policy.name,
-                                style: theme.textTheme.titleSmall),
-                            const SizedBox(height: 2),
-                            Text(
-                                policy.restrictedTargets
-                                    .map((target) =>
-                                        _targetLabel(l10n, target))
-                                    .join(' · '),
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(
-                                        color: theme.colorScheme
-                                            .onSurfaceVariant)),
-                          ])),
+                      child: Row(children: [
+                        GuardianIconBadge(
+                            icon: Icons.rule_outlined,
+                            background: policy.enabled
+                                ? GuardianTokens.guardianNavy
+                                : GuardianTokens.statusOffline,
+                            size: 34),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(policy.name.isEmpty
+                                      ? policy.id
+                                      : policy.name,
+                                      style: theme.textTheme.titleSmall),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                      policy.restrictedTargets
+                                          .map((target) =>
+                                              _targetLabel(l10n, target))
+                                          .join(' · '),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                              color: theme.colorScheme
+                                                  .onSurfaceVariant)),
+                                ])),
+                      ])),
                   Switch(
                       value: policy.enabled,
                       onChanged: policy.enabled
@@ -479,13 +493,13 @@ class _PolicyTile extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Row(children: [
                   Expanded(
-                      child: Text(policy.enabled
-                          ? l10n.t('policyActiveStatus')
-                          : l10n.t('policyInactiveStatus'),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                              color: policy.enabled
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant))),
+                      child: GuardianStatusChip(
+                          label: policy.enabled
+                              ? l10n.t('policyActiveStatus')
+                              : l10n.t('policyInactiveStatus'),
+                          kind: policy.enabled
+                              ? GuardianStatusKind.safe
+                              : GuardianStatusKind.watch)),
                   Expanded(
                       child: Text(_syncLabel(l10n, policy.syncState),
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -1021,60 +1035,56 @@ class _ExceptionsCard extends ConsumerWidget {
     final canReview =
         contextRef.valueOrNull?.can(FamilyPermission.reviewExceptionRequests) ??
             false;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              const Icon(Icons.assignment_outlined),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: Text(l10n.t('exceptionRequestsTitle'),
-                      style: theme.textTheme.titleMedium)),
-            ]),
-            const SizedBox(height: 12),
-            requests.when(
-              loading: () => const Center(
-                  child: SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator())),
-              error: (error, _) => _SectionError(retry: () =>
-                  ref.invalidate(
-                      familyExceptionRequestsProvider(familyId))),
-              data: (items) {
-                final pending = items
-                    .where((request) =>
-                        request.status ==
-                        ChildExceptionRequestStatus.pending)
-                    .toList();
-                if (pending.isEmpty) {
-                  return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l10n.t('noPendingExceptions'),
-                            style: theme.textTheme.bodyMedium),
-                      ]);
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                        '${pending.length} '
-                        '${pending.length == 1 ? l10n.t('pendingExceptionBadge') : l10n.t('pendingExceptionBadgePlural')}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color:
-                                theme.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 8),
-                    ...pending.map((request) => _ExceptionRequestTile(
-                        request: request, canReview: canReview)),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+    return GuardianCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            GuardianIconBadge(
+                icon: Icons.assignment_outlined,
+                background: GuardianTokens.statusWatch,
+                size: 40),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(l10n.t('exceptionRequestsTitle'),
+                    style: theme.textTheme.titleMedium)),
+          ]),
+          const SizedBox(height: 12),
+          requests.when(
+            loading: () => const GuardianStateView(
+                state: GuardianViewState.loading),
+            error: (error, _) => GuardianStateView(
+                state: GuardianViewState.error,
+                onRetry: () => ref.invalidate(
+                    familyExceptionRequestsProvider(familyId))),
+            data: (items) {
+              final pending = items
+                  .where((request) =>
+                      request.status ==
+                      ChildExceptionRequestStatus.pending)
+                  .toList();
+              if (pending.isEmpty) {
+                return GuardianStateView(
+                    state: GuardianViewState.empty,
+                    message: l10n.t('noPendingExceptions'));
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      '${pending.length} '
+                      '${pending.length == 1 ? l10n.t('pendingExceptionBadge') : l10n.t('pendingExceptionBadgePlural')}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 8),
+                  ...pending.map((request) => _ExceptionRequestTile(
+                      request: request, canReview: canReview)),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -1162,10 +1172,23 @@ class _ExceptionRequestTileState
                   style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(height: 6),
-              Text(
-                  '${_statusLabel(l10n, request.status)} · ${_syncLabel(l10n, request.syncState)}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
+              Row(children: [
+                GuardianStatusChip(
+                    label: _statusLabel(l10n, request.status),
+                    kind: request.status ==
+                            ChildExceptionRequestStatus.approved
+                        ? GuardianStatusKind.safe
+                        : request.status ==
+                                ChildExceptionRequestStatus.pending
+                            ? GuardianStatusKind.watch
+                            : GuardianStatusKind.alert),
+                const SizedBox(width: 6),
+                Expanded(
+                    child: Text(_syncLabel(l10n, request.syncState),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                            color:
+                                theme.colorScheme.onSurfaceVariant))),
+              ]),
               if (widget.canReview) ...[
                 const SizedBox(height: 8),
                 Row(children: [
@@ -1243,14 +1266,10 @@ class _SectionError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(children: [
-      const Icon(Icons.error_outline, size: 24),
-      const SizedBox(height: 6),
-      Text(l10n.t('error'), style: Theme.of(context).textTheme.bodySmall),
-      const SizedBox(height: 6),
-      OutlinedButton(
-          onPressed: retry,
-          child: Text(l10n.t('retry')))
-    ]);
+    return GuardianStateView(
+      state: GuardianViewState.error,
+      message: l10n.t('error'),
+      onRetry: retry,
+    );
   }
 }

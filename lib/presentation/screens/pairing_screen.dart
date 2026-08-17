@@ -8,6 +8,8 @@ import '../../application/remote_provisioning_service.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/family_authorization.dart';
 import '../../domain/guardian_models.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 
 /// Canonical parent pairing issuance screen.
 ///
@@ -117,17 +119,30 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.t('pairDevice'))),
       body: contextAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _ErrorBody(message: l10n.t('unknownRedeemError')),
+        loading: () => const Center(
+            child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator())),
+        error: (_, __) => GuardianStateView(
+            state: GuardianViewState.error,
+            message: l10n.t('unknownRedeemError'),
+            onRetry: () =>
+                ref.invalidate(familyRuntimeContextProvider(widget.familyId))),
         data: (runtimeContext) {
           if (!runtimeContext.can(FamilyPermission.manageDevices)) {
-            return _UnauthorizedBody(
+            return GuardianStateView(
+                state: GuardianViewState.error,
                 title: l10n.t('unauthorizedActor'),
-                message: l10n.t('unauthorizedActorBody'));
+                message: l10n.t('unauthorizedActorBody'),
+                onPrimaryAction: () =>
+                    ref.invalidate(familyRuntimeContextProvider(widget.familyId)),
+                primaryActionLabel: l10n.t('retry'));
           }
           final children = runtimeContext.children;
           if (children.isEmpty) {
-            return _ErrorBody(message: l10n.t('noChildToPair'));
+            return GuardianStateView(
+                state: GuardianViewState.empty,
+                message: l10n.t('noChildToPair'));
           }
 
           _targetMemberId ??= children.first.id;
@@ -244,24 +259,34 @@ class _IssuedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('${l10n.t('pairForChild')}: $childName',
-          style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 16),
-      QrImageView(
-          data:
-              'guardian-eye://pair?request=${request.id}&code=${request.code}',
-          size: 210),
-      const SizedBox(height: 16),
-      SelectableText(request.code,
-          style: Theme.of(context).textTheme.displayMedium),
-      const SizedBox(height: 12),
-      Text(l10n.t('pairingRedeemHint'), textAlign: TextAlign.center),
-      const SizedBox(height: 8),
-      Text(expiryText,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall),
-      const SizedBox(height: 20),
-      FilledButton(onPressed: onRedeem, child: Text(l10n.t('redeemDevice'))),
+      GuardianCard(
+        child: Column(children: [
+          Row(children: [
+            GuardianIconBadge(
+                icon: Icons.qr_code_2_outlined,
+                background: GuardianTokens.guardianNavy),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text('${l10n.t('pairForChild')}: $childName',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          GuardianStatusChip(label: expiryText, kind: GuardianStatusKind.watch),
+          const SizedBox(height: 16),
+          QrImageView(
+              data:
+                  'guardian-eye://pair?request=${request.id}&code=${request.code}',
+              size: 210),
+          const SizedBox(height: 16),
+          SelectableText(request.code,
+              style: Theme.of(context).textTheme.displayMedium),
+          const SizedBox(height: 12),
+          Text(l10n.t('pairingRedeemHint'), textAlign: TextAlign.center),
+          const SizedBox(height: 20),
+          FilledButton(onPressed: onRedeem, child: Text(l10n.t('redeemDevice'))),
+        ]),
+      ),
     ]);
   }
 }

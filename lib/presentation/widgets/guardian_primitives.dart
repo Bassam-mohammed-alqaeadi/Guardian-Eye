@@ -286,17 +286,23 @@ class GuardianStateView extends StatelessWidget {
   const GuardianStateView({
     super.key,
     required this.state,
+    this.title,
     this.message,
     this.onRetry,
     this.onPrimaryAction,
     this.primaryActionLabel,
+    this.onSecondaryAction,
+    this.secondaryActionLabel,
   });
 
   final GuardianViewState state;
+  final String? title;
   final String? message;
   final VoidCallback? onRetry;
   final VoidCallback? onPrimaryAction;
   final String? primaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+  final String? secondaryActionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -366,6 +372,12 @@ class GuardianStateView extends StatelessWidget {
                   color: GuardianTokens.statusOffline,
                 ),
                 const SizedBox(height: 12),
+                if (title != null) ...[
+                  Text(title!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                ],
                 Text(
                   message ??
                       (state == GuardianViewState.offline
@@ -386,6 +398,13 @@ class GuardianStateView extends StatelessWidget {
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh_outlined),
                     label: Text(l10n.t('retry')),
+                  ),
+                ],
+                if (onSecondaryAction != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: onSecondaryAction,
+                    child: Text(secondaryActionLabel ?? l10n.t('continue')),
                   ),
                 ],
               ],

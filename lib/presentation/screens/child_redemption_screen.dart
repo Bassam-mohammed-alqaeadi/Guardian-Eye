@@ -8,6 +8,8 @@ import '../../application/guardian_providers.dart';
 import '../../application/remote_provisioning_service.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/guardian_models.dart';
+import '../../core/theme/guardian_tokens.dart';
+import '../widgets/guardian_primitives.dart';
 
 /// Canonical child-device redemption screen (M4).
 ///
@@ -153,20 +155,19 @@ class _ChildRedemptionScreenState extends ConsumerState<ChildRedemptionScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.t('redeemDevice'))),
       body: contextAsync.when(
-        loading: () => _StateView(
-          icon: Icons.hourglass_top,
-          title: l10n.t('redeemValidating'),
-          message: '',
+        loading: () => GuardianStateView(
+          state: GuardianViewState.loading,
+          message: l10n.t('redeemValidating'),
         ),
-        error: (_, __) => _OutcomeView(
-          icon: Icons.cloud_off,
-          title: l10n.t('unknownRedeemError'),
-          message: l10n.t('unknownRedeemErrorBody'),
-              primaryLabel: l10n.t('retryRedeemLater'),
-              onPrimary: () => ref.invalidate(
-                  familyRuntimeContextProvider(widget.familyId)),
-          secondaryLabel: l10n.t('goHome'),
-          onSecondary: () => context.go('/'),
+        error: (_, __) => GuardianStateView(
+          state: GuardianViewState.error,
+          message: '${l10n.t('unknownRedeemError')}. '
+              '${l10n.t('unknownRedeemErrorBody')}',
+          primaryActionLabel: l10n.t('retryRedeemLater'),
+          onPrimaryAction: () =>
+              ref.invalidate(familyRuntimeContextProvider(widget.familyId)),
+          secondaryActionLabel: l10n.t('goHome'),
+          onSecondaryAction: () => context.go('/'),
         ),
         data: (runtimeContext) {
           final targetChild = runtimeContext.children.isEmpty
@@ -285,33 +286,35 @@ class _OutcomeSurface extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(
-                pending ? Icons.cloud_queue : Icons.check_circle_outline,
-                size: 48,
-                color: pending
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.primary,
+              GuardianIconBadge(
+                icon: pending
+                    ? Icons.cloud_queue
+                    : Icons.check_circle_outline,
+                background: GuardianTokens.guardianTeal,
+                size: 56,
               ),
               const SizedBox(height: 16),
               Text(l10n.t('redeemSuccess'),
                   style: theme.textTheme.titleLarge,
                   textAlign: TextAlign.center),
               const SizedBox(height: 8),
+              GuardianStatusChip(
+                label: pending
+                    ? l10n.t('pendingSync')
+                    : l10n.t('redeemSuccessBody'),
+                kind: pending
+                    ? GuardianStatusKind.offline
+                    : GuardianStatusKind.safe,
+                live: !pending,
+              ),
               if (enrolledDeviceId != null)
-                Text('${l10n.t('linkedDevice')}: ${enrolledDeviceId!.substring(0, 8)}',
-                    style: theme.textTheme.bodySmall),
-              const SizedBox(height: 8),
-              Text(pending
-                      ? l10n.t('redemptionPendingHint')
-                      : l10n.t('redeemSuccessBody'),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium),
-              if (pending) ...[
-                const SizedBox(height: 8),
-                Text(l10n.t('pendingSync'),
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-              ],
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                      '${l10n.t('linkedDevice')}: '
+                      '${enrolledDeviceId!.substring(0, 8)}',
+                      style: theme.textTheme.bodySmall),
+                ),
               const SizedBox(height: 24),
               FilledButton(onPressed: onGoHome, child: Text(l10n.t('goHome'))),
             ]),
@@ -411,7 +414,8 @@ class _OutcomeView extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 40),
+          GuardianIconBadge(icon: icon, background: GuardianTokens.guardianNavy,
+              size: 56),
           const SizedBox(height: 12),
           Text(title,
               style: Theme.of(context).textTheme.titleLarge,
