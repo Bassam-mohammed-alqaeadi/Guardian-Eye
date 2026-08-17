@@ -4,10 +4,23 @@ build/
 .gradle/
 android/.gradle/
 android/local.properties
+android/.kotlin/
 ios/Flutter/ephemeral/
+
+# Firebase debug / emulator logs (runtime artifacts — never committed)
+firebase-debug.log
+firestore-debug.log
+firebase/firestore-debug.log
+ui-debug.log
+
+# IDE artifacts
+*.iml
+ui2.xml
+.idea/
 
 # Backend ignores
 guardian_backend/node_modules/
 guardian_backend/serviceAccountKey.json
+
 # Firebase platform configuration is committed with every push (project owner policy).
 # firebase_options.dart, google-services.json, GoogleService-Info.plist are included in Git.
