@@ -69,11 +69,15 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                       selected: {languageCode},
                       onSelectionChanged: (selection) {
-                        ref.read(localeProvider.notifier).state =
-                            selection.first;
+                        final next = selection.first;
+                        ref.read(localeProvider.notifier).state = next;
+                        // Resolve copy in the language just chosen — the
+                        // captured [l10n] is still the previous locale.
+                        final nextCopy =
+                            AppLocalizations(Locale(next)).t('settingsSaved');
                         ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(
-                                content: Text(l10n.t('settingsSaved'))));
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(SnackBar(content: Text(nextCopy)));
                       },
                     ),
                   ],

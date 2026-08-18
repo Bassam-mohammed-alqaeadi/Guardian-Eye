@@ -179,8 +179,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('English'));
       await tester.pumpAndSettle();
-      // Informative feedback: the shell announces the saved preference.
-      expect(find.textContaining('حُفظت الإعدادات'), findsOneWidget);
+      // Feedback must speak the language just chosen, not the previous one.
+      expect(find.textContaining('Settings saved'), findsOneWidget);
     });
 
     testWidgets('an unverified actor gets disabled safety actions rather than dead ends',

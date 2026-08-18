@@ -33,18 +33,18 @@ class GuardianBottomNav extends StatelessWidget {
 
     final items = [
       _Tab(icon: Icons.home_outlined, active: Icons.home, path: '/',
-          label: l10n.t('dashboard')),
+          label: l10n.t('navDashboard')),
       _Tab(icon: Icons.family_restroom_outlined, active: Icons.family_restroom,
-          path: '/family/$familyId', label: l10n.t('children'),
+          path: '/family/$familyId', label: l10n.t('navChildren'),
           requiresFamily: true),
       _Tab(icon: Icons.shield_outlined, active: Icons.shield,
-          path: '/safety/daily/$familyId', label: l10n.t('dailySafety'),
+          path: '/safety/daily/$familyId', label: l10n.t('navSafety'),
           requiresFamily: true),
       _Tab(icon: Icons.timeline_outlined, active: Icons.timeline,
-          path: '/timeline/$familyId', label: l10n.t('safetyTimeline'),
+          path: '/timeline/$familyId', label: l10n.t('navTimeline'),
           requiresFamily: true),
       _Tab(icon: Icons.settings_outlined, active: Icons.settings,
-          path: '/settings', label: l10n.t('settings')),
+          path: '/settings', label: l10n.t('navSettings')),
     ];
 
     return Scaffold(
@@ -152,17 +152,21 @@ class _NavItem extends StatelessWidget {
                 size: 23,
               ),
               const SizedBox(height: 3),
-              Text(
-                tab.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: enabled
-                      ? (active ? Colors.white : Colors.white60)
-                      : Colors.white24,
-                  fontFamily: GuardianTokens.fontFamily,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  tab.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    color: enabled
+                        ? (active ? Colors.white : Colors.white60)
+                        : Colors.white24,
+                    fontFamily: GuardianTokens.fontFamily,
+                  ),
                 ),
               ),
             ],

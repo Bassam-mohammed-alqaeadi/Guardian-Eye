@@ -62,17 +62,28 @@ class _FamilySetupState extends ConsumerState<_FamilySetup> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
+    final familyName = _familyController.text.trim();
+    final parentName = _parentController.text.trim();
+    if (familyName.isEmpty || parentName.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(l10n.t('familySetupRequired'))),
+        );
+      return;
+    }
     setState(() => _saving = true);
     try {
       await ref.read(familyRepositoryProvider).createFamily(
-            familyName: _familyController.text,
-            parentName: _parentController.text,
+            familyName: familyName,
+            parentName: parentName,
           );
       widget.onCreated();
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).t('error'))),
+          SnackBar(content: Text(l10n.t('error'))),
         );
       }
     } finally {
