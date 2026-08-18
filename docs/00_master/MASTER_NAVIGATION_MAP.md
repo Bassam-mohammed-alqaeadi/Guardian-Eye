@@ -184,6 +184,53 @@
 | `/subscription/:familyId/upgrade` | CMR-002 | owner | billing | no |
 | `/subscription/:familyId/limits` | CMR-003 | owner | view limits | no |
 | `/subscription/:familyId/billing` | CMR-004 | owner | billing | no |
+| `/subscription/:familyId/cancel` | CMR-005 | owner | billing | no |
+
+### Gap-closure route additions (all subsystems, per MASTER_DEVELOPMENT_PLAN.md §6)
+| Route | Screen ID | Subsystem | Entry requirement | Permission | Deep link |
+| --- | --- | --- | --- | --- | --- |
+| `/safety/web/:familyId/history` | WF-005 | FS-002 | parent/owner | view web policy | no |
+| `/safety/web/:familyId/history/:hitId` | WF-006 | FS-002 | parent/owner | view web policy | no |
+| `/safety/web/:familyId/history/:hitId/allow` | WF-007 | FS-002 | parent/owner | manage policies | no |
+| `/safety/web/:familyId/allowlist` | WF-008 | FS-002 | parent/owner | manage policies | no |
+| `/safety/web/:familyId/:childId` | WF-009 | FS-002 | parent/owner | manage policies | no |
+| device-side `/blocked` | WF-010 | FS-002 | child device | — | **yes (enforcement)** |
+| `/apps/:familyId/:childId/:appId/usage` | AC-005 | FS-003 | parent/owner | view usage | no |
+| `/apps/:familyId/:childId/:appId/alerts` | AC-006 | FS-003 | parent/owner | manage policies | no |
+| `/apps/:familyId/ratings` | AC-007 | FS-003 | parent/owner | manage policies | no |
+| `/apps/:familyId/history` | AC-008 | FS-003 | parent/owner | view usage | no |
+| `/monitoring/:familyId/requests` | SC-007 | FS-004 | parent/owner | view monitoring | no |
+| `/monitoring/:familyId/schedule` | SC-008 | FS-004 | parent/owner | manage policies | no |
+| `/monitoring/:familyId/evidence` | SC-009 | FS-004 | parent/owner | review evidence | no |
+| `/modes/:familyId/:modeId/template` | MD-009 | FS-005 | parent/owner | manage policies | no |
+| `/modes/:familyId/:modeId/conflict` | MD-010 | FS-005 | parent/owner | manage policies | no |
+| `/sos/:familyId/recipients` | SO-007 | FS-006 | parent/owner | manage SOS | no |
+| `/sos/:familyId/drill` | SO-008 | FS-006 | member (drill-gated) | trigger SOS | no |
+| `/ai-safety/:familyId/trend` | AS-008 | FS-007 | parent/owner | view safety | no |
+| `/ai-safety/:familyId/templates` | AS-009 | FS-007 | parent/owner | manage dictionary | no |
+| `/audio/:familyId/settings/keywords` | AU-014 | FS-008 | parent/owner | manage policies | no |
+| `/reports/:familyId/schedule` | RP-006 | FS-009 | parent/owner | generate reports | no |
+| `/chat/:familyId/:threadId/settings` | CH-003 | FS-010 | member | chat | no |
+| `/rules/:familyId/:ruleId/audit` | RL-006 | FS-011 | parent/owner | view history | no |
+| `/rules/:familyId/template` | RL-007 | FS-011 | parent/owner | manage policies | no |
+| `/child/:familyId/:childId/requests` | CM-004 | FS-012 | child self-scope | fail-closed | no |
+| `/child/:familyId/:childId/privacy` | CM-005 | FS-012 | child self-scope | fail-closed | no |
+| `/couple/:familyId/routines/new` | CO-005 | FS-013 | spouse/co-parent | symmetric | no |
+| `/couple/:familyId/responsibilities` | CO-006 | FS-013 | spouse/co-parent | symmetric | no |
+| `/couple/:familyId/handover` | CO-007 | FS-013 | spouse/co-parent | symmetric | no |
+| `/family/:familyId/profile` | PD-006 | FS-014 | member | view family | no |
+| `/family/:familyId/setup` | PD-007 | FS-014 | parent/owner | manage family | no |
+| `/settings/devices` | DL-010 | FS-015 | parent/owner | view devices | no |
+| `/settings/device/:deviceId/transfer` | DL-011 | FS-015 | parent/owner | manage devices | no |
+| `/whats-new` | ST-005 | FS-016 | any member | — | no |
+| `/location/:familyId/places` | LO-013 | FS-001 | parent/owner | manage geofences | no |
+| `/location/:familyId/places/template` | LO-014 | FS-001 | parent/owner | manage geofences | no |
+| `/child/:familyId/:childId/location-sharing` | LO-015 | FS-001 | child self-scope | fail-closed | no |
+| `/insights/:familyId/digest` | AI-011 | AI Phase 11 | parent/owner + entitlement | view insights | no |
+| `/insights/:familyId/outcomes` | AI-012 | AI Phase 11 | parent/owner + entitlement | view insights | no |
+| `/insights/:familyId/scorecard` | AI-013 | AI Phase 11 | parent/owner + entitlement | view insights | no |
+
+**Inline screens (no dedicated route):** ST-004 role landings (post-gate routing wrappers), CH-004 expired notice (inline banner), RL-004 conflict warning (inline card), MD-009 templates (inline on MD-003), AS-009 dictionary templates (inline on AS-005), AU-013 session notes (inline on AU-010), RP-007 report share (inline share sheet), CM-004/CO-007 also surface inline — all are documented inside their parent screens in the master plan.
 
 ## C. Navigation rules (apply to every future route)
 

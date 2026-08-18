@@ -1,4 +1,4 @@
-# MASTER SCREEN INDEX — Guardian Eye Pro (~150 screens/states)
+# MASTER SCREEN INDEX — Guardian Eye Pro (170 named screens, ~200 states)
 
 **Authoritative registry of every screen.** Status values: HISTORICAL/VERIFIED, CURRENT, IN DESIGN, IN DEVELOPMENT, IMPLEMENTED, TESTED, DEVICE VERIFIED, BACKEND VERIFIED, GREEN, PARTIAL, BLOCKED, PLANNED, SUPERSEDED, DEPRECATED. Per-screen 21-field specs live in `docs/06_ux/02_screens/<subsystem>/`. Companion: `MASTER_FEATURE_MATRIX.md`, `MASTER_NAVIGATION_MAP.md`.
 
@@ -29,6 +29,12 @@
 | WF-002 | Content Categories | PLANNED | `/safety/web/:familyId/categories` | — |
 | WF-003 | Website Blocklist | PLANNED | `/safety/web/:familyId/blocklist` | — |
 | WF-004 | Web Filtering Settings | PLANNED | `/safety/web/:familyId/settings` | — |
+| WF-005 | Block History | PLANNED | `/safety/web/:familyId/history` | — |
+| WF-006 | Block Hit Detail | PLANNED | `/safety/web/:familyId/history/:hitId` | — |
+| WF-007 | Temporary Allow | PLANNED | `/safety/web/:familyId/history/:hitId/allow` | — |
+| WF-008 | Site Allowlist | PLANNED | `/safety/web/:familyId/allowlist` | — |
+| WF-009 | Per-Child Web Policy | PLANNED | `/safety/web/:familyId/:childId` | — |
+| WF-010 | Blocked Page Explanation | PLANNED | device-side `/blocked` | — |
 
 ## C. FS-003 Application System
 
@@ -38,6 +44,10 @@
 | AC-002 | Installed Applications | PLANNED | `/apps/:familyId/:childId` |
 | AC-003 | Application Details | PLANNED | `/apps/:familyId/:childId/:appId` |
 | AC-004 | Allowlist | PLANNED | `/apps/:familyId/allowlist` |
+| AC-005 | App Usage Detail | PLANNED | `/apps/:familyId/:childId/:appId/usage` |
+| AC-006 | Usage Alert Settings | PLANNED | `/apps/:familyId/:childId/:appId/alerts` |
+| AC-007 | Age-Rating Policy | PLANNED | `/apps/:familyId/ratings` |
+| AC-008 | App Block History | PLANNED | `/apps/:familyId/history` |
 
 ## D. FS-004 Screenshot & Camera Control
 
@@ -49,6 +59,9 @@
 | SC-004 | Live Screen Session | PLANNED | `/monitoring/:familyId/live` |
 | SC-005 | Camera Control | PLANNED | `/monitoring/:familyId/camera` |
 | SC-006 | Child Active Session | PLANNED | `/monitoring/:familyId/:childId/session` |
+| SC-007 | Capture Request History | PLANNED | `/monitoring/:familyId/requests` |
+| SC-008 | Camera Schedule | PLANNED | `/monitoring/:familyId/schedule` |
+| SC-009 | Evidence Review Queue | PLANNED | `/monitoring/:familyId/evidence` |
 
 ## E. FS-005 Special & Custom Modes
 
@@ -62,6 +75,8 @@
 | MD-006 | Child Assignment | PLANNED | `/modes/:familyId/:modeId/children` |
 | MD-007 | Mode History | PLANNED | `/modes/:familyId/:modeId/history` |
 | MD-008 | Child Active Mode Screen | PLANNED | `/child/:familyId/:childId/mode` |
+| MD-009 | Mode Templates | PLANNED | inline on MD-003 |
+| MD-010 | Mode Conflict Resolver | PLANNED | inline on MD-002 |
 
 ## F. FS-006 SOS & Emergency
 
@@ -73,6 +88,8 @@
 | SO-004 | Emergency Location | PLANNED | `/sos/:familyId/location` |
 | SO-005 | Emergency Alert (deep link) | PLANNED | `/sos/:familyId/alert/:alertId` |
 | SO-006 | Acknowledgement History | PLANNED | `/sos/:familyId/ack` |
+| SO-007 | SOS Recipient Management | PLANNED | `/sos/:familyId/recipients` |
+| SO-008 | SOS Drill / Readiness Test | PLANNED | `/sos/:familyId/drill` |
 
 ## G. FS-007 Offline AI Safety
 
@@ -85,6 +102,8 @@
 | AS-005 | Custom Dictionary | PLANNED | `/ai-safety/:familyId/dictionary` |
 | AS-006 | AI Safety Settings | PLANNED | `/ai-safety/:familyId/settings` |
 | AS-007 | Child Safety Explanation | PLANNED | `/child/:familyId/:childId/safety` |
+| AS-008 | Detection Trend | PLANNED | `/ai-safety/:familyId/trend` |
+| AS-009 | Dictionary Templates | PLANNED | inline on AS-005 |
 
 ## H. FS-008 One-Way Audio
 
@@ -102,6 +121,8 @@
 | AU-010 | Audio Session History | PLANNED | `/audio/:familyId/history` |
 | AU-011 | Spouse Consent Settings | PLANNED | `/audio/:familyId/settings/consent` |
 | AU-012 | Child Audio Policy | PLANNED | `/child/:familyId/:childId/audio-policy` |
+| AU-013 | Session Notes | PLANNED | inline on AU-010 |
+| AU-014 | Keyword Alert Settings | PLANNED | `/audio/:familyId/settings/keywords` |
 
 ## I. FS-009 Reports & PDF
 
@@ -112,6 +133,8 @@
 | RP-003 | Generation Progress | PLANNED | `/reports/:familyId/build/progress/:jobId` |
 | RP-004 | Single Child Report | PLANNED | `/reports/:familyId/report/:reportId` |
 | RP-005 | All-Children Report | PLANNED | `/reports/:familyId/report/:reportId/all` |
+| RP-006 | Scheduled Reports | PLANNED | `/reports/:familyId/schedule` |
+| RP-007 | Report Share | PLANNED | inline on RP-004/005 |
 
 ## J. FS-010 Ephemeral Family Chat
 
@@ -119,6 +142,8 @@
 | --- | --- | --- | --- |
 | CH-001 | Chat List | PLANNED | `/chat/:familyId` |
 | CH-002 | Chat Screen | PLANNED | `/chat/:familyId/:threadId` |
+| CH-003 | Chat Settings | PLANNED | inline on CH-001 |
+| CH-004 | Expired Conversation Notice | PLANNED | inline on CH-002 |
 
 ## K. FS-011 Family Rules & Policy Engine
 
@@ -129,6 +154,8 @@
 | RL-003 | Rule Detail | PLANNED | `/rules/:familyId/:ruleId` |
 | RL-004 | Conflict Warning (inline) | PLANNED | inline on RL-003 |
 | RL-005 | Effective Policy Preview | PLANNED | `/rules/:familyId/:ruleId/preview` |
+| RL-006 | Rule History / Audit | PLANNED | inline on RL-003 |
+| RL-007 | Rule Templates | PLANNED | inline on RL-002 |
 
 ## L. FS-012 Child Mode & Child Experience
 
@@ -137,6 +164,8 @@
 | CM-001 | Child Mode Dashboard | PLANNED | `/child/:familyId/:childId` (upgrade) |
 | CM-002 | Child Mode Lock | PLANNED | lock overlay |
 | CM-003 | Parent Authorization (unlock) | PLANNED | `/requests/:familyId/unlock/:requestId` |
+| CM-004 | My Exception Requests | PLANNED | `/child/:familyId/:childId/requests` |
+| CM-005 | My Privacy View | PLANNED | `/child/:familyId/:childId/privacy` |
 
 ## M. FS-013 Couple Harmony
 
@@ -146,6 +175,9 @@
 | CO-002 | Couple Harmony Dashboard | PLANNED | `/couple/:familyId` |
 | CO-003 | Permission Review | PLANNED | `/couple/:familyId/permissions` |
 | CO-004 | Family Decisions | PLANNED | `/couple/:familyId/decisions` |
+| CO-005 | Shared Routine Builder | PLANNED | `/couple/:familyId/routines/new` |
+| CO-006 | Responsibility Board | PLANNED | `/couple/:familyId/responsibilities` |
+| CO-007 | Co-Parent Handover | PLANNED | inline on CO-002 |
 
 ## N. FS-014 Primary Parent Dashboard & Unlinked Device
 
@@ -156,6 +188,8 @@
 | PD-003 | Join Existing Family | PLANNED | `/family/join/:invitationCode` |
 | PD-004 | Parent Authentication | PLANNED | `/auth/confirm` |
 | PD-005 | Primary Parent Dashboard | PLANNED | `/` (post-capability) |
+| PD-006 | Family Profile | PLANNED | `/family/:familyId/profile` |
+| PD-007 | Setup Checklist | PLANNED | `/family/:familyId/setup` |
 
 ## O. FS-015 Device Linking & Enrollment
 
@@ -170,6 +204,8 @@
 | DL-007 | Spouse Role Selection | PLANNED | `/couple/:familyId/role` |
 | DL-008 | Permission Onboarding | PLANNED | `/onboard/permissions` |
 | DL-009 | Device Unlinking | PLANNED | `/settings/device/:deviceId/unlink` |
+| DL-010 | Device Health Dashboard | PLANNED | `/settings/devices` |
+| DL-011 | Replace / Transfer Device | PLANNED | `/settings/device/:deviceId/transfer` |
 
 ## P. FS-016 Startup & State Machine
 
@@ -178,6 +214,8 @@
 | ST-001 | Onboarding / Splash + Role Selection | PLANNED | splash → role gate |
 | ST-002 | Feature Lock / Upgrade Gate | PLANNED | inline gate |
 | ST-003 | Offline Startup | PLANNED | cold start |
+| ST-004 | Role Landing Variants | PLANNED | per-role post-gate |
+| ST-005 | What's New | PLANNED | `/whats-new` |
 
 ## Q. FS-001 Location & Geofencing
 
@@ -195,6 +233,9 @@
 | LO-010 | Location Alerts | PLANNED | `/location/:familyId/alerts` |
 | LO-011 | Location Privacy Information | PLANNED | `/location/:familyId/privacy` |
 | LO-012 | Offline Location State | PLANNED | inline banner |
+| LO-013 | Favorite Places | PLANNED | `/location/:familyId/places` |
+| LO-014 | Geofence Templates | PLANNED | inline on LO-005 |
+| LO-015 | Child Sharing Visibility | PLANNED | `/child/:familyId/:childId/location-sharing` |
 
 ## R. Guardian AI Screens (Phase 11)
 
@@ -210,6 +251,9 @@
 | AI-008 | Copilot Settings | PLANNED | `/insights/:familyId/copilot/settings` |
 | AI-009 | Smart Policy Proposal | PLANNED | `/insights/:familyId/proposals/:proposalId` |
 | AI-010 | AI Transparency Center | PLANNED | `/insights/:familyId/transparency` |
+| AI-011 | Weekly AI Digest | PLANNED | via RP-006 + `/insights/:familyId/digest` |
+| AI-012 | Suggestion Outcomes | PLANNED | inline on AI-006 |
+| AI-013 | Family Health Scorecard | PLANNED | `/insights/:familyId/scorecard` |
 
 ## S. Commercial Screens (Phase 13)
 
@@ -219,13 +263,14 @@
 | CMR-002 | Upgrade Flow | PLANNED | `/subscription/:familyId/upgrade` |
 | CMR-003 | Usage Limits | PLANNED | `/subscription/:familyId/limits` |
 | CMR-004 | Billing & Receipts | PLANNED | `/subscription/:familyId/billing` |
+| CMR-005 | Cancel / Pause Flow | PLANNED | `/subscription/:familyId/cancel` |
 
 ## Totals
 
 | Group | Count |
 | --- | --- |
 | Baseline (implemented) | 14 |
-| FS subsystems (FS-001…FS-016) | 95 |
-| Guardian AI (Phase 11) | 10 |
-| Commercial (Phase 13) | 4 |
-| **Platform total** | **123 named screens + inline states (≈150 screen/states)** |
+| FS subsystems (FS-001…FS-016) | 135 |
+| Guardian AI (Phase 11) | 13 |
+| Commercial (Phase 13) | 5 |
+| **Platform total** | **167 named screens + inline states (≈200 screen/states)** |

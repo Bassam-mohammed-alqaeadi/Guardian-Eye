@@ -104,16 +104,16 @@ STREAM 7 — FINAL:     Commercial Scale (subscriptions, entitlements) + Product
 
 | Order | Phase | Purpose | Dependencies | Expected screens | Backend changes | AI relevance | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **CURRENT** | Phase 2: FS-002 Web Filtering | First capability vertical on the new design system | Design system (Phase 0/1) | 3 + 1 settings | None | Feeds web-safety AI signals | Tests green, analyze clean |
-| NEXT | Phase 3: FS-003 App Control + FS-015 Device Linking | Application allow/block control; child/spouse device enrollment UX | FS-002 patterns | ~12 | None | App-usage signals | Same gate |
-| AFTER NEXT | Phase 4: FS-004 Screenshot/Camera + FS-005 Custom Modes + FS-006 SOS expansion | Monitoring surfaces and emergency expansion | Phase 3 | ~18 | None | Screenshot evidence layer | Same gate |
-| AFTER NEXT | Phase 5: FS-007 Offline AI Safety + FS-008 One-Way Audio | On-device safety detection UX; live audio with consent gates | Phase 4, AI artifact review | ~18 | None (Render endpoints consumed as-is) | Direct on-device AI UX | Same gate |
-| LATER | Phase 6: FS-009 Reports + FS-010 Family Chat + FS-011 Rules Engine + FS-012 Child Mode | Reporting, ephemeral chat, rule engine, child-facing mode | Phase 5 | ~20 | None | Report inputs / rule intelligence | Same gate |
-| LATER | Phase 7: FS-013 Couple Harmony + FS-014 Primary Dashboard + FS-016 Startup & Feature Gates | Full role experiences: spouse, onboarding, subscription-aware UX | Phase 6, entitlements doc | ~12 | None | Family context inputs | Same gate |
-| LATER | Phase 8: Location & Geofencing (FS-001 completion) | Map, history, geofence CRUD, permission onboarding, alerts | Android permission docs 05 | ~12 | None | Location risk signals | Same gate |
+| **CURRENT** | Phase 2: FS-002 Web Filtering | First capability vertical on the new design system | Design system (Phase 0/1) | 10 | None | Feeds web-safety AI signals | Tests green, analyze clean |
+| NEXT | Phase 3: FS-003 App Control + FS-015 Device Linking | Application allow/block control; child/spouse device enrollment UX | FS-002 patterns | 19 | None | App-usage signals | Same gate |
+| AFTER NEXT | Phase 4: FS-004 Screenshot/Camera + FS-005 Custom Modes + FS-006 SOS expansion | Monitoring surfaces and emergency expansion | Phase 3 | 29 | None | Screenshot evidence layer | Same gate |
+| AFTER NEXT | Phase 5: FS-007 Offline AI Safety + FS-008 One-Way Audio | On-device safety detection UX; live audio with consent gates | Phase 4, AI artifact review | 23 | None (Render endpoints consumed as-is) | Direct on-device AI UX | Same gate |
+| LATER | Phase 6: FS-009 Reports + FS-010 Family Chat + FS-011 Rules Engine + FS-012 Child Mode | Reporting, ephemeral chat, rule engine, child-facing mode | Phase 5 | 23 | None | Report inputs / rule intelligence | Same gate |
+| LATER | Phase 7: FS-013 Couple Harmony + FS-014 Primary Dashboard + FS-016 Startup & Feature Gates | Full role experiences: spouse, onboarding, subscription-aware UX | Phase 6, entitlements doc | 19 | None | Family context inputs | Same gate |
+| LATER | Phase 8: Location & Geofencing (FS-001 completion) | Map, history, geofence CRUD, permission onboarding, alerts | Android permission docs 05 | 15 | None | Location risk signals | Same gate |
 | LATER | Phase 9: Unified Event / Telemetry Layer | Event normalization, consumer registry, AI input stability contracts | All FS phases implemented | 0 UI | None | **Foundational for AI** | Contract tests |
 | LATER | Phase 10: Guardian AI Foundation | On-device model bootstrap, risk engine v2, family context store | Phase 9 | ~3 screens | None | THE AI platform | Eval harness GREEN |
-| FUTURE | Phase 11: Guardian AI Intelligence Layers | 9 layers: normalization → on-device → behavior → risk → family context → reasoning → family intelligence → copilot → policy intelligence | Phase 10 | ~10 screens | None | The product's intelligence | Eval suite GREEN |
+| FUTURE | Phase 11: Guardian AI Intelligence Layers | 9 layers: normalization → on-device → behavior → risk → family context → reasoning → family intelligence → copilot → policy intelligence | Phase 10 | 13 screens | None | The product's intelligence | Eval suite GREEN |
 | FUTURE | Phase 12: AI-Powered Experiences + Automation | Smart policy proposals, auto-incident triage, weekly family insights | Phase 11 | ~6 screens | None | Productization of layers | Eval suite GREEN |
 | FUTURE | Phase 13: Reporting & Insights maturation + Commercial | Weekly/monthly reports, subscription tiers, billing, usage limits, AI entitlements | Phase 12, Phase 7 | ~8 screens | Entitlement reads only | AI entitlement gating | Tests + payment sandbox |
 | FINAL | Phase 14: Production Hardening + Scale | Release signing, production Firebase deploy, reboot/doze/background resilience, scale testing | All above | 0 UI | Deploy config only | Latency budgets | Release checklist |
@@ -139,24 +139,24 @@ The 16 approved subsystem specifications are preserved in intent. They are place
 
 | # | Subsystem | Spec source | Status | Screens (approx.) | Depends on | Feeds |
 | --- | --- | --- | --- | --- | --- | --- |
-| FS-001 | Location & Geofencing | UX docs (11 screens designed) | UX DONE, code PENDING | 12 | Android permission model | Risk engine, reports |
-| FS-002 | Web Filtering | `pasted_file_eR4Zl5` | **CURRENT (first)** | 4 | Design system | AI web-safety signals |
-| FS-003 | Application System | `pasted_file_g0NMq9` | PLANNED | 4 | FS-002 UI patterns | Usage/AI signals |
-| FS-004 | Screenshot & Camera Control | `pasted_file_jJJcSG` | PLANNED | 5 | FS-003 | AI evidence layer |
-| FS-005 | Special & Custom Modes | `pasted_file_tMVRXe` | PLANNED | 7 | Policy engine (M6/M8) | Policy intelligence |
-| FS-006 | SOS & Emergency | `pasted_file_Bq5QbT` | PLANNED | 6 | SOS pipeline (Phase 18) | Risk engine |
-| FS-007 | Offline AI Safety | `pasted_file_VQAyYR` | PLANNED | 6 | FS-004, AI artifact review | On-device AI layer |
-| FS-008 | One-Way Audio | `pasted_file_MQgNts` | PLANNED | 12 | FS-007 consent patterns | Behavior intelligence |
-| FS-009 | Reports & PDF | `pasted_file_S45lxh` | PLANNED | 5 | All data-producing subsystems | Family intelligence |
-| FS-010 | Ephemeral Family Chat | `pasted_file_7sbK3L` | PLANNED | 2 | Membership lifecycle (M5) | Family context |
-| FS-011 | Family Rules & Policy Engine | `pasted_file_JBLkUK` | PLANNED | 5 | Policy engine, FS-002/003/005 actions | Policy intelligence |
-| FS-012 | Child Mode & Child Device Experience | `pasted_file_02czMG` | PLANNED | 3 | M8 enforcement | Child self-service |
-| FS-013 | Couple Harmony Mode | `pasted_file_tzaehl` | PLANNED | 4 | M5 membership, Phase 17 spouse role | Couple context |
-| FS-014 | Primary Parent Dashboard & Unlinked Device | `pasted_file_joglQ1` | PLANNED | 5 | All capability phases | Entry/journeys |
-| FS-015 | Device Linking & Enrollment | `pasted_file_1QzLnG` | PLANNED | 9 | Pairing repository (M4) | Onboarding |
-| FS-016 | Startup & State Machine | `pasted_file_oeZ4F6` | PLANNED | 3 | Role model, entitlements doc | Onboarding |
+| FS-001 | Location & Geofencing | UX docs (11 screens designed) | UX DONE, code PENDING | 15 | Android permission model | Risk engine, reports |
+| FS-002 | Web Filtering | `pasted_file_eR4Zl5` + gap closure | **CURRENT (first)** | 10 | Design system | AI web-safety signals |
+| FS-003 | Application System | `pasted_file_g0NMq9` + gap closure | PLANNED | 8 | FS-002 UI patterns | Usage/AI signals |
+| FS-004 | Screenshot & Camera Control | `pasted_file_jJJcSG` + gap closure | PLANNED | 9 | FS-003 | AI evidence layer |
+| FS-005 | Special & Custom Modes | `pasted_file_tMVRXe` + gap closure | PLANNED | 10 | Policy engine (M6/M8) | Policy intelligence |
+| FS-006 | SOS & Emergency | `pasted_file_Bq5QbT` + gap closure | PLANNED | 8 | SOS pipeline (Phase 18) | Risk engine |
+| FS-007 | Offline AI Safety | `pasted_file_VQAyYR` + gap closure | PLANNED | 9 | FS-004, AI artifact review | On-device AI layer |
+| FS-008 | One-Way Audio | `pasted_file_MQgNts` + gap closure | PLANNED | 14 | FS-007 consent patterns | Behavior intelligence |
+| FS-009 | Reports & PDF | `pasted_file_S45lxh` + gap closure | PLANNED | 7 | All data-producing subsystems | Family intelligence |
+| FS-010 | Ephemeral Family Chat | `pasted_file_7sbK3L` + gap closure | PLANNED | 4 | Membership lifecycle (M5) | Family context |
+| FS-011 | Family Rules & Policy Engine | `pasted_file_JBLkUK` + gap closure | PLANNED | 7 | Policy engine, FS-002/003/005 actions | Policy intelligence |
+| FS-012 | Child Mode & Child Device Experience | `pasted_file_02czMG` + gap closure | PLANNED | 5 | M8 enforcement | Child self-service |
+| FS-013 | Couple Harmony Mode | `pasted_file_tzaehl` + gap closure | PLANNED | 7 | M5 membership, Phase 17 spouse role | Couple context |
+| FS-014 | Primary Parent Dashboard & Unlinked Device | `pasted_file_joglQ1` + gap closure | PLANNED | 7 | All capability phases | Entry/journeys |
+| FS-015 | Device Linking & Enrollment | `pasted_file_1QzLnG` + gap closure | PLANNED | 11 | Pairing repository (M4) | Onboarding |
+| FS-016 | Startup & State Machine | `pasted_file_oeZ4F6` + gap closure | PLANNED | 5 | Role model, entitlements doc | Onboarding |
 
-Total new UI surface: **~131 screens** across 16 subsystems, plus the ~10 AI screens in Phase 11 — the platform's full target of ~150 screens/states.
+Total new UI surface: **138 screens** across 16 subsystems, plus the 13 AI screens in Phase 11 and 5 commercial screens — the platform's full target of ~169 named screens and ~200 screen/states (including child-device and inline surfaces).
 
 ### 4.1 Dependency graph (condensed)
 
@@ -223,26 +223,29 @@ The table below is the complete map. Each subsystem section in Sections 6–8 ex
 
 | Subsystem | Screens (ID range) | Count |
 | --- | --- | --- |
-| FS-002 Web Filtering | WF-001…WF-004 | 4 |
-| FS-003 Application System | AC-001…AC-004 | 4 |
-| FS-004 Screenshot & Camera | SC-001…SC-005 (+ child active session) | 6 |
-| FS-005 Special & Custom Modes | MD-001…MD-007 (+ child active mode) | 8 |
-| FS-006 SOS & Emergency | SO-001…SO-006 | 6 |
-| FS-007 Offline AI Safety | AS-001…AS-006 (+ settings) | 7 |
-| FS-008 One-Way Audio | AU-001…AU-012 | 12 |
-| FS-009 Reports & PDF | RP-001…RP-005 | 5 |
-| FS-010 Ephemeral Chat | CH-001, CH-002 | 2 |
-| FS-011 Family Rules | RL-001…RL-005 | 5 |
-| FS-012 Child Mode | CM-001…CM-003 | 3 |
-| FS-013 Couple Harmony | CO-001…CO-004 | 4 |
-| FS-014 Primary Dashboard | PD-001…PD-005 | 5 |
-| FS-015 Device Linking | DL-001…DL-009 | 9 |
-| FS-016 Startup & State Machine | ST-001…ST-003 | 3 |
-| FS-001 Location & Geofencing | LO-001…LO-012 | 12 |
-| **FS subtotal** | | **95** |
-| Guardian AI (Phase 11) | AI-001…AI-010 | 10 |
+| FS-002 Web Filtering | WF-001…WF-010 | 10 |
+| FS-003 Application System | AC-001…AC-008 | 8 |
+| FS-004 Screenshot & Camera | SC-001…SC-009 (+ child active session) | 9+1 |
+| FS-005 Special & Custom Modes | MD-001…MD-010 (+ child active mode) | 10+1 |
+| FS-006 SOS & Emergency | SO-001…SO-008 | 8 |
+| FS-007 Offline AI Safety | AS-001…AS-009 | 9 |
+| FS-008 One-Way Audio | AU-001…AU-014 | 14 |
+| FS-009 Reports & PDF | RP-001…RP-007 | 7 |
+| FS-010 Ephemeral Chat | CH-001…CH-004 | 4 |
+| FS-011 Family Rules | RL-001…RL-007 | 7 |
+| FS-012 Child Mode | CM-001…CM-005 | 5 |
+| FS-013 Couple Harmony | CO-001…CO-007 | 7 |
+| FS-014 Primary Dashboard | PD-001…PD-007 | 7 |
+| FS-015 Device Linking | DL-001…DL-011 | 11 |
+| FS-016 Startup & State Machine | ST-001…ST-005 | 5 |
+| FS-001 Location & Geofencing | LO-001…LO-015 | 15 |
+| **FS subtotal** | | **138** |
+| Guardian AI (Phase 11) | AI-001…AI-013 | 13 |
+| Commercial (Phase 13) | CMR-001…CMR-005 | 5 |
 | Baseline (existing, upgraded) | 14 screens | 14 |
-| **Platform total** | | **~150 screens/states** |
+| **Platform total** | | **170 named screens, ~200 screen/states** |
+
+**Gap-closure principle:** every screen above serves at least one of five purposes — completes a user lifecycle (view → act → review), removes a dead end (unhandled device/events lifecycle), lowers a real activation friction (templates, presets), enforces honesty (transparent states), or feeds a future AI layer with structured signals. No screen exists for decoration.
 
 ---
 
@@ -290,16 +293,33 @@ docs/06_ux/02_screens/<subsystem>/
 | WF-002 | Content Categories | `/safety/web/:familyId/categories` | Enable/disable the 12 category blocks (adult content, gambling, violence, social, streaming, …) with child granularity | `GuardianSection` per category group; each row: `GuardianIconBadge` + title + description + `SwitchListTile`-style toggle rendered through theme; per-child chips via `GuardianStatusChip` | loading, empty, unauthorized | parent/owner |
 | WF-003 | Website Blocklist | `/safety/web/:familyId/blocklist` | Add/remove blocked domains; search; empty state invites first entry | `GuardianCard` list rows (domain + reason + delete action); add sheet with domain input + `FilledButton`; empty `GuardianStateView(state: empty)` with primary action "Add first domain" | loading, empty, error, offline | parent/owner |
 | WF-004 | Web Filtering Settings | `/safety/web/:familyId/settings` | Safe-search enforcement, blocked-page behavior (explain-to-child vs silent), exception requests allowed | `GuardianCard` toggles + radio groups; info banner about child experience | loading, unauthorized | parent/owner |
+| WF-005 | Block History | `/safety/web/:familyId/history` | What was blocked, when, for which child, in which category; filterable log | `GuardianCard` log rows with `GuardianStatusChip` severity + filter bar; empty state explains healthy-absence | loading, empty, offline | parent/owner |
+| WF-006 | Block Hit Detail | `/safety/web/:familyId/history/:hitId` | One hit: domain, time, child, category match, outbox honesty | Detail stack + action row (allow once / allow 15min / keep blocked) | loading, missing | parent/owner |
+| WF-007 | Temporary Allow | `/safety/web/:familyId/history/:hitId/allow` | Unblock once or for a bounded window with expiry honesty | Time picker section + consequence disclosure + confirm CTA; chip shows `GuardianStatusKind.active` until expiry | — | parent/owner |
+| WF-008 | Site Allowlist | `/safety/web/:familyId/allowlist` | Trusted sites that pass all filters (school, bank, prayer times) | `GuardianCard` list + add sheet; distinct from blocklist; empty state CTA | loading, empty | parent/owner |
+| WF-009 | Per-Child Web Policy | `/safety/web/:familyId/:childId` | Per-child category matrix: teen gets social, younger child does not | Child header + category matrix (`GuardianSection` per group) | loading, no-child | parent/owner |
+| WF-010 | Blocked Page Explanation | device-side `/blocked` | Child-facing: why this site is blocked, which rule, request-exception CTA | Child-mode explanation hero; copy is age-appropriate AR+EN | — | child (device-side; spec documents contract) |
 
 **Data wiring:** reads `childPoliciesProvider(familyId)`, `childOverridesProvider(familyId)`, `familyRuntimeContextProvider(familyId)`; category enable mutations enqueue through the existing outbox repository. Events: emits future `WEB_POLICY_UPDATED`, `WEB_BLOCK_HIT` consumers (Phase 9 normalization); today the UI reads only.
 
-**Child experience:** blocked pages are rendered by the existing enforcement layer; no new child screen in this phase (child blocked-page UX is device-side, out of frontend scope).
+**Child experience:** blocked pages are rendered by the existing enforcement layer; WF-010 documents the child contract (reason, rule, exception CTA).
+
+**Gap-closure rationale (WF-005…WF-010):** WF-005/006 complete the view→act→review lifecycle of blocking; WF-007 is the standard parent override behavior absent in the base spec; WF-008 adds the trust-list complement to the blocklist; WF-009 fixes the flat-policy gap (one policy cannot fit a 9-year-old and a 13-year-old); WF-010 closes the child-experience dead end mandated by the honesty contract.
 
 **Acceptance:** 3 dashboard widget tests (loading/loaded/unauthorized), categories toggle toggles state and queues a mutation, blocklist add/remove updates list and shows empty state after removal, full suite green, analyze clean. Status: **CURRENT** — this is the next commit set.
 
+**Gap-closure additions (AC-005…AC-008):** AC-005 answers the parent's first question ("how much did they use this app?") with a per-app usage timeline; AC-006 adds proactive alerting (alert when an app exceeds X) absent from the base spec; AC-007 complements category filtering with age-rating policy; AC-008 mirrors WF-005 with an app block-history audit trail that feeds behavior intelligence (L3).
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| AC-005 | App Usage Detail | `/apps/:familyId/:childId/:appId/usage` | Per-app usage timeline and session lengths | Timeline `GuardianSection` + daily bars | parent/owner |
+| AC-006 | Usage Alert Settings | `/apps/:familyId/:childId/:appId/alerts` | Alert when app exceeds X time | Threshold picker + toggle | parent/owner |
+| AC-007 | Age-Rating Policy | `/apps/:familyId/ratings` | Block apps by age rating | Rating matrix toggles | parent/owner |
+| AC-008 | App Block History | `/apps/:familyId/history` | Audit trail of app blocks | Log rows with severity chips | parent/owner |
+
 ---
 
-### 6.3 FS-003 — Application System (4 screens)
+### 6.3 FS-003 — Application System (8 screens)
 
 **Product intent:** Parents see installed applications on linked child devices, apply per-app block/allow policies, and maintain an allowlist that survives mode changes.
 
@@ -325,13 +345,22 @@ docs/06_ux/02_screens/<subsystem>/
 | SC-003 | Screenshot Viewer | `/monitoring/:familyId/screenshots/:shotId` | Full-size capture with metadata, evidence tagging | Full-bleed image card + metadata section + tag as evidence CTA | loading, missing | parent/owner |
 | SC-004 | Live Screen Session | `/monitoring/:familyId/live` | Real-time mirroring request; connecting/waiting/active/ended states | State-driven `GuardianStateView` for connecting; active tile with `GuardianStatusChip(live)`; duration limit notice | connecting, active, unavailable (device off/doze) | parent/owner |
 | SC-005 | Camera Control | `/monitoring/:familyId/camera` | Camera capture policy: enabled/disabled, schedule, capture history | `GuardianCard` toggles + schedule section + history list | loading, unsupported (hardware missing) honest | parent/owner + spouse-consent gate (documented, enforced later in FS-013) |
-| SC-006 | Child Active Session | `/monitoring/:familyId/:childId/session` | Child's current app/active state summary | Single `GuardianHeroCard` session summary + `GuardianStatusChip` | loading, no-device | parent/owner |
+
+| SC-006 | Child Active Session | `/monitoring/:familyId/:childId/session` | Child device sees its own active monitored session status | Child-mode session card + privacy note | child (self-scope, fail-closed) |
 
 **AI dependency:** every capture is an evidence object consumed by FS-007 offline AI detection. Contract: captures carry `privacyClass` — never uploaded beyond the family scope.
 
+**Gap-closure additions (SC-007…SC-009):** SC-007 makes the capture pipeline honest end-to-end (requested → approved → delivered/failed) through the outbox contract; SC-008 turns one-off captures into a scheduled policy surface; SC-009 creates the unified evidence queue consumed by FS-007 and AI L2.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| SC-007 | Capture Request History | `/monitoring/:familyId/requests` | Request lifecycle: requested / approved / delivered / failed, outbox honesty | Status-tiled log rows (`GuardianStatusChip` per stage) | parent/owner |
+| SC-008 | Camera Schedule | `/monitoring/:familyId/schedule` | Recurring scheduled captures (e.g., homework hours) | Schedule list + create sheet | parent/owner |
+| SC-009 | Evidence Review Queue | `/monitoring/:familyId/evidence` | All flagged evidence from screenshots/camera in one triage queue | Queue rows + tag chips; taps into AS-004 | parent/owner |
+
 ---
 
-### 6.5 FS-005 — Special & Custom Modes (8 screens)
+### 6.5 FS-005 — Special & Custom Modes (10 screens)
 
 **Product intent:** Beyond daily screen-time limits, the parent defines situational modes — homework mode, bedtime mode, travel mode — with schedules, child assignment, and temporary overrides.
 
@@ -346,11 +375,18 @@ docs/06_ux/02_screens/<subsystem>/
 | MD-007 | Mode History | `/modes/:familyId/:modeId/history` | Activation log with honest states (applied / requested / failed) | Timeline list | parent/owner |
 | MD-008 | Child Active Mode Screen | child device vertical `/child/:fid/:cid/mode` | Child sees which mode is active, remaining time, request exception CTA | Child-facing read-only hero + request CTA | child self-scope |
 
+**Gap-closure additions (MD-009, MD-010):** MD-009 removes the "blank canvas" friction that kills mode creation with three tested presets (homework, bedtime, travel); MD-010 makes the policy engine honest about simultaneous modes — deterministic conflict resolution with a conflict-preview surface, preventing silent policy overrides.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| MD-009 | Mode Templates | inline on MD-003 | Preset starting points: homework, bedtime, travel — pre-filled forms | Template cards → create form | parent/owner |
+| MD-010 | Mode Conflict Resolver | inline preview on MD-002 | Two modes active simultaneously: which rules win and why | Conflict table + resolution policy disclosure | parent/owner |
+
 **Backend dependency:** uses the existing policy/mode evaluation pipeline; new mode records queue via outbox. **AI consumer:** mode suggestions from behavior intelligence.
 
 ---
 
-### 6.6 FS-006 — SOS & Emergency (6 screens)
+### 6.6 FS-006 — SOS & Emergency (8 screens)
 
 **Product intent:** Expand the existing Phase-18 SOS pipeline into a full emergency experience: activation, live active-SOS state, recipient acknowledgement, emergency location, alerts history.
 
@@ -363,11 +399,18 @@ docs/06_ux/02_screens/<subsystem>/
 | SO-005 | Emergency Alert | notification deep link → `/sos/:familyId/alert/:alertId` | Received alert detail, acknowledge CTA | Urgent card + acknowledge button → posts acknowledgement event | SOS recipient |
 | SO-006 | Emergency Acknowledgement History | `/sos/:familyId/ack` | Who acknowledged, when; unacknowledged escalation state | Timeline + `GuardianStatusChip` per responder | parents |
 
+**Gap-closure additions (SO-007, SO-008):** SO-007 closes the recipient-management gap — a readiness dashboard without recipient control is a dead end; SO-008 converts the readiness claim into proof via a guided test drill that verifies alert delivery, reception, acknowledgement, and location before a real emergency.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| SO-007 | SOS Recipient Management | `/sos/:familyId/recipients` | Add/remove/order recipients; assign roles (responder vs notify-only) | Recipient list + add sheet; role chips | parent/owner |
+| SO-008 | SOS Drill / Readiness Test | `/sos/:familyId/drill` | Guided test: alert sent → received → acknowledged → location check | Step checklist hero + live test states (`GuardianStatusChip`) + result summary | parent/owner; child can trigger own drill |
+
 **Honest-state emphasis:** SOS never shows "alert sent" unless the outbox confirms queueing; offline SOS uses the existing SMS-fallback contract (displayed as `GuardianStatusChip` state).
 
 ---
 
-### 6.7 FS-007 — Offline AI Safety (7 screens)
+### 6.7 FS-007 — Offline AI Safety (9 screens)
 
 **Product intent:** The on-device safety-detection experience: safety reports generated by on-device analysis, evidence review, and a parent-maintained custom dictionary (sensitive words/phrases the child should not encounter).
 
@@ -383,11 +426,18 @@ docs/06_ux/02_screens/<subsystem>/
 | AS-006 | AI Safety Settings | `/ai-safety/:familyId/settings` | Detection on/off per child, sensitivity, notification preferences | `GuardianCard` toggles | parent/owner |
 | AS-007 | Child Safety Explanation | child vertical `/child/:fid/:cid/safety` | Child-facing explanation of what is monitored, in age-appropriate copy | Child-mode hero + explanation sections | child self-scope |
 
+**Gap-closure additions (AS-008, AS-009):** AS-008 answers the detection-trend question (better or worse this week?) — the minimal longitudinal surface that bridges to Family Intelligence (L7); AS-009 removes the cold-start friction of the custom dictionary with age-appropriate preset lists a parent can adopt in one tap.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| AS-008 | Detection Trend | `/ai-safety/:familyId/trend` | Week-over-week detection direction, honest when data is insufficient | Trend hero + note "not enough data yet" when N is small | parent/owner |
+| AS-009 | Dictionary Templates | inline on AS-005 | Age-appropriate preset word lists (child 7–9, 10–12, 13+) | Preset cards → adopt/preview | parent/owner |
+
 **Events:** consumes `SAFETY_DETECTION` family; emits parent actions as `SAFETY_REPORT_ACTION`. **AI dependency:** this subsystem IS the UI surface of the future on-device AI layer; its contracts must remain stable.
 
 ---
 
-### 6.8 FS-008 — One-Way Audio (12 screens)
+### 6.8 FS-008 — One-Way Audio (14 screens)
 
 **Product intent:** Live ambient audio listening to the child's environment — the most sensitive surface in the platform. It carries hard consent gates (Phase 17 sensitive-action law), spouse co-authorization, network policy, duration caps, and full session history with transparency.
 
@@ -406,11 +456,18 @@ docs/06_ux/02_screens/<subsystem>/
 | AU-011 | Spouse Consent / Authorization Settings | `/audio/:familyId/settings/consent` | Whether spouse approval is required before sessions | Consent toggle + pending approvals list | parent/owner |
 | AU-012 | Child Audio Policy | child vertical `/child/:fid/:cid/audio-policy` | Child-facing visibility of audio policy state | Child-mode explanation | child self-scope |
 
+**Gap-closure additions (AU-013, AU-014):** AU-013 gives parents a memory surface (per-session notes) so audio context is retained across sessions and later feeds Family Context (L5); AU-014 converts passive listening into an active safety net — an opt-in keyword alert that notifies parents when the child says trigger phrases ("help", "I'm scared") without requiring continuous monitoring.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| AU-013 | Session Notes | inline on AU-010 | Parent annotations per audio session | Note input + notes list per session | parent/owner |
+| AU-014 | Keyword Alert Settings | `/audio/:familyId/settings/keywords` | Opt-in trigger phrases that alert the parent ("help", custom) | Keyword list + add/remove + disclosure of sensitivity | parent/owner |
+
 **Authorization note:** AU-002 is the only audio surface an actor can reach without the sensitive-action flag; the gate itself verifies `FamilyRuntimeContext.can(audioMonitor)` before rendering the confirm CTA. **AI consumer:** audio events feed behavior intelligence (with privacy class enforcement).
 
 ---
 
-### 6.9 FS-009 — Reports & PDF (5 screens)
+### 6.9 FS-009 — Reports & PDF (7 screens)
 
 **Product intent:** Aggregated family reporting: daily/weekly/monthly, per-child and whole-family, exportable PDF.
 
@@ -422,11 +479,18 @@ docs/06_ux/02_screens/<subsystem>/
 | RP-004 | Single Child Report | `/reports/:familyId/report/:reportId` | Executive summary + per-section cards + PDF export CTA | Hero summary + `GuardianSection`s per chapter + export | parent/owner |
 | RP-005 | All-Children Report | `/reports/:familyId/report/:reportId/all` | Whole-family aggregate report | As RP-004 with per-child comparison sections | parent/owner |
 
+**Gap-closure additions (RP-006, RP-007):** RP-006 closes the engagement loop (parents who forget to generate reports stop using the feature) with automatic scheduled weekly reports; RP-007 enables co-parent collaboration by sharing a report via a family-scoped link.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| RP-006 | Scheduled Reports | `/reports/:familyId/schedule` | Auto-generate weekly report (period, sections, children) | Schedule card + edit/remove | parent/owner |
+| RP-007 | Report Share | inline on RP-004/005 | Share report within the family | Share sheet (copy link) + honest scope note (family-only) | parent/owner |
+
 **Data:** aggregates existing daily summaries, policy evaluations, incidents, outbox history. **AI consumer:** family intelligence drafts the executive summary (Phase 11).
 
 ---
 
-### 6.10 FS-010 — Ephemeral Family Chat (2 screens)
+### 6.10 FS-010 — Ephemeral Family Chat (4 screens)
 
 **Product intent:** In-family messaging with 24-hour auto-expiration. Lightweight: list + chat, no attachments phase 1.
 
@@ -435,9 +499,16 @@ docs/06_ux/02_screens/<subsystem>/
 | CH-001 | Chat List | `/chat/:familyId` | Conversations (Family / per-member / spouse) with expiration indicators | List of `GuardianCard` rows with last-message + timer chip | any member (role-scoped threads) |
 | CH-002 | Chat Screen | `/chat/:familyId/:threadId` | Bubbles, input, expiration note banner | Bubble list + input bar; `GuardianOfflineBanner` when queued | as CH-001 |
 
+**Gap-closure additions (CH-003, CH-004):** CH-003 adds the control surface (thread expiration window, notification preference) that every messaging surface needs; CH-004 enforces the honesty contract of ephemeral messaging by showing what happened to expired threads rather than pretending messages persist.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| CH-003 | Chat Settings | inline on CH-001 | Per-thread expiration window and notification preference | Settings sheet | any member |
+| CH-004 | Expired Conversation Notice | inline on CH-002 | Honest notice that earlier messages expired (read-only hint) | Inline banner | any member |
+
 ---
 
-### 6.11 FS-011 — Family Rules & Policy Engine (5 screens)
+### 6.11 FS-011 — Family Rules & Policy Engine (7 screens)
 
 **Product intent:** A user-friendly rule layer over the existing `PolicyEngine`: parents create plain-language rules (when/who/what → action) that compile into delivered policies, with conflict detection and effective-policy preview.
 
@@ -449,11 +520,18 @@ docs/06_ux/02_screens/<subsystem>/
 | RL-004 | Conflict Warning | inline on RL-003 | Two rules conflict → warning card with resolution options | Warning `GuardianCard`(alert kind) | — |
 | RL-005 | Effective Policy Preview | `/rules/:familyId/:ruleId/preview` | Simulated delivered policy for a selected child | Preview sections: daily limit, blocks, modes | parent/owner |
 
+**Gap-closure additions (RL-006, RL-007):** RL-006 adds the accountability audit (who created/changed a rule and when) that rule surfaces need in a two-parent household; RL-007 removes creation friction with preset rules.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| RL-006 | Rule History / Audit | inline on RL-003 | Who created/changed/disabled a rule, when | Timeline rows | parent/owner |
+| RL-007 | Rule Templates | inline on RL-002 | Preset rules: homework hours, bedtime, weekends | Template cards → create form | parent/owner |
+
 **Backend dependency:** rules compile locally and queue through the existing policy outbox path — no new schema.
 
 ---
 
-### 6.12 FS-012 — Child Mode & Child Device Experience (3 screens)
+### 6.12 FS-012 — Child Mode & Child Device Experience (5 screens)
 
 **Product intent:** The child-facing experience: my usage today, my device status, and the ability to request more time (feeding the existing exception-request pipeline).
 
@@ -463,9 +541,16 @@ docs/06_ux/02_screens/<subsystem>/
 | CM-002 | Child Mode Lock | lock overlay | Device locked: reason, remaining time, parent contact note | Full-screen lock hero (navy) + time chip | child |
 | CM-003 | Parent Authorization (unlock request) | `/requests/:familyId/unlock/:requestId` | Parent reviews child's unlock request | Existing request-review cards with approve/deny CTAs | parent/owner |
 
+**Gap-closure additions (CM-004, CM-005):** CM-004 gives the child visibility of their own request lifecycle (submitted → decided) — the child-voice half of the exception pipeline; CM-005 builds child-side trust by showing what is monitored and why, a transparency requirement that strengthens long-term compliance.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| CM-004 | My Exception Requests | child vertical `/child/:fid/:cid/requests` | Child's own pending/decided request history | Child-mode list with status chips | child self-scope |
+| CM-005 | My Privacy View | child vertical `/child/:fid/:cid/privacy` | What is monitored on my device, which rule, why | Child-mode disclosure cards, age-appropriate copy | child self-scope |
+
 ---
 
-### 6.13 FS-013 — Couple Harmony Mode (4 screens)
+### 6.13 FS-013 — Couple Harmony Mode (7 screens)
 
 **Product intent:** A distinct subsystem (NOT child monitoring): spouses coordinate as equals — shared routines, divided responsibilities, coordinated decisions, emergency roles, and explicit privacy boundaries. Authority is deliberately symmetric; every sensitive action requires mutual or owner-approved consent. **Status: PLANNED.**
 
@@ -476,11 +561,19 @@ docs/06_ux/02_screens/<subsystem>/
 | CO-003 | Permission Review | `/couple/:familyId/permissions` | What each partner can see/do; boundary disclosures | Permission matrix cards with `GuardianStatusChip` | both |
 | CO-004 | Family Decisions | `/couple/:familyId/decisions` | Propose/resolve family decisions (new rule, new app allowed, trip mode) | Decision cards + propose CTA + resolved section | both |
 
+**Gap-closure additions (CO-005…CO-007):** CO-005 builds shared daily routines (the subsystem's core coordination artifact); CO-006 operationalizes responsibility division (who handles drop-off tonight); CO-007 handles the real-world asymmetric day — when one parent is away, an explicit handover mode transfers primary response duty with honest role chips.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| CO-005 | Shared Routine Builder | `/couple/:familyId/routines/new` | Create morning/night/weekday routines with steps and owners | Routine step builder + owner assignment | both |
+| CO-006 | Responsibility Board | `/couple/:familyId/responsibilities` | Today's divided tasks, ownership chips, done toggles | Board cards per responsibility + done state | both |
+| CO-007 | Co-Parent Handover | inline on CO-002 | Activate "one parent away" mode; transfer primary duty | Handover card + role chip switch | both |
+
 **Privacy boundaries (design law):** no partner can view the other's sensitive surfaces (audio history, evidence) without the other's explicit approval; the UI enforces this through `FamilyRuntimeContext.can()` — identical mechanism, symmetric matrix rows.
 
 ---
 
-### 6.14 FS-014 — Primary Parent Dashboard & Unlinked Device (5 screens)
+### 6.14 FS-014 — Primary Parent Dashboard & Unlinked Device (7 screens)
 
 **Product intent:** The first-run and aggregate experiences: unlinked entry, family creation/join, authentication confirmation, and the post-capability primary dashboard aggregating all subsystems.
 
@@ -492,9 +585,16 @@ docs/06_ux/02_screens/<subsystem>/
 | PD-004 | Parent Authentication | `/auth/confirm` | Re-auth confirmation for sensitive operations | Confirmation card + OTP/biometric ladder hooks | account holder |
 | PD-005 | Primary Parent Dashboard | `/` (post-capability) | Aggregates: family overview, safety center, location overview, geofence overview, SOS overview | Hero + subsystem overview `GuardianCard`s, each tapping into its subsystem dashboard | parent/owner |
 
+**Gap-closure additions (PD-006, PD-007):** PD-006 provides the family identity surface (name, members, founded date) every aggregate dashboard presupposes; PD-007 is the activation funnel — an honest setup checklist (link a device, set the first policy, configure SOS) whose completion directly determines first-week retention.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| PD-006 | Family Profile | `/family/:familyId/profile` | Family identity: name, members summary, created date | Profile `GuardianCard` stack | member |
+| PD-007 | Setup Checklist | `/family/:familyId/setup` | Guided activation: device linked → first policy → SOS configured | Checklist hero + per-step CTAs with honest progress | parent/owner |
+
 ---
 
-### 6.15 FS-015 — Device Linking & Enrollment (9 screens)
+### 6.15 FS-015 — Device Linking & Enrollment (11 screens)
 
 **Product intent:** Complete the M4 pairing foundation with full UX: QR pairing, manual code, child enrollment flow, spouse device linking, permission onboarding with honest failure ladders, role transition, and unlinking.
 
@@ -510,9 +610,16 @@ docs/06_ux/02_screens/<subsystem>/
 | DL-008 | Permission Onboarding | `/onboard/permissions` | Android permission ladder with honest failure states (location/accessibility/usage stats) | Ladder sections; each row honest: granted / requires-settings / unsupported / deferred | device actor |
 | DL-009 | Device Unlinking | `/settings/device/:deviceId/unlink` | Revoke a device with consequence disclosure | Disclosure card + confirm | owner |
 
+**Gap-closure additions (DL-010, DL-011):** DL-010 closes the operational dead end of "no device has synced in 3 days" with a family-wide device-health view; DL-011 handles the most common real-world device lifecycle event (child gets a new phone) which today would force a full re-pairing from scratch.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| DL-010 | Device Health Dashboard | `/settings/devices` | Every family device: battery, sync freshness, last-seen | Health cards with `GuardianStatusChip`(healthy/stale/offline) | parent/owner |
+| DL-011 | Replace / Transfer Device | `/settings/device/:deviceId/transfer` | Move a child's enrollment to a new device with honest data-migration note | Transfer wizard + confirm | parent/owner |
+
 ---
 
-### 6.16 FS-016 — Startup & State Machine (3 screens)
+### 6.16 FS-016 — Startup & State Machine (5 screens)
 
 **Product intent:** The app's cold-start experience and subscription-aware feature gating.
 
@@ -522,9 +629,16 @@ docs/06_ux/02_screens/<subsystem>/
 | ST-002 | Feature Lock / Upgrade Gate | inline gate | Free-tier features locked: what's locked, why, upgrade CTA | Lock card (gradient hero) + entitlements list + upgrade CTA | any (post-entitlements) |
 | ST-003 | Offline Startup | cold start offline | App usable offline: queued banner, last-known state freshness stamp | Honest startup card + `GuardianOfflineBanner` | any |
 
+**Gap-closure additions (ST-004, ST-005):** ST-004 completes role routing (the role gate exists; the role-specific landings did not); ST-005 is the engagement disclosure surface — what's new since last launch — required once FS capabilities roll out.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| ST-004 | Role Landing Variants | per-role post-gate | Child lands on `/child/:fid/:cid`; spouse lands on harmony dashboard | Role-specific landing wrappers | any member |
+| ST-005 | What's New | `/whats-new` | Feature disclosure per version, dismiss with honesty | Version cards + dismiss | any member |
+
 ---
 
-### 6.17 FS-001 — Location & Geofencing (12 screens)
+### 6.17 FS-001 — Location & Geofencing (15 screens)
 
 **Product intent:** The designed 11-screen location system (FS-001-UX approved): family map, member location details, location history, geofence list/CRUD, settings, permission onboarding, sharing status, alerts, privacy information. Implemented as a parallel track with the same contracts.
 
@@ -542,6 +656,14 @@ docs/06_ux/02_screens/<subsystem>/
 | LO-010 | Location Alerts | `/location/:familyId/alerts` | Geofence entry/exit alert history | Alert list + severity chips | parent/owner |
 | LO-011 | Location Privacy Information | `/location/:familyId/privacy` | What is collected, retention, who sees it | Disclosure sections | any member |
 | LO-012 | Offline Location State | inline banner | Outbox-queued location updates | `GuardianOfflineBanner` | — |
+
+**Gap-closure additions (LO-013…LO-015):** LO-013 removes the per-geofence naming burden with named favorite places (home, school, mosque, grandma) that geofences can anchor to; LO-014 removes geofence creation friction with place templates; LO-015 closes the child-agency gap — location sharing is presented to the child as a visible, explaineable state, not an invisible background collection.
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| LO-013 | Favorite Places | `/location/:familyId/places` | Named places: home, school, others — geofence anchors | Place list + add-on-map sheet | parent/owner |
+| LO-014 | Geofence Templates | inline on LO-005 | Presets: school hours, home range, prayer location | Template cards → pre-filled form | parent/owner |
+| LO-015 | Child Sharing Visibility | child vertical `/child/:fid/:cid/location-sharing` | Child sees when/why location is shared | Child-mode disclosure cards | child self-scope |
 
 **AI consumer:** location anomalies → risk engine; geofence violations → incident generation.
 
@@ -606,7 +728,7 @@ Every AI layer documents the same 13 fields: Purpose, Inputs, Sources, Preproces
 
 **Model strategy:** on-device models for detection (privacy-class enforcement: detections never leave the device unredacted), cloud models for reasoning/copilot summaries where the family has opted in, and **Guardian-owned logic** (ontology, risk rules, policy intelligence) as the durable differentiator. No general LLM training — orchestration is the IP.
 
-### 7.4 The 10 AI screens
+### 7.4 The 13 AI screens
 
 | ID | Screen | Route | Purpose | UI composition | Auth |
 | --- | --- | --- | --- | --- | --- |
@@ -620,6 +742,14 @@ Every AI layer documents the same 13 fields: Purpose, Inputs, Sources, Preproces
 | AI-008 | Copilot Settings | `/insights/:familyId/copilot/settings` | Opt-in controls, cloud-model consent, explanation language | Consent toggles + disclosure | parent/owner |
 | AI-009 | Smart Policy Proposal | `/insights/:familyId/proposals/:proposalId` | AI-drafted policy change with before/after preview | Diff preview (reuses RL-005 component) + approve/reject CTAs | parent/owner |
 | AI-010 | AI Transparency Center | `/insights/:familyId/transparency` | What the AI knows, model versions, data used, delete-my-model-data | Disclosure sections + data controls | parent/owner |
+
+**Gap-closure additions (AI-011…AI-013):** AI-011 delivers insights instead of hiding them behind a dashboard visit (weekly AI digest, reusing RP-006 delivery); AI-012 closes the suggestion feedback loop — what was applied/dismissed and what happened after — which is also the training signal for the evaluation harness; AI-013 is the flagship composite surface, a single honest family health scorecard that synthesizes the subsystems into one answer: "how is our family doing?"
+
+| ID | Screen | Route | Purpose | UI composition | Auth |
+| --- | --- | --- | --- | --- | --- |
+| AI-011 | Weekly AI Digest | delivered via RP-006 + `/insights/:familyId/digest` | Weekly AI summary in the report delivery channel | Digest sections mirroring AI-005 | parent/owner |
+| AI-012 | Suggestion Outcomes | inline on AI-006 | Applied/dismissed suggestions + observed effect after 7 days | Outcome cards with effect chips | parent/owner |
+| AI-013 | Family Health Scorecard | `/insights/:familyId/scorecard` | Composite honest view: usage balance, safety incidents, sleep/device-off hours | Scorecard hero + per-dimension tiles; honest "insufficient data" states | parent/owner |
 
 ### 7.5 AI dependency map (feature → event → data → layer → insight → action)
 
@@ -650,6 +780,9 @@ The commercial layer is subscription-aware UX built on the entitlements contract
 | CMR-002 | Upgrade Flow | `/subscription/:familyId/upgrade` | Tier comparison + payment-bridge CTA (external checkout) |
 | CMR-003 | Usage Limits | `/subscription/:familyId/limits` | AI-credit and feature usage meters with honest exhaustion states |
 | CMR-004 | Billing & Receipts | `/subscription/:familyId/billing` | History, local-corridor payment notes |
+| CMR-005 | Cancel / Pause Flow | `/subscription/:familyId/cancel` | Honest exit: confirm consequences, preserve-data disclosure, regulatory-compliant cancel path | Disclosure card + confirm; pause option; `GuardianStatusChip(off)` state | owner |
+
+**Gap-closure (CMR-005):** a subscription system without an honest cancel path is both a regulatory failure (Google Play family-policy) and a trust failure; CMR-005 closes it.
 
 **Tier model (design intent, not implementation):** Free (core safety, 1 child), Premium (all FS capabilities), Family Pro (AI entitlements + multi-child + advanced safety). AI entitlements gate the Phase 11 screens via ST-002.
 
@@ -736,7 +869,7 @@ Every phase commit set must satisfy all of: full test suite green (baseline 247,
 
 | Phase | Test-floor expectation | Docs expected |
 | --- | --- | --- |
-| FS-002 | ≥255 (247 + 8 new) | WF specs in 02_screens, matrix + index updated |
+| FS-002 | ≥267 (247 + 20 new; 10 screens) | WF specs in 02_screens, matrix + index updated |
 | Each FS phase | +6 to +15 tests | subsystem docs + master docs updated |
 | Phase 2.5 integration | same or higher | journeys updated, dead-route re-verification |
 | Phase 9 events | contract tests GREEN | event registry |
@@ -747,7 +880,7 @@ Every phase commit set must satisfy all of: full test suite green (baseline 247,
 
 ## 12. First Deliverables From This Plan
 
-The immediate next work, in order: (1) populate `MASTER_FEATURE_MATRIX.md`, `MASTER_SCREEN_INDEX.md`, `MASTER_NAVIGATION_MAP.md`, `MASTER_PHASE_DEPENDENCY_MAP.md`, `AI_AGENT_ENTRY_PROTOCOL.md` in `docs/00_master/`; (2) begin Phase 2 — implement WF-001…WF-004 (FS-002 Web Filtering) per the specs in Section 6.2, with tests and docs; (3) update this plan's status fields as work lands. This document is the constitution; those files are its working registers.
+The immediate next work, in order: (1) populate `MASTER_FEATURE_MATRIX.md`, `MASTER_SCREEN_INDEX.md`, `MASTER_NAVIGATION_MAP.md`, `MASTER_PHASE_DEPENDENCY_MAP.md`, `AI_AGENT_ENTRY_PROTOCOL.md` in `docs/00_master/`; (2) begin Phase 2 — implement WF-001…WF-010 (FS-002 Web Filtering) per the specs in Section 6.2, with tests and docs; (3) update this plan's status fields as work lands. This document is the constitution; those files are its working registers.
 
 ---
 
