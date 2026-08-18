@@ -14,6 +14,12 @@
 |------|---------|
 | [GUARDIAN_EYE_MASTER_PRODUCT_BLUEPRINT.md](GUARDIAN_EYE_MASTER_PRODUCT_BLUEPRINT.md) | **Primary authority** — product vision, 5-layer architecture, all 17 milestones |
 | [GUARDIAN_EYE_CANONICAL_ROADMAP.md](GUARDIAN_EYE_CANONICAL_ROADMAP.md) | Milestone definitions M4–M17 with scope, contracts, and acceptance criteria |
+| [MASTER_DEVELOPMENT_PLAN.md](MASTER_DEVELOPMENT_PLAN.md) | **Operational authority (current→final)** — constitution: current state, roadmap, 16 subsystem specs, ~150-screen map, Guardian AI, governance. Supersedes prior phase planning. |
+| [MASTER_FEATURE_MATRIX.md](MASTER_FEATURE_MATRIX.md) | What to work on next — per-feature status, dependencies, acceptance |
+| [MASTER_SCREEN_INDEX.md](MASTER_SCREEN_INDEX.md) | Registry of all ~150 screens/states with routes and status |
+| [MASTER_NAVIGATION_MAP.md](MASTER_NAVIGATION_MAP.md) | All routes, gating, deep links, navigation rules |
+| [MASTER_PHASE_DEPENDENCY_MAP.md](MASTER_PHASE_DEPENDENCY_MAP.md) | Phase ordering, hard/soft/parallel/AI/backend/Android dependencies |
+| [AI_AGENT_ENTRY_PROTOCOL.md](AI_AGENT_ENTRY_PROTOCOL.md) | Mandatory zero-history onboarding sequence for any AI agent |
 | [DESIGN_DECISION_LOG.md](DESIGN_DECISION_LOG.md) | Immutable architectural decision record |
 | [CHANGE_PROPOSAL.md](CHANGE_PROPOSAL.md) | Approved change proposals log |
 
