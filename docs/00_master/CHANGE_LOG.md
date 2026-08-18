@@ -134,3 +134,31 @@ DOCS REQUIRED:        · CHANGE_LOG.md (this entry), FIRESTORE_RULES_WEB_FILTER.
 ROLLBACK:             · git revert of this commit; web collections can be dropped from Firestore
 STATUS:               · ready (awaiting user confirmation to commit)
 ```
+
+### CL-005 — Backend integration audit: incident.acknowledged sync fix
+
+```text
+CHANGE-ID:            · CL-005
+REQUEST:              · User directive: re-verify ALL previous phases for real Frontend + Backend +
+                        Firebase + Render integration; fix any genuine gaps found.
+CURRENT PHASE:        · Post FS-002 closure (FS-003 not started)
+AFFECTED FEATURE:     · Safety incidents (M6/M7-adjacent) — one missed sync case
+AFFECTED SCREENS:     · none (backend-only; dashboard incident state already local-correct)
+AFFECTED FILES:       · lib/data/firestore_contracts.dart (new incident.acknowledged case →
+                        families/{fid}/incidents/{iid} merge)
+                      · test/web_filter_backend_test.dart (new contract test)
+AFFECTED DATA:        · Firestore incidents/{incidentId} now receives the acknowledged status
+AFFECTED BACKEND:     · contract switch only; existing deployed rules already allow member-
+                        authorized incident writes (same path as incident.created)
+AFFECTED EVENTS:      · incident.acknowledged (previously fell to syncMetadata — unauthorized,
+                        permanently permission-denied, like the closed M8 bug)
+AFFECTED SECURITY:    · none new (same incident path/authorization as incident.created)
+AFFECTED CURRENT PHASE:      · closes a residual sync gap; no in-flight work altered
+AFFECTED PREVIOUS FOUNDATION: · NONE (M1–M9/Phase 17-18 untouched)
+AFFECTED FUTURE PHASES:      · FS-011 rules / reporting consume acknowledged incidents
+MIGRATION REQUIRED:   · none
+TESTS REQUIRED:       · +1 contract test; suite 257 → 258, all green; 0 errors/0 warnings
+DOCS REQUIRED:        · this entry
+ROLLBACK:             · git revert of this commit
+STATUS:               · ready (awaiting user confirmation to commit)
+```

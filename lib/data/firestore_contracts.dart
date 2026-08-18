@@ -512,6 +512,27 @@ class FirestoreEventContract {
               if (operation == 'family.member.role.updated') 'role': payload['role'],
               if (operation == 'family.member.role.updated') 'roleUpdatedAtClient': payload['updatedAt'],
             });
+      // FS-001-adjacent — Safety incidents. `incident.created` seeds the
+      // document; `incident.acknowledged` merges the acknowledged status on
+      // the same document. Without this case the ack fell through to
+      // `syncMetadata`, a path no deployed rule permits (the same failure
+      // mode the M8 `child.enforcement.applied` fix closed).
+      case 'incident.acknowledged':
+        final ackIncidentId = payload['incidentId'] as String?;
+        if (ackIncidentId == null) {
+          throw const FormatException('incident.acknowledged payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.incident(familyId, ackIncidentId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'familyId': familyId,
+              'incidentId': ackIncidentId,
+              'status': 'acknowledged',
+              'acknowledgedAtClient': payload['acknowledgedAt'] ??
+                  DateTime.now().toUtc().toIso8601String(),
+            });
       // FS-002 — Web Filtering. These operations reach real Firestore
       // documents under the family (web_hits, web_domains, web_category_rules,
       // web_settings). The same idempotency discipline as every other

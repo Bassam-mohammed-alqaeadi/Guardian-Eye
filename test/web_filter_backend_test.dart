@@ -32,7 +32,7 @@ Future<void> _seedFamily(WebFilterRepository repository) async {
 }
 
 void main() {
-  group('FirestoreEventContract — FS-002 web operations', () {
+  group('FirestoreEventContract — FS-002 web operations (+incident ack)', () {
     const contract = FirestoreEventContract();
 
     test('web.hit maps to a real web_hits document with idempotency key', () {
@@ -110,6 +110,22 @@ void main() {
       );
       expect(mutation.path, 'families/fam-1/web_category_rules/child-2:gambling');
       expect(mutation.data['enabled'], false);
+    });
+
+    test('incident.acknowledged merges the ack onto the real incidents document', () {
+      final mutation = contract.businessMutation(
+        operation: 'incident.acknowledged',
+        identity: _identity,
+        idempotencyKey: 'incident.acknowledged:fam-1:inc-1:1',
+        payload: {
+          'familyId': 'fam-1',
+          'incidentId': 'inc-1',
+          'acknowledgedAt': '2026-08-18T11:00:00Z',
+        },
+      );
+      expect(mutation.path, 'families/fam-1/incidents/inc-1');
+      expect(mutation.data['status'], 'acknowledged');
+      expect(mutation.data['acknowledgedAtClient'], '2026-08-18T11:00:00Z');
     });
 
     test('web.setting writes a real web_settings document', () {
