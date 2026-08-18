@@ -30,6 +30,10 @@ class FirestorePaths {
       '${family(familyId)}/locations/$locationId';
   static String geofence(String familyId, String geofenceId) =>
       '${family(familyId)}/geofences/$geofenceId';
+  static String favoritePlace(String familyId, String placeKey) =>
+      '${family(familyId)}/favorite_places/$placeKey';
+  static String locationSetting(String familyId, String key) =>
+      '${family(familyId)}/location_settings/$key';
   static String notification(String familyId, String notificationId) =>
       '${family(familyId)}/notification_events/$notificationId';
   static String syncMetadata(String familyId, String eventId) =>
@@ -652,6 +656,129 @@ class FirestoreEventContract {
               'hitId': ovHitId,
               'overriddenBy': payload['overriddenBy'],
               'overriddenAtClient': payload['overriddenAt']
+            });
+      // FS-001 — Location & Geofencing. Consent-gated location updates land
+      // on `locations/{locationId}` (device-written, parent-read); geofence
+      // configuration lands on `geofences/{geofenceId}` (parent-written);
+      // favorite places anchor geofences to named family places. The same
+      // idempotency discipline as every other operation applies: a repeated
+      // key is a harmless merge, never a duplicate.
+      case 'location.updated':
+        final locId = payload['locationId'] as String?;
+        final locLatitude = payload['latitude'] as num?;
+        final locLongitude = payload['longitude'] as num?;
+        if (locId == null || locLatitude == null || locLongitude == null) {
+          throw const FormatException('location.updated payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.location(familyId, locId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'locationId': locId,
+              'deviceId': payload['deviceId'],
+              'memberId': payload['memberId'],
+              'latitude': locLatitude.toDouble(),
+              'longitude': locLongitude.toDouble(),
+              'accuracyMeters': payload['accuracyMeters'] ?? 100,
+              'capturedAt': payload['capturedAt'],
+              'batteryLevel': payload['batteryLevel'],
+              'source': payload['source'] ?? 'device',
+              'recordedAtClient': payload['capturedAt']
+            });
+      case 'geofence.created':
+        final gfId = payload['geofenceId'] as String?;
+        final gfName = payload['name'] as String?;
+        final gfRadius = payload['radiusMeters'] as num?;
+        if (gfId == null || gfName == null || gfRadius == null) {
+          throw const FormatException('geofence.created payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.geofence(familyId, gfId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'geofenceId': gfId,
+              'name': gfName,
+              'boundary': {
+                'latitude': (payload['latitude'] as num).toDouble(),
+                'longitude': (payload['longitude'] as num).toDouble(),
+                'radiusMeters': gfRadius.toDouble()
+              },
+              'alertOnEntry': payload['alertOnEntry'] ?? true,
+              'alertOnExit': payload['alertOnExit'] ?? true,
+              'memberIds': payload['memberIds'] ?? const <String>[],
+              'placeKey': payload['placeKey'],
+              'status': 'active',
+              'version': payload['version'] ?? 1,
+              'createdAtClient': payload['createdAt']
+            });
+      case 'geofence.updated':
+        final updGfId = payload['geofenceId'] as String?;
+        if (updGfId == null) {
+          throw const FormatException('geofence.updated payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.geofence(familyId, updGfId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'geofenceId': updGfId,
+              'name': payload['name'],
+              'boundary': {
+                'latitude': (payload['latitude'] as num).toDouble(),
+                'longitude': (payload['longitude'] as num).toDouble(),
+                'radiusMeters': (payload['radiusMeters'] as num).toDouble()
+              },
+              'alertOnEntry': payload['alertOnEntry'],
+              'alertOnExit': payload['alertOnExit'],
+              'memberIds': payload['memberIds'],
+              'placeKey': payload['placeKey'],
+              'version': (payload['version'] ?? 1) + 1,
+              'updatedAtClient': payload['updatedAt']
+            });
+      case 'geofence.disabled':
+        final disGfId = payload['geofenceId'] as String?;
+        if (disGfId == null) {
+          throw const FormatException('geofence.disabled payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.geofence(familyId, disGfId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'geofenceId': disGfId,
+              'status': 'disabled',
+              'disabledAtClient': payload['updatedAt'] ??
+                  DateTime.now().toUtc().toIso8601String()
+            });
+      case 'favorite.place':
+        final placeKey = payload['placeKey'] as String?;
+        if (placeKey == null) {
+          throw const FormatException('favorite.place payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.favoritePlace(familyId, placeKey),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'placeKey': placeKey,
+              'name': payload['name'],
+              'updatedAtClient': payload['updatedAt']
+            });
+      case 'location.setting':
+        final locSettingKey = payload['key'] as String?;
+        if (locSettingKey == null) {
+          throw const FormatException('location.setting payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.locationSetting(familyId, locSettingKey),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'key': locSettingKey,
+              'value': payload['value'],
+              'updatedAtClient': payload['updatedAt']
             });
       default:
         return syncMetadata(

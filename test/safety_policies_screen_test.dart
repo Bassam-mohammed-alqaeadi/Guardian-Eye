@@ -78,6 +78,11 @@ void main() {
     expect(find.textContaining('بانتظار المزامنة'), findsOneWidget);
     final toggle = find.byType(Switch);
     expect(toggle, findsOneWidget);
+    final scrollableFinder = find.ancestor(
+        of: toggle, matching: find.byType(Scrollable));
+    expect(scrollableFinder, findsOneWidget);
+    await tester.scrollUntilVisible(toggle, 200.0);
+    await tester.pump();
     await tester.tap(toggle);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));

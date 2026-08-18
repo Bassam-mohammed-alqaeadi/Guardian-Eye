@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 export 'family_membership_providers.dart';
+import 'family_context_provider.dart';
 import '../core/database/guardian_database.dart';
 import '../core/firebase/guardian_firebase_bootstrap.dart';
 import '../core/platform/capability_gateway.dart';
@@ -26,6 +27,8 @@ import '../data/outbox_sync_status.dart';
 import '../data/policy_repository.dart';
 import '../data/web_filter_repository.dart';
 import '../data/web_filter_remote_service.dart';
+import '../data/location_repository.dart';
+import '../data/location_remote_service.dart';
 import '../data/safety_repositories.dart';
 import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
@@ -275,4 +278,78 @@ class _UnavailableFamilyMembershipRemoteReader
           {required String familyId, required String accountUid}) =>
       Future<RemoteFamilyMembership?>.error(
           StateError('firebase_membership_reader_unavailable'));
+}
+
+// FS-001 — Location & Geofencing. Local-first store for consent-gated
+// location updates, parent-managed geofences, geofence alerts, favorite
+// places, and family location settings. Reads and mutations are local
+// SQLite first; the honest outbox carries the same offline-first rhythm.
+final locationGeofenceRepositoryProvider =
+    Provider((ref) => LocationGeofenceRepository(GuardianDatabase.instance));
+final locationPointsProvider = FutureProvider.family<List<LocationPoint>, String>(
+    (ref, String familyId) =>
+        ref.watch(locationGeofenceRepositoryProvider).pointsForFamily(familyId));
+final locationPointsForMemberProvider =
+    FutureProvider.family<List<LocationPoint>, ({String familyId, String memberId})>(
+        (ref, ({String familyId, String memberId}) scope) =>
+            ref.watch(locationGeofenceRepositoryProvider).pointsForMember(
+                scope.familyId, scope.memberId));
+final geofencesProvider = FutureProvider.family<List<GeofenceEntry>, String>(
+    (ref, String familyId) =>
+        ref.watch(locationGeofenceRepositoryProvider).geofencesForFamily(familyId));
+final locationAlertsProvider = FutureProvider.family<List<LocationAlert>, String>(
+    (ref, String familyId) =>
+        ref.watch(locationGeofenceRepositoryProvider).alertsForFamily(familyId));
+// FS-001 — location settings view (battery saver + per-member sharing).
+final locationSettingsProvider =
+    FutureProvider.family<Map<String, String>, String>((ref, String familyId) async {
+  final repository = ref.watch(locationGeofenceRepositoryProvider);
+  final batterySaver =
+      await repository.setting(familyId, 'battery_saver', 'off');
+  final runtime = await ref.watch(familyRuntimeContextProvider(familyId).future);
+  final values = <String, String>{'battery_saver': batterySaver};
+  for (final member in runtime.children) {
+    final sharing = await repository.setting(
+        familyId, 'sharing_enabled:${member.id}', 'on');
+    values['sharing_enabled:${member.id}'] = sharing;
+  }
+  return values;
+});
+final locationAlertCountProvider = FutureProvider.family<int, String>(
+    (ref, String familyId) =>
+        ref.watch(locationGeofenceRepositoryProvider).unacknowledgedAlertCount(familyId));
+final favoritePlacesProvider = FutureProvider.family<List<FavoritePlace>, String>(
+    (ref, String familyId) =>
+        ref.watch(locationGeofenceRepositoryProvider).placesForFamily(familyId));
+
+// FS-001 — Location & Geofencing remote bridge. Reads verified server
+// facts from Firestore (`/families/{id}/locations`, `geofences`,
+// `location_settings`) and applies them into the local store. When
+// Firebase is unconfigured the reader is a safe no-op so the local
+// offline-first store remains the single honest source of truth.
+final locationRemoteReaderProvider =
+    Provider<FamilyLocationRemoteReader>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return const _UnavailableFamilyLocationRemoteReader();
+  }
+  return FirestoreFamilyLocationRemoteReader(FirebaseFirestore.instance);
+});
+final locationSyncApplierProvider = Provider((ref) =>
+    LocationPolicySyncApplier(ref.watch(locationGeofenceRepositoryProvider)));
+final familyLocationPullProvider =
+    FutureProvider.family<FamilyLocationPullResult, String>(
+        (ref, String familyId) => FamilyLocationPullService(
+            ref.watch(locationRemoteReaderProvider),
+            ref.watch(locationSyncApplierProvider))
+            .pull(familyId: familyId));
+
+class _UnavailableFamilyLocationRemoteReader
+    implements FamilyLocationRemoteReader {
+  const _UnavailableFamilyLocationRemoteReader();
+
+  @override
+  Future<RemoteLocationPolicy?> readLocationPolicy(
+          {required String familyId}) =>
+      Future<RemoteLocationPolicy?>.error(
+          StateError('firebase_location_reader_unavailable'));
 }

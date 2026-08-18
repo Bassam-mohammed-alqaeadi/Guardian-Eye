@@ -468,11 +468,23 @@ class _ScreenTimeSection extends ConsumerWidget {
               if (canManage)
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
-                  child: FilledButton.icon(
-                    onPressed: () => context.push(
-                        '/child/$familyId/$childId/policies'),
-                    icon: const Icon(Icons.settings_outlined),
-                    label: Text(l10n.t('managePolicies')),
+                  child: Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                            '/child/$familyId/$childId/device'),
+                        icon: const Icon(Icons.phone_android_outlined),
+                        label: Text(l10n.t('childDeviceExperience')),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                            '/child/$familyId/$childId/policies'),
+                        icon: const Icon(Icons.settings_outlined),
+                        label: Text(l10n.t('managePolicies')),
+                      ),
+                    ],
                   ),
                 )
               else

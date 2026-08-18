@@ -543,8 +543,96 @@ class AppLocalizations {
       'viewHistory': 'السجل',
       'domainMustBeValid': 'أدخل اسم موقع صالحًا (مثل example.com).',
       'webPolicySaved': 'حُفظت تغييرات حماية الويب محليًا وستُزامن عند الاتصال.',
+      'accuracyMeters': '±{meters} م من النقطة',
+      'acknowledge': 'اعتماد',
+      'alertAcknowledged': 'تم اعتماد التنبيه',
+      'alertOnEntry': 'تنبيه عند الدخول',
+      'alertOnExit': 'تنبيه عند الخروج',
+      'backgroundLocation': 'الوصول للموقع في الخلفية',
+      'backgroundLocationDetail': 'يتيح رؤية موقع طفلك حتى عندما يكون التطبيق في الخلفية.',
+      'batteryLevel': 'مستوى البطارية',
+      'batterySaver': 'وضع توفير البطارية',
+      'batterySaverDescription': 'يقلل وتيرة تحديث الموقع لإطالة عمر البطارية. قد يصبح العرض أقل دقة.',
+      'childPrivacySeePrivacy': 'راجع سياسة الخصوصية لمعرفة ما نجمعه وما لا نجمعه.',
+      'childSharingDescription': 'يمكنك إيقاف مشاركة موقعك في أي وقت. يصل أي طلب من والدك عند اتصال الجهاز.',
+      'childSharingDisabled': 'تم إيقاف مشاركة موقعك.',
+      'childSharingEnabled': 'مشاركة موقعك مفعّلة',
+      'childSyncPending': 'أي تغيير يطلبه والدك يصل إليك فقط عندما يتصل جهازك بالإنترنت.',
+      'coarseLocation': 'الموقع التقريبي',
+      'coarseLocationDetail': 'موقع تقريبي داخل نطاق الشبكة الخلوية.',
+      'createGeofence': 'إنشاء سياج جغرافي',
+      'delete': 'حذف',
+      'editGeofence': 'تعديل السياج',
+      'familyMap': 'خريطة العائلة',
+      'favoritePlaces': 'الأماكن المفضلة',
+      'fineLocation': 'الموقع الدقيق',
+      'fineLocationDetail': 'إحداثيات دقيقة على مستوى بضع أمتار.',
+      'geofenceName': 'اسم السياج',
+      'geofenceNameRequired': 'اسم السياج الجغرافي مطلوب.',
+      'geofenceRadius': 'نصف القطر',
+      'geofenceRadiusHint': 'نصف قطر بين 50 و5000 متر.',
+      'geofenceRemoved': 'تم وضع علامة إزالة على السياج وسيتزامن عند الاتصال.',
+      'geofenceSaved': 'تم حفظ السياج محليًا وسيتزامن عند الاتصال.',
+      'geofenceTemplates': 'قوالب جاهزة',
+      'geofences': 'السياج الجغرافي',
+      'hoursAgo': 'منذ {n} ساعة',
+      'justNow': 'الآن',
+      'lastUpdated': 'آخر تحديث',
+      'locationAlerts': 'تنبيهات الموقع',
+      'locationAlertsNav': 'تنبيهات الموقع',
+      'locationHistory': 'سجل الموقع',
+      'locationPrivacy': 'خصوصية الموقع',
+      'locationSettings': 'إعدادات الموقع',
+      'locationSharing': 'مشاركة الموقع',
+      'memberLocationDetails': 'تفاصيل موقع العضو',
+      'memberNotNearAnyGeofence': 'هذا العضو ليس داخل أي سياج نشط.',
+      'members': 'الأعضاء',
+      'minutesAgo': 'منذ {n} دقيقة',
+      'noAlertsYet': 'لا توجد تنبيهات موقع حتى الآن.',
+      'noGeofencesYet': 'لا توجد سياج جغرافي بعد. أنشئ واحدًا من الأعلى.',
+      'noLocationsYet': 'لم يصل أي موقع لهذا العضو بعد.',
+      'noMembersYet': 'لا يوجد أعضاء يمكن مشاهدتهم على الخريطة.',
+      'noPlacesYet': 'لا توجد أماكن مفضلة بعد. ثبّت موقعًا من الخريطة.',
+      'permissionNotSupported': 'هذا الإذن غير مدعوم على هذا الجهاز.',
+      'permissionOnboarding': 'إعداد إذن الموقع',
+      'permissionRationale': 'لماذا نحتاج إذن الموقع؟',
+      'permissionRationaleDetail': 'لن تعمل الخريطة ولا السياج الجغرافي ولا التنبيهات دون إذن موقع حقيقي ممنوح من إعدادات Android. لا نخترق الموقع — إن لم يُمنح الإذن سنعرض الحالة بصدق.',
+      'privacyDeleteData': 'حذف بيانات الموقع',
+      'privacyDeleteDataDetail': 'يمكنك حذف سجل المواقع في أي وقت من إعدادات هذا الجهاز. لا تُرسل البيانات إلى أطراف ثالثة.',
+      'privacyLocationCollection': 'ماذا نجمع؟',
+      'privacyLocationCollectionDetail': 'نجمع فقط آخر مواضع معلنة لكل عضو مفعّل له المشاركة، وفق وتيرة تحديث محددة في الإعدادات.',
+      'privacyLocationRetention': 'مدة الاحتفاظ',
+      'privacyLocationRetentionDetail': 'تُحفظ المواضع محليًا وتُزامن مع حسابات العائلة الموثقة فقط. لا تحتفظ العائلة بأي بيانات بعد حذف العضو.',
+      'privacyParentAccess': 'من يرى ماذا؟',
+      'privacyParentAccessDetail': 'الوالدان الموثقان فقط يرون المواقع. يراهما الشريك بحسب الصلاحيات الممنوحة. ولا يرى أي طفل موقع أي عضو آخر.',
+      'privacyThirdParty': 'الأطراف الخارجية',
+      'privacyThirdPartyDetail': 'لا تُباع البيانات ولا تُشارك مع معلنين أو وسطاء. تتم المزامنة فقط داخل بنية العائلة الخاصة بك.',
+      'radiusMeters': '{radius} م',
+      'routeTrace': 'مسار الحركة',
+      'save': 'حفظ',
+      'saveChanges': 'حفظ التعديلات',
+      'selectPlaceOnMap': 'اختر الموقع على الخريطة',
+      'setFavoritePlace': 'تثبيت كمفضّل',
+      'sharingDisabled': 'تم إيقاف المشاركة لهذا العضو.',
+      'sharingEnabled': 'تم تفعيل مشاركة الموقع.',
+      'sharingMatrix': 'جدول الرؤية',
+      'sharingRevoked': 'أُلغيت مشاركة هذا العضو. يتوقف العرض عند المزامنة التالية.',
+      'tapToSetCenter': 'اضغط لتحديد الموقع',
+      'templateSchoolHours': 'أوقات المدرسة',
+      'templateHomeRange': 'النطاق الآمن حول المنزل',
+      'templatePrayerPlace': 'المصلى',
+      'templateSchoolHoursName': 'المدرسة — أوقات الدوام',
+      'templateHomeRangeName': 'المنزل — النطاق الآمن',
+      'templatePrayerPlaceName': 'المصلى',
+      'viewAll': 'عرض الكل',
+      'favoritePlacesNav': 'الأماكن المفضلة',
+      'webProtectionNav': 'حماية الويب',
+      'webFilterHistoryNav': 'سجل الرصد',
+      'childDeviceExperience': 'الجهاز',
+      'sosUtilityNotice': 'تسجيل حدث طوارئ ومزامنة الطابور المحلي.',
+      'open': 'فتح',
     },
-    'en': {
+'en': {
       'appTitle': 'Guardian Eye Pro',
       'welcome': 'Protect your family with clarity and trust',
       'createFamily': 'Create family',
@@ -975,6 +1063,96 @@ class AppLocalizations {
       ,'offlineMode': 'You are currently offline.'
       ,'offlineChangesSaved': 'Changes are saved locally and sync automatically when you are back.'
       ,'somethingWentWrong': 'Something went wrong. Please try again.'
+      ,'accuracyMeters': '±{meters} m of the point'
+      ,'acknowledge': 'Acknowledge'
+      ,'alertAcknowledged': 'Alert acknowledged'
+      ,'alertOnEntry': 'Alert on entry'
+      ,'alertOnExit': 'Alert on exit'
+      ,'authorizationFailure': 'Authorization failure'
+      ,'backgroundLocation': 'Background location'
+      ,'backgroundLocationDetail': 'Allows the app to keep seeing your child’s position while it runs in the background.'
+      ,'batteryLevel': 'Battery level'
+      ,'batterySaver': 'Battery saver mode'
+      ,'batterySaverDescription': 'Lowers the location update frequency to save battery. The view may become less precise.'
+      ,'childPrivacySeePrivacy': 'See the privacy note for what is collected and what is never collected.'
+      ,'childSharingDescription': 'You can stop sharing your location at any time. A parent’s stop request arrives when this device reconnects.'
+      ,'childSharingDisabled': 'Your location sharing is now off.'
+      ,'childSharingEnabled': 'Your location sharing is on'
+      ,'childSyncPending': 'Any change a parent requests reaches this screen only when your device connects to the internet.'
+      ,'coarseLocation': 'Approximate location'
+      ,'coarseLocationDetail': 'An approximate position within the cellular network area.'
+      ,'createGeofence': 'Create geofence'
+      ,'delete': 'Delete'
+      ,'editGeofence': 'Edit geofence'
+      ,'familyMap': 'Family map'
+      ,'favoritePlaces': 'Favorite places'
+      ,'fineLocation': 'Precise location'
+      ,'fineLocationDetail': 'Coordinates accurate to a few meters.'
+      ,'geofenceName': 'Geofence name'
+      ,'geofenceNameRequired': 'A geofence name is required.'
+      ,'geofenceRadius': 'Radius'
+      ,'geofenceRadiusHint': 'Radius must be between 50 and 5000 meters.'
+      ,'geofenceRemoved': 'The geofence is marked for removal and will sync when connected.'
+      ,'geofenceSaved': 'The geofence was saved locally and will sync when connected.'
+      ,'geofenceTemplates': 'Ready-made templates'
+      ,'geofences': 'Geofences'
+      ,'hoursAgo': '{n} h ago'
+      ,'justNow': 'Just now'
+      ,'lastUpdated': 'Last updated'
+      ,'locationAlerts': 'Location alerts'
+      ,'locationAlertsNav': 'Location alerts'
+      ,'locationHistory': 'Location history'
+      ,'locationPrivacy': 'Location privacy'
+      ,'locationSettings': 'Location settings'
+      ,'locationSharing': 'Location sharing'
+      ,'memberLocationDetails': 'Member location details'
+      ,'memberNotNearAnyGeofence': 'This member is not inside any active geofence.'
+      ,'members': 'Members'
+      ,'minutesAgo': '{n} min ago'
+      ,'noAlertsYet': 'No location alerts yet.'
+      ,'noGeofencesYet': 'No geofences yet. Create one from above.'
+      ,'noLocationsYet': 'No location points have arrived for this member yet.'
+      ,'noMembersYet': 'There are no members to show on the map yet.'
+      ,'noPlacesYet': 'No favorite places yet. Pin one from the map.'
+      ,'permissionNotSupported': 'This permission is not supported on this device.'
+      ,'permissionOnboarding': 'Location permission setup'
+      ,'permissionRationale': 'Why we need location permission'
+      ,'permissionRationaleDetail': 'The map, geofences and alerts cannot work without real location permission granted in Android settings. We never fabricate positions — if the permission is missing we say so honestly.'
+      ,'privacyDeleteData': 'Delete location data'
+      ,'privacyDeleteDataDetail': 'You can delete the location history at any time from this device’s settings. Data is never shared with third parties.'
+      ,'privacyLocationCollection': 'What we collect'
+      ,'privacyLocationCollectionDetail': 'We only collect the last announced positions of each member whose sharing is enabled, at the update frequency set in Location settings.'
+      ,'privacyLocationRetention': 'Retention'
+      ,'privacyLocationRetentionDetail': 'Positions are stored locally and synced only with verified family accounts. No location data is retained after a member is removed.'
+      ,'privacyParentAccess': 'Who sees what'
+      ,'privacyParentAccessDetail': 'Only verified parents see member locations. A spouse sees according to granted permissions. No child ever sees another member’s location.'
+      ,'privacyThirdParty': 'Third parties'
+      ,'privacyThirdPartyDetail': 'Data is never sold or shared with advertisers or brokers. Sync happens only within your own family infrastructure.'
+      ,'radiusMeters': '{radius} m'
+      ,'roleNotAllowed': 'Your family role is not allowed to view this page.'
+      ,'routeTrace': 'Route trace'
+      ,'save': 'Save'
+      ,'saveChanges': 'Save changes'
+      ,'selectPlaceOnMap': 'Pick the position on the map'
+      ,'setFavoritePlace': 'Set as favorite'
+      ,'sharingDisabled': 'Sharing is now off for this member.'
+      ,'sharingEnabled': 'Location sharing is now on.'
+      ,'sharingMatrix': 'Sharing matrix'
+      ,'sharingRevoked': 'This member’s sharing was revoked. Their view stops at the next sync.'
+      ,'tapToSetCenter': 'Tap to set the position'
+      ,'templateSchoolHours': 'School hours'
+      ,'templateHomeRange': 'Safe home range'
+      ,'templatePrayerPlace': 'Prayer place'
+      ,'templateSchoolHoursName': 'School — class hours'
+      ,'templateHomeRangeName': 'Home — safe range'
+      ,'templatePrayerPlaceName': 'Mosque'
+      ,'viewAll': 'View all'
+      ,'favoritePlacesNav': 'Favorite places'
+      ,'webProtectionNav': 'Web protection'
+      ,'webFilterHistoryNav': 'Block history'
+      ,'childDeviceExperience': 'Device'
+      ,'sosUtilityNotice': 'Record an emergency event and sync the local queue.'
+      ,'open': 'Open'
     },
   };
   String t(String key) => _values[locale.languageCode]?[key] ?? key;

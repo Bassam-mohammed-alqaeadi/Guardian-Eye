@@ -295,6 +295,53 @@ class _Dashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _NavGroup(
+            label: l10n.t('familyMap'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewChildStatus)
+                    ? () => context.push('/location/$familyId')
+                    : null,
+                icon: const Icon(Icons.map_outlined),
+                label: Text(l10n.t('familyMap')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewChildStatus)
+                    ? () => context.push('/location/$familyId/places')
+                    : null,
+                icon: const Icon(Icons.star_outline),
+                label: Text(l10n.t('favoritePlacesNav')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewChildStatus)
+                    ? () => context.push('/location/$familyId/alerts')
+                    : null,
+                icon: const Icon(Icons.notifications_outlined),
+                label: Text(l10n.t('locationAlertsNav')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('webProtectionNav'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/safety/web/$familyId')
+                    : null,
+                icon: const Icon(Icons.public_off_outlined),
+                label: Text(l10n.t('webProtectionNav')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/safety/web/$familyId/history')
+                    : null,
+                icon: const Icon(Icons.history_outlined),
+                label: Text(l10n.t('webFilterHistoryNav')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
             label: l10n.t('permissionsTitle'),
             children: [
               OutlinedButton.icon(

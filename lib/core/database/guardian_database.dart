@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 15,
+        version: 16,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -130,6 +130,28 @@ class GuardianDatabase {
         'CREATE INDEX idx_web_hits_family_time ON web_hits(family_id, blocked_at DESC)');
     batch.execute(
         'CREATE INDEX idx_web_domains_family_kind ON web_domains(family_id, kind)');
+    // FS-001 — Location & Geofencing tables: consent-gated location updates
+    // (location_points), parent-managed geofences, geofence entry/exit
+    // alerts, named favorite places that geofences anchor to, and family
+    // location settings. Location documents are device-written and
+    // parent-read; geofence documents are parent-written. Every location
+    // write enters the outbox through the same honesty rhythm as the rest
+    // of the platform: local SQLite first, sync_state 'queued' until the
+    // server confirms.
+    batch.execute(
+        'CREATE TABLE location_points(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), device_id TEXT, member_id TEXT, latitude REAL NOT NULL, longitude REAL NOT NULL, accuracy_meters REAL NOT NULL DEFAULT 100, captured_at TEXT NOT NULL, battery_level REAL, source TEXT NOT NULL DEFAULT \'device\', sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE TABLE geofences(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, latitude REAL NOT NULL, longitude REAL NOT NULL, radius_meters REAL NOT NULL, alert_on_entry INTEGER NOT NULL DEFAULT 1, alert_on_exit INTEGER NOT NULL DEFAULT 1, member_ids_json TEXT, place_key TEXT, status TEXT NOT NULL DEFAULT \'active\', sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE TABLE location_alerts(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), geofence_id TEXT, member_id TEXT, member_display_name TEXT, event_type TEXT NOT NULL, occurred_at TEXT NOT NULL, acknowledged INTEGER NOT NULL DEFAULT 0, acknowledged_at TEXT, device_id TEXT, source TEXT NOT NULL DEFAULT \'geofence\', sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE TABLE favorite_places(family_id TEXT NOT NULL REFERENCES families(id), place_key TEXT NOT NULL, name TEXT NOT NULL, latitude REAL NOT NULL, longitude REAL NOT NULL, notes TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(family_id, place_key))');
+    batch.execute(
+        'CREATE TABLE location_settings(family_id TEXT NOT NULL REFERENCES families(id), key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(family_id, key))');
+    batch.execute(
+        'CREATE INDEX idx_location_points_family_time ON location_points(family_id, captured_at DESC)');
+    batch.execute(
+        'CREATE INDEX idx_location_alerts_family_time ON location_alerts(family_id, occurred_at DESC)');
     await batch.commit(noResult: true);
   }
 
@@ -252,6 +274,23 @@ class GuardianDatabase {
           'CREATE INDEX idx_web_hits_family_time ON web_hits(family_id, blocked_at DESC)');
       await db.execute(
           'CREATE INDEX idx_web_domains_family_kind ON web_domains(family_id, kind)');
+    }
+    if (oldVersion < 16) {
+      // FS-001 — Location & Geofencing (see onCreate for schema docs).
+      await db.execute(
+          'CREATE TABLE location_points(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), device_id TEXT, member_id TEXT, latitude REAL NOT NULL, longitude REAL NOT NULL, accuracy_meters REAL NOT NULL DEFAULT 100, captured_at TEXT NOT NULL, battery_level REAL, source TEXT NOT NULL DEFAULT \'device\', sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE TABLE geofences(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, latitude REAL NOT NULL, longitude REAL NOT NULL, radius_meters REAL NOT NULL, alert_on_entry INTEGER NOT NULL DEFAULT 1, alert_on_exit INTEGER NOT NULL DEFAULT 1, member_ids_json TEXT, place_key TEXT, status TEXT NOT NULL DEFAULT \'active\', sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE TABLE location_alerts(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), geofence_id TEXT, member_id TEXT, member_display_name TEXT, event_type TEXT NOT NULL, occurred_at TEXT NOT NULL, acknowledged INTEGER NOT NULL DEFAULT 0, acknowledged_at TEXT, device_id TEXT, source TEXT NOT NULL DEFAULT \'geofence\', sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE TABLE favorite_places(family_id TEXT NOT NULL REFERENCES families(id), place_key TEXT NOT NULL, name TEXT NOT NULL, latitude REAL NOT NULL, longitude REAL NOT NULL, notes TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(family_id, place_key))');
+      await db.execute(
+          'CREATE TABLE location_settings(family_id TEXT NOT NULL REFERENCES families(id), key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(family_id, key))');
+      await db.execute(
+          'CREATE INDEX idx_location_points_family_time ON location_points(family_id, captured_at DESC)');
+      await db.execute(
+          'CREATE INDEX idx_location_alerts_family_time ON location_alerts(family_id, occurred_at DESC)');
     }
   }
 }

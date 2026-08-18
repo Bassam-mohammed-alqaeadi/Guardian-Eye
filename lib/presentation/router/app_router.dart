@@ -8,6 +8,7 @@ import '../screens/child_device_status_screen.dart';
 import '../screens/child_context_screen.dart';
 import '../screens/screen_time_policies_screen.dart';
 import '../screens/family_safety_experience_screens.dart';
+import '../screens/safety_actions_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/pairing_screen.dart';
 import '../screens/child_redemption_screen.dart';
@@ -16,6 +17,8 @@ import '../screens/firebase_session_screen.dart';
 import '../screens/web_filter_screens.dart';
 import '../screens/web_filter_management_screens.dart';
 import '../screens/web_filter_child_screens.dart';
+import '../screens/location_screens.dart';
+import '../screens/location_child_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -63,6 +66,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             childId: state.pathParameters['childId']!),
       ),
       GoRoute(
+        path: '/child/:familyId/:childId/device',
+        name: 'childDeviceExperience',
+        builder: (context, state) => ChildPolicyExperienceScreen(
+            familyId: state.pathParameters['familyId']!,
+            deviceId: state.pathParameters['childId']!,
+            childUid: state.pathParameters['childId']!),
+      ),
+      GoRoute(
         path: '/family/:familyId',
         name: 'family',
         builder: (context, state) => FamilyMembersScreen(
@@ -80,6 +91,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'safetyDeviceStatus',
         builder: (context, state) =>
             ChildDeviceStatusScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/actions/:familyId',
+        name: 'safetyActions',
+        builder: (context, state) =>
+            SafetyActionsScreen(familyId: state.pathParameters['familyId']!),
       ),
       GoRoute(
         path: '/safety/daily/:familyId',
@@ -190,6 +207,100 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => BlockedPageScreen(
             familyId: state.pathParameters['familyId']!,
             childId: state.pathParameters['childId']!),
+      ),
+      // FS-001 Location & Geofencing subsystem routes (LO-001 … LO-015).
+      GoRoute(
+        path: '/location/:familyId',
+        name: 'familyMap',
+        builder: (context, state) =>
+            FamilyMapScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/:memberId',
+        name: 'memberLocationDetails',
+        builder: (context, state) => MemberLocationDetailsScreen(
+            familyId: state.pathParameters['familyId']!,
+            memberId: state.pathParameters['memberId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/:memberId/history',
+        name: 'locationHistory',
+        builder: (context, state) => LocationHistoryScreen(
+            familyId: state.pathParameters['familyId']!,
+            memberId: state.pathParameters['memberId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/geofences',
+        name: 'geofenceList',
+        builder: (context, state) =>
+            GeofenceListScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/geofences/new',
+        name: 'createGeofence',
+        builder: (context, state) =>
+            CreateGeofenceScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/geofences/:geofenceId/edit',
+        name: 'editGeofence',
+        builder: (context, state) => EditGeofenceScreen(
+            familyId: state.pathParameters['familyId']!,
+            geofenceId: state.pathParameters['geofenceId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/settings',
+        name: 'locationSettings',
+        builder: (context, state) =>
+            LocationSettingsScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/onboard/location',
+        name: 'permissionOnboarding',
+        builder: (context, state) =>
+            PermissionOnboardingScreen(familyId: ''),
+      ),
+      GoRoute(
+        path: '/location/:familyId/permissions',
+        name: 'permissionOnboardingFamily',
+        builder: (context, state) => PermissionOnboardingScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/sharing',
+        name: 'sharingStatus',
+        builder: (context, state) =>
+            SharingStatusScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/alerts',
+        name: 'locationAlerts',
+        builder: (context, state) =>
+            LocationAlertsScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/privacy',
+        name: 'locationPrivacy',
+        builder: (context, state) =>
+            LocationPrivacyScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/location/:familyId/places',
+        name: 'favoritePlaces',
+        builder: (context, state) =>
+            FavoritePlacesScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/child/:familyId/:childId/location-sharing',
+        name: 'childLocationSharing',
+        builder: (context, state) => ChildLocationSharingScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      GoRoute(
+        path: '/location/sharing/self',
+        name: 'childLocationSharingLegacy',
+        builder: (context, state) => const ChildLocationSharingScreen(),
       ),
       ],),
     ],

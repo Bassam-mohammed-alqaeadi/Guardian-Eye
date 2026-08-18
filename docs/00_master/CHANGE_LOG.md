@@ -162,3 +162,39 @@ DOCS REQUIRED:        · this entry
 ROLLBACK:             · git revert of this commit
 STATUS:               · ready (awaiting user confirmation to commit)
 ```
+
+### CL-006 — FS-001 Location & Geofencing: complete real Firebase/Firestore integration
+- **REQUEST:** User directive: "FS-001 — Location & Geofencing, fix this phase as planned" — full subsystem to the same Frontend + Backend + Firebase real-integration standard (no Mock, no partial).
+- **CURRENT PHASE:** FS-001 Location & Geofencing (prior code state: UX docs only, no implementation).
+- **AFFECTED FEATURE:** FS-001 Location & Geofencing.
+- **AFFECTED SCREENS:** LO-001 … LO-015 (family map, member details, history, geofence list/create/edit, settings, alerts, privacy, permission onboarding, sharing status, favorite places, child self-scope sharing).
+- **AFFECTED FILES:** lib/core/database/guardian_database.dart (v16), lib/data/location_repository.dart (NEW), lib/data/location_remote_service.dart (NEW), lib/data/firestore_contracts.dart (5 cases), lib/application/guardian_providers.dart, lib/presentation/screens/location_screens.dart (NEW), lib/presentation/screens/location_child_screens.dart (NEW), lib/presentation/widgets/guardian_map_widget.dart (NEW), lib/presentation/router/app_router.dart (13 routes), lib/core/localization/app_localizations.dart (~85 keys AR+EN), test/location_backend_test.dart (NEW), docs/00_master/FIRESTORE_RULES_LOCATION.md (NEW), docs/00_master/CHANGE_LOG.md (this entry).
+- **AFFECTED DATA:** new SQLite tables location_points, geofences, location_alerts, favorite_places, location_settings (migration v16).
+- **AFFECTED BACKEND:** NEW Firestore contract cases location.updated, geofence.created/updated/disabled, favorite.place, location.setting (paths families/{id}/locations|geofences|favorite_places|location_settings); real pull bridge (verified /locations server read → WebPolicySyncApplier-style merge with removal handling); honest failure reporting.
+- **AFFECTED EVENTS:** location.updated (device-written), geofence.* (parent-written), favorite.place, location.setting — all outbox-enqueued with idempotency keys.
+- **AFFECTED SECURITY:** new collections authorized per FIRESTORE_RULES_LOCATION.md; locations device-written/parent-read, geofences parent-written; hard delete blocked server-side; soft-disable semantics.
+- **AFFECTED CURRENT PHASE:** closes FS-001.
+- **AFFECTED PREVIOUS FOUNDATION:** NONE (M1–M9 untouched; reuses membership/pull infrastructure).
+- **AFFECTED FUTURE PHASES:** FS-011 (rules/alerts reporting consumes location_alerts); Guardian AI location layer consumes verified positions.
+- **MIGRATION REQUIRED:** SQLite migration v16 (automatic).
+- **TESTS REQUIRED:** +10 backend tests (contract paths, payload validation, applier merge/removal, pull failure); suite 258 → 268, all green; 0 errors/0 warnings on new code.
+- **DOCS REQUIRED:** FIRESTORE_RULES_LOCATION.md (deployable), this entry.
+- **ROLLBACK:** git revert of this commit (+ migration v16 undo).
+- **STATUS:** ready (awaiting user confirmation to commit)
+
+
+## CL-007 — Coherence audit: full-phase consistency sweep
+Date: 2026-08-18 | Branch: feature/design-system-integration | Tests: 274/274 green
+
+Deep coherence audit of every declared phase (Phase 0/1, M1-M9, FS-002, FS-001) against MASTER_DEVELOPMENT_PLAN.md and MASTER_SCREEN_INDEX.md. Findings and fixes:
+
+1. **Broken navigation in Family Map (LO-001)**: member tiles pushed `/location/:familyId/members/:id` and the history tile pushed `/location/:familyId/history` — both routes do not exist (404 page). Fixed to the canonical member-details and per-member history routes.
+2. **Location History ignored the selected member (LO-003)**: the screen discarded `memberId` and fell back to a runtime-derived scope. Now scoped strictly to the member passed from the map.
+3. **Four FS-001 routes deviated from the canonical master plan** and were realigned: create `/geofences/new`, edit `/geofences/:geofenceId/edit`, permission onboarding `/onboard/location`, child sharing `/child/:familyId/:childId/location-sharing` (with real family/child identifiers bound instead of an empty-string fallback).
+4. **Missing bilingual localization keys** (`acknowledge`, `saveChanges`, plus ~90 FS-001 keys lost during a local revert) were reconstructed with professional AR+EN values.
+5. **LO-014 Geofence Templates implemented**: three ready-made presets (school hours, home range, prayer place) pre-fill name, radius, alert profile and anchor on the create form.
+6. **Two orphan screens got routes**: SafetyActionsScreen at `/safety/actions/:familyId` and ChildPolicyExperienceScreen at `/child/:familyId/:childId/device`.
+7. **Missing cross-subsystem wiring**: the dashboard now exposes Web Protection and Family Map entry cards (gated by `FamilyRuntimeContext.can()`), the child context screen exposes the device experience, and the safety policies screen exposes the SOS utility. No more dead-end subsystems.
+8. **Test discipline**: the policy-manager widget test was made scroll-aware (new SOS card grew the list); six new CL-007 regression tests lock in canonical route coverage, template presets, bilingual key presence and the child self-scope contract.
+
+MASTER_SCREEN_INDEX statuses updated to COMPLETED for WF-002..WF-010 and LO-001..LO-015. Zero changes to existing Firebase rules, schema, or the Render backend.

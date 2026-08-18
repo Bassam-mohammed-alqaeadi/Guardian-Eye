@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/guardian_tokens.dart';
@@ -334,6 +336,43 @@ class _SafetyPoliciesScreenState extends ConsumerState<SafetyPoliciesScreen> {
                     onRefresh: _load,
                     child:
                         ListView(padding: const EdgeInsets.all(16), children: [
+                      GuardianCard(
+                          child: Row(children: [
+                            GuardianIconBadge(
+                                icon: Icons.sos,
+                                background: GuardianTokens.statusSOS
+                                    .withValues(alpha: 0.25),
+                                foreground: GuardianTokens.statusSOS),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(l10n.t('sosTitle'),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall),
+                                  Text(
+                                      l10n.t('sosUtilityNotice'),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.color
+                                                  ?.withValues(alpha: 0.7))),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  context.push('/safety/actions/${widget.familyId}'),
+                              child: Text(l10n.t('open')),
+                            ),
+                          ])),
+                      const SizedBox(height: 12),
                       GuardianCard(
                           color: GuardianTokens.statusWatchSoft,
                           child: Row(children: [

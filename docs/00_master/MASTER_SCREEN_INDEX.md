@@ -26,15 +26,15 @@
 | Screen ID | Name | Status | Route | Spec |
 | --- | --- | --- | --- | --- |
 | WF-001 | Web Filtering Dashboard | CURRENT | `/safety/web/:familyId` | docs/06_ux/02_screens/web_filtering/ |
-| WF-002 | Content Categories | PLANNED | `/safety/web/:familyId/categories` | — |
-| WF-003 | Website Blocklist | PLANNED | `/safety/web/:familyId/blocklist` | — |
-| WF-004 | Web Filtering Settings | PLANNED | `/safety/web/:familyId/settings` | — |
-| WF-005 | Block History | PLANNED | `/safety/web/:familyId/history` | — |
-| WF-006 | Block Hit Detail | PLANNED | `/safety/web/:familyId/history/:hitId` | — |
-| WF-007 | Temporary Allow | PLANNED | `/safety/web/:familyId/history/:hitId/allow` | — |
-| WF-008 | Site Allowlist | PLANNED | `/safety/web/:familyId/allowlist` | — |
-| WF-009 | Per-Child Web Policy | PLANNED | `/safety/web/:familyId/:childId` | — |
-| WF-010 | Blocked Page Explanation | PLANNED | device-side `/blocked` | — |
+| WF-002 | Content Categories | COMPLETED | `/safety/web/:familyId/categories` | — |
+| WF-003 | Website Blocklist | COMPLETED | `/safety/web/:familyId/blocklist` | — |
+| WF-004 | Web Filtering Settings | COMPLETED | `/safety/web/:familyId/settings` | — |
+| WF-005 | Block History | COMPLETED | `/safety/web/:familyId/history` | — |
+| WF-006 | Block Hit Detail | COMPLETED | `/safety/web/:familyId/history/:hitId` | — |
+| WF-007 | Temporary Allow | COMPLETED | `/safety/web/:familyId/history/:hitId/allow` | — |
+| WF-008 | Site Allowlist | COMPLETED | `/safety/web/:familyId/allowlist` | — |
+| WF-009 | Per-Child Web Policy | COMPLETED | `/safety/web/:familyId/:childId` | — |
+| WF-010 | Blocked Page Explanation | COMPLETED | device-side `/blocked` | — |
 
 ## C. FS-003 Application System
 
@@ -221,21 +221,21 @@
 
 | Screen ID | Name | Status | Route |
 | --- | --- | --- | --- |
-| LO-001 | Family Map | PLANNED | `/location/:familyId` |
-| LO-002 | Member Location Details | PLANNED | `/location/:familyId/:memberId` |
-| LO-003 | Location History | PLANNED | `/location/:familyId/:memberId/history` |
-| LO-004 | Geofence List | PLANNED | `/location/:familyId/geofences` |
-| LO-005 | Create Geofence | PLANNED | `/location/:familyId/geofences/new` |
-| LO-006 | Edit Geofence | PLANNED | `/location/:familyId/geofences/:gfId/edit` |
-| LO-007 | Location Settings | PLANNED | `/location/:familyId/settings` |
-| LO-008 | Location Permission Onboarding | PLANNED | `/onboard/location` |
-| LO-009 | Location Sharing Status | PLANNED | `/location/:familyId/sharing` |
-| LO-010 | Location Alerts | PLANNED | `/location/:familyId/alerts` |
-| LO-011 | Location Privacy Information | PLANNED | `/location/:familyId/privacy` |
-| LO-012 | Offline Location State | PLANNED | inline banner |
-| LO-013 | Favorite Places | PLANNED | `/location/:familyId/places` |
-| LO-014 | Geofence Templates | PLANNED | inline on LO-005 |
-| LO-015 | Child Sharing Visibility | PLANNED | `/child/:familyId/:childId/location-sharing` |
+| LO-001 | Family Map | COMPLETED | `/location/:familyId` |
+| LO-002 | Member Location Details | COMPLETED | `/location/:familyId/:memberId` |
+| LO-003 | Location History | COMPLETED | `/location/:familyId/:memberId/history` |
+| LO-004 | Geofence List | COMPLETED | `/location/:familyId/geofences` |
+| LO-005 | Create Geofence | COMPLETED | `/location/:familyId/geofences/new` |
+| LO-006 | Edit Geofence | COMPLETED | `/location/:familyId/geofences/:gfId/edit` |
+| LO-007 | Location Settings | COMPLETED | `/location/:familyId/settings` |
+| LO-008 | Location Permission Onboarding | COMPLETED | `/onboard/location` |
+| LO-009 | Location Sharing Status | COMPLETED | `/location/:familyId/sharing` |
+| LO-010 | Location Alerts | COMPLETED | `/location/:familyId/alerts` |
+| LO-011 | Location Privacy Information | COMPLETED | `/location/:familyId/privacy` |
+| LO-012 | Offline Location State | COMPLETED | inline banner |
+| LO-013 | Favorite Places | COMPLETED | `/location/:familyId/places` |
+| LO-014 | Geofence Templates | COMPLETED | inline on LO-005 |
+| LO-015 | Child Sharing Visibility | COMPLETED | `/child/:familyId/:childId/location-sharing` |
 
 ## R. Guardian AI Screens (Phase 11)
 
