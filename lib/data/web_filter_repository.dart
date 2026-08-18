@@ -127,6 +127,10 @@ class WebFilterRepository {
   final GuardianDatabase _database;
   final Uuid _uuid;
 
+  /// Exposed for the remote sync applier: merging verified server facts
+  /// into the local store is an honest write, never a fabrication.
+  GuardianDatabase get database => _database;
+
   // ── Hits (block history) ────────────────────────────────────────────────
 
   Future<List<WebBlockHit>> hitsForFamily(String familyId) async {
@@ -195,11 +199,14 @@ class WebFilterRepository {
         'operation': 'web.hit',
         'payload_json': jsonEncode({
           'family_id': familyId,
-          'child_id': childId,
+          'hitId': id,
+          'childId': childId,
+          'childDisplayName': childDisplayName,
           'domain': domain.trim().toLowerCase(),
           'category': category,
-          'blocked_at': blockedAt.toUtc().toIso8601String(),
+          'blockedAt': blockedAt.toUtc().toIso8601String(),
           'decision': decision,
+          'recordedAt': now.toIso8601String(),
         }),
         'idempotency_key': 'web.hit:$id',
         'state': 'pending',
@@ -218,15 +225,6 @@ class WebFilterRepository {
         blockedAt: blockedAt.toUtc(),
         decision: decision,
         syncState: SyncState.queued);
-  }
-
-  /// Honesty-driven override: marking a blocked hit "allowed once" does
-  /// not rewrite history — it stamps which override ended the block, so
-  /// the parent can always reconstruct what really happened.
-  Future<void> markOverridden(String hitId, String overriddenBy) async {
-    final db = await _database.database;
-    await db.update('web_hits', {'overridden_by': overriddenBy},
-        where: 'id = ?', whereArgs: [hitId]);
   }
 
   // ── Domains (blocklist + allowlist) ─────────────────────────────────────
@@ -282,9 +280,11 @@ class WebFilterRepository {
         'operation': 'web.domain',
         'payload_json': jsonEncode({
           'family_id': familyId,
+          'domainId': id,
           'domain': entry.domain,
           'kind': kind,
           'reason': reason,
+          'createdAt': now.toIso8601String(),
         }),
         'idempotency_key': 'web.domain:$id',
         'state': 'pending',
@@ -297,14 +297,52 @@ class WebFilterRepository {
   }
 
   Future<void> removeDomain(String entryId) async {
+    final now = DateTime.now().toUtc();
     final db = await _database.database;
-    await db.delete('web_domains', where: 'id = ?', whereArgs: [entryId]);
+    await db.transaction((tx) async {
+      await tx.delete('web_domains', where: 'id = ?', whereArgs: [entryId]);
+      await tx.insert('outbox', {
+        'id': _uuid.v4(),
+        'aggregate_type': 'web',
+        'aggregate_id': entryId,
+        'operation': 'web.domain.removal',
+        'payload_json': jsonEncode({
+          'domainId': entryId,
+          'removedAt': now.toIso8601String(),
+        }),
+        'idempotency_key': 'web.domain.removal:$entryId',
+        'state': 'pending',
+        'attempt_count': 0,
+        'next_attempt_at': now.toIso8601String(),
+        'created_at': now.toIso8601String(),
+      });
+    });
   }
 
   Future<void> setDomainEnabled(String entryId, bool enabled) async {
+    final now = DateTime.now().toUtc();
     final db = await _database.database;
-    await db.update('web_domains', {'enabled': enabled ? 1 : 0},
-        where: 'id = ?', whereArgs: [entryId]);
+    await db.transaction((tx) async {
+      await tx.update('web_domains', {'enabled': enabled ? 1 : 0},
+          where: 'id = ?', whereArgs: [entryId]);
+      await tx.insert('outbox', {
+        'id': _uuid.v4(),
+        'aggregate_type': 'web',
+        'aggregate_id': entryId,
+        'operation': 'web.domain.updated',
+        'payload_json': jsonEncode({
+          'domainId': entryId,
+          'enabled': enabled,
+          'updatedAt': now.toIso8601String(),
+        }),
+        'idempotency_key':
+            'web.domain.updated:$entryId:${now.millisecondsSinceEpoch}',
+        'state': 'pending',
+        'attempt_count': 0,
+        'next_attempt_at': now.toIso8601String(),
+        'created_at': now.toIso8601String(),
+      });
+    });
   }
 
   // ── Category rules (per child) ──────────────────────────────────────────
@@ -387,9 +425,12 @@ class WebFilterRepository {
         'operation': 'web.category',
         'payload_json': jsonEncode({
           'family_id': familyId,
-          'child_id': childId,
+          'ruleId': '$childId:$category',
+          'childId': childId,
+          'childDisplayName': childDisplayName,
           'category': category,
           'enabled': enabled,
+          'updatedAt': now.toIso8601String(),
         }),
         'idempotency_key':
             'web.category:$familyId:$childId:$category:${now.millisecondsSinceEpoch}',
@@ -429,6 +470,7 @@ class WebFilterRepository {
     final existing = await db.query('web_settings',
         where: 'family_id = ? AND key = ?',
         whereArgs: [familyId, key]);
+    final now = DateTime.now().toUtc();
     if (existing.isEmpty) {
       await db.insert('web_settings',
           {'family_id': familyId, 'key': key, 'value': value});
@@ -437,6 +479,51 @@ class WebFilterRepository {
           where: 'family_id = ? AND key = ?',
           whereArgs: [familyId, key]);
     }
+    await db.insert('outbox', {
+      'id': _uuid.v4(),
+      'aggregate_type': 'web',
+      'aggregate_id': key,
+      'operation': 'web.setting',
+      'payload_json': jsonEncode({
+        'key': key,
+        'value': value,
+        'updatedAt': now.toIso8601String(),
+      }),
+      'idempotency_key': 'web.setting:$familyId:$key:${now.millisecondsSinceEpoch}',
+      'state': 'pending',
+      'attempt_count': 0,
+      'next_attempt_at': now.toIso8601String(),
+      'created_at': now.toIso8601String(),
+    });
+  }
+
+  /// Honesty-driven override stamp with real sync: the parent's
+  /// temporary-allow decision is a remote-visible mutation, never local-only.
+  Future<void> markOverridden(String hitId, String overriddenBy) async {
+    final now = DateTime.now().toUtc();
+    final db = await _database.database;
+    final hit = await hitById(hitId);
+    if (hit == null) return;
+    await db.transaction((tx) async {
+      await tx.update('web_hits', {'overridden_by': overriddenBy},
+          where: 'id = ?', whereArgs: [hitId]);
+      await tx.insert('outbox', {
+        'id': _uuid.v4(),
+        'aggregate_type': 'web',
+        'aggregate_id': hitId,
+        'operation': 'web.hit.overridden',
+        'payload_json': jsonEncode({
+          'hitId': hitId,
+          'overriddenBy': overriddenBy,
+          'overriddenAt': now.toIso8601String(),
+        }),
+        'idempotency_key': 'web.hit.overridden:$hitId',
+        'state': 'pending',
+        'attempt_count': 0,
+        'next_attempt_at': now.toIso8601String(),
+        'created_at': now.toIso8601String(),
+      });
+    });
   }
 
   /// Convenience: how many hits with decision=blocked occurred for the

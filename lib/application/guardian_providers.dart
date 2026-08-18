@@ -25,6 +25,7 @@ import '../data/outbox_sync_executor.dart';
 import '../data/outbox_sync_status.dart';
 import '../data/policy_repository.dart';
 import '../data/web_filter_repository.dart';
+import '../data/web_filter_remote_service.dart';
 import '../data/safety_repositories.dart';
 import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
@@ -239,6 +240,33 @@ final webDomainsProvider = FutureProvider.family(
 final webSettingsProvider = FutureProvider.family(
     (ref, String familyId) =>
         ref.watch(webFilterRepositoryProvider).settingsForFamily(familyId));
+
+// FS-002 — Web Filtering remote bridge. Reads verified server facts from
+// Firestore (`/families/{id}/web_policy`) and applies them into the local
+// store. When Firebase is unconfigured the reader is a safe no-op so the
+// local offline-first store remains the single honest source of truth.
+final webPolicyRemoteReaderProvider = Provider<WebPolicyRemoteReader>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return const _UnavailableWebPolicyRemoteReader();
+  }
+  return FirestoreWebPolicyRemoteReader(FirebaseFirestore.instance);
+});
+final webPolicySyncApplierProvider = Provider((ref) =>
+    WebPolicySyncApplier(ref.watch(webFilterRepositoryProvider)));
+final webFilterPullProvider = FutureProvider.family<WebPullResult, String>(
+    (ref, String familyId) => WebFilterPullService(
+        ref.watch(webPolicyRemoteReaderProvider),
+        ref.watch(webPolicySyncApplierProvider))
+        .pull(familyId));
+
+class _UnavailableWebPolicyRemoteReader implements WebPolicyRemoteReader {
+  const _UnavailableWebPolicyRemoteReader();
+
+  @override
+  Future<RemoteWebPolicy?> readWebPolicy({required String familyId}) =>
+      Future<RemoteWebPolicy?>.error(
+          StateError('firebase_web_policy_reader_unavailable'));
+}
 
 class _UnavailableFamilyMembershipRemoteReader
     implements FamilyMembershipRemoteReader {

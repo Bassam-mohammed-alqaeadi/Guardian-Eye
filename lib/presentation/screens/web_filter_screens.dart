@@ -109,8 +109,13 @@ class _WebFilterDashboardState extends ConsumerState<WebFilterDashboardScreen> {
 
     return RefreshIndicator(
       onRefresh: () async {
+        // FS-002 — real remote pull: verified Firestore facts land locally
+        // first; the UI re-reads afterwards and never presents unverified
+        // remote claims. A failed pull keeps the honest local view intact.
+        await ref.read(webFilterPullProvider(widget.familyId).future);
         ref.invalidate(webHitsProvider(widget.familyId));
         ref.invalidate(webDomainsProvider(widget.familyId));
+        ref.invalidate(webSettingsProvider(widget.familyId));
       },
       child: Directionality(
         textDirection: l10n.isRtl ? TextDirection.rtl : TextDirection.ltr,

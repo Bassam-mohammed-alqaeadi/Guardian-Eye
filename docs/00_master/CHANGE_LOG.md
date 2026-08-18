@@ -87,3 +87,50 @@ STATUS:               · approved (user directive)
 - **DOCS REQUIRED:** INDEX.md WF table added (this entry).
 - **ROLLBACK:** `git revert` of this commit; DB migration is additive-only (safe to keep).
 - **STATUS:** approved (user directive)
+
+### CL-004 — FS-002 Web Filtering: real Firebase/Firestore backend integration
+
+```text
+CHANGE-ID:            · CL-004
+REQUEST:              · User directive: complete ALL backend work for FS-002 — real Frontend + Backend +
+                        Firebase integration. No Mock, no partial. Close the phase completely.
+CURRENT PHASE:        · FS-002 closure (after CL-003 frontend)
+AFFECTED FEATURE:     · FS-002 Web Filtering
+AFFECTED SCREENS:     · WF-001 (dashboard pull-to-refresh now performs a real remote pull)
+AFFECTED FILES:       · lib/data/firestore_contracts.dart (web.hit / web.domain / web.domain.removal /
+                        web.category / web.setting / web.hit.overridden switch cases + FirestorePaths for
+                        web_hits, web_domains, web_category_rules, web_settings, web_policy)
+                      · lib/data/web_filter_repository.dart (outbox payloads now match contract keys;
+                        setSetting/removeDomain/setDomainEnabled enqueue outbox; sync-aware markOverridden;
+                        public database getter)
+                      · lib/data/web_filter_remote_service.dart (NEW — WebPolicyRemoteReader,
+                        FirestoreWebPolicyRemoteReader, RemoteWebPolicy/Hit/Domain/CategoryRule,
+                        WebPolicySyncApplier, WebFilterPullService/WebPullResult)
+                      · lib/application/guardian_providers.dart (webPolicyRemoteReaderProvider,
+                        webPolicySyncApplierProvider, webFilterPullProvider, no-op fallback when Firebase
+                        is unconfigured)
+                      · lib/presentation/screens/web_filter_screens.dart (dashboard refresh calls the
+                        real pull provider before invalidating local providers)
+                      · test/web_filter_backend_test.dart (NEW — 10 tests: contract paths/idempotency,
+                        payload validation, applier merge/removal, honest pull failure)
+                      · docs/00_master/FIRESTORE_RULES_WEB_FILTER.md (NEW — deployable security rules spec)
+AFFECTED DATA:        · Same SQLite tables (migration v15); remote pull writes only verified server facts
+AFFECTED BACKEND:     · NEW Firestore documents only — families/{familyId}/web_policy summary doc plus
+                        web_hits / web_domains / web_category_rules / web_settings collections. Zero
+                        changes to existing Firebase rules/schema/Render backend.
+AFFECTED EVENTS:      · 6 new business operations (web.hit, web.domain, web.domain.removal, web.category,
+                        web.setting, web.hit.overridden) via the existing contract engine
+AFFECTED SECURITY:    · Security rules spec requires auth + family-member authorization for all web
+                        collections; removals are idempotent deletion markers, not history rewrites
+AFFECTED CURRENT PHASE:      · Closes FS-002 completely (frontend + backend + Firebase)
+AFFECTED PREVIOUS FOUNDATION: · NONE (M1–M9 / Phase 17-18 untouched)
+AFFECTED FUTURE PHASES:      · All subsystems follow the same pull/push pattern (child policy delivery,
+                        FS-003+ remotes); the outbox/sync semantics become the standard
+MIGRATION REQUIRED:   · None (additive collections only); deploy FIRESTORE_RULES_WEB_FILTER.md rules
+                        manually to the project
+TESTS REQUIRED:       · +10 (web_filter_backend_test.dart); total suite 247 → 257, all green;
+                        flutter analyze 0 errors / 0 warnings on new code
+DOCS REQUIRED:        · CHANGE_LOG.md (this entry), FIRESTORE_RULES_WEB_FILTER.md
+ROLLBACK:             · git revert of this commit; web collections can be dropped from Firestore
+STATUS:               · ready (awaiting user confirmation to commit)
+```

@@ -34,6 +34,16 @@ class FirestorePaths {
       '${family(familyId)}/notification_events/$notificationId';
   static String syncMetadata(String familyId, String eventId) =>
       '${family(familyId)}/sync_metadata/$eventId';
+  // FS-002 — Web Filtering. Real Firestore documents the parent app
+  // writes through the outbox and the child app reads for enforcement.
+  static String webHit(String familyId, String hitId) =>
+      '${family(familyId)}/web_hits/$hitId';
+  static String webDomain(String familyId, String domainId) =>
+      '${family(familyId)}/web_domains/$domainId';
+  static String webCategoryRule(String familyId, String ruleId) =>
+      '${family(familyId)}/web_category_rules/$ruleId';
+  static String webSetting(String familyId, String key) =>
+      '${family(familyId)}/web_settings/$key';
 }
 
 class FirestoreMutation {
@@ -501,6 +511,126 @@ class FirestoreEventContract {
               if (operation == 'family.member.revoked') 'revokedAtClient': payload['revokedAt'],
               if (operation == 'family.member.role.updated') 'role': payload['role'],
               if (operation == 'family.member.role.updated') 'roleUpdatedAtClient': payload['updatedAt'],
+            });
+      // FS-002 — Web Filtering. These operations reach real Firestore
+      // documents under the family (web_hits, web_domains, web_category_rules,
+      // web_settings). The same idempotency discipline as every other
+      // operation: a repeated key is a harmless merge, never a duplicate.
+      case 'web.hit':
+        final hitId = payload['hitId'] as String?;
+        final hitChildId = payload['childId'] as String?;
+        final hitDomain = payload['domain'] as String?;
+        if (hitId == null || hitChildId == null || hitDomain == null) {
+          throw const FormatException('web.hit payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webHit(familyId, hitId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'hitId': hitId,
+              'childId': hitChildId,
+              'childDisplayName': payload['childDisplayName'],
+              'domain': hitDomain,
+              'category': payload['category'],
+              'blockedAt': payload['blockedAt'],
+              'decision': payload['decision'] ?? 'blocked',
+              'overriddenBy': payload['overriddenBy'],
+              'recordedAtClient': payload['recordedAt']
+            });
+      case 'web.domain':
+        final domainId = payload['domainId'] as String?;
+        final domainKind = payload['kind'] as String?;
+        if (domainId == null || domainKind == null) {
+          throw const FormatException('web.domain payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webDomain(familyId, domainId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'domainId': domainId,
+              'domain': payload['domain'],
+              'kind': domainKind,
+              'reason': payload['reason'],
+              'enabled': true,
+              'createdAtClient': payload['createdAt']
+            });
+      case 'web.domain.updated':
+        final updDomainId = payload['domainId'] as String?;
+        if (updDomainId == null) {
+          throw const FormatException('web.domain.updated payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webDomain(familyId, updDomainId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'domainId': updDomainId,
+              'enabled': payload['enabled'],
+              'updatedAtClient': payload['updatedAt']
+            });
+      case 'web.domain.removal':
+        final remDomainId = payload['domainId'] as String?;
+        if (remDomainId == null) {
+          throw const FormatException(
+              'web.domain.removal payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webDomain(familyId, remDomainId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'domainId': remDomainId,
+              'removed': true,
+              'removedAtClient': payload['removedAt']
+            });
+      case 'web.category':
+        final catRuleId = payload['ruleId'] as String?;
+        final catChildId = payload['childId'] as String?;
+        final catCategory = payload['category'] as String?;
+        if (catRuleId == null || catChildId == null || catCategory == null) {
+          throw const FormatException('web.category payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webCategoryRule(familyId, catRuleId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'ruleId': catRuleId,
+              'childId': catChildId,
+              'childDisplayName': payload['childDisplayName'],
+              'category': catCategory,
+              'enabled': payload['enabled'],
+              'updatedAtClient': payload['updatedAt']
+            });
+      case 'web.setting':
+        final settingKey = payload['key'] as String?;
+        if (settingKey == null) {
+          throw const FormatException('web.setting payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webSetting(familyId, settingKey),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'key': settingKey,
+              'value': payload['value'],
+              'updatedAtClient': payload['updatedAt']
+            });
+      case 'web.hit.overridden':
+        final ovHitId = payload['hitId'] as String?;
+        if (ovHitId == null) {
+          throw const FormatException('web.hit.overridden payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.webHit(familyId, ovHitId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'hitId': ovHitId,
+              'overriddenBy': payload['overriddenBy'],
+              'overriddenAtClient': payload['overriddenAt']
             });
       default:
         return syncMetadata(
