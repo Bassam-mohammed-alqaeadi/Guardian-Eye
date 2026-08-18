@@ -88,8 +88,11 @@ class _FamilySetupState extends ConsumerState<_FamilySetup> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 36),
-          Icon(Icons.shield_outlined,
-              size: 64, color: Theme.of(context).colorScheme.primary),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Image.asset('assets/images/guardian_eye_icon.png',
+                width: 88, height: 88, fit: BoxFit.cover),
+          ),
           const SizedBox(height: 20),
           Text(l10n.t('welcome'),
               style: Theme.of(context).textTheme.headlineMedium),
@@ -149,11 +152,27 @@ class _Dashboard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.t('familyDecisionCenter'),
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(color: Colors.white)),
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.asset(
+                        'assets/images/guardian_eye_icon.png',
+                        width: 54,
+                        height: 54,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(l10n.t('familyDecisionCenter'),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(color: Colors.white)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Text(data.family!.name,
                     style: Theme.of(context)

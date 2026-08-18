@@ -2210,6 +2210,15 @@ class PermissionOnboardingScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/onboarding_location.png',
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
               GuardianHeroCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

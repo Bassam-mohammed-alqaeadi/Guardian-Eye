@@ -174,6 +174,15 @@ class _WebFilterDashboardState extends ConsumerState<WebFilterDashboardScreen> {
               ),
             ),
             const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/images/onboarding_filtering.png',
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
             GuardianOfflineBanner(),
             const SizedBox(height: 16),
             GuardianSection(

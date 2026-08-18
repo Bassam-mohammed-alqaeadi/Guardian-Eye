@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Guardian Eye Pro brand navy used by the launch splash. -->
+    <color name="guardian_navy">#FF0F2A5B</color>
+</resources>
