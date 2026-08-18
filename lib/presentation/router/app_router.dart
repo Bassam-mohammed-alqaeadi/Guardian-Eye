@@ -13,10 +13,12 @@ import '../screens/pairing_screen.dart';
 import '../screens/child_redemption_screen.dart';
 import '../screens/permissions_screen.dart';
 import '../screens/firebase_session_screen.dart';
+import '../screens/web_filter_screens.dart';
+import '../screens/web_filter_management_screens.dart';
+import '../screens/web_filter_child_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
-import '../../application/family_context_provider.dart';
 
 /// One source of navigation truth for Guardian Eye Pro.
 ///
@@ -123,6 +125,71 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/safety/permissions',
         name: 'safetyPermissions',
         builder: (context, state) => const PermissionsScreen(),
+      ),
+      // FS-002 Web Filtering subsystem routes (WF-001 … WF-010).
+      GoRoute(
+        path: '/safety/web/:familyId',
+        name: 'webFiltering',
+        builder: (context, state) =>
+            WebFilterDashboardScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/categories',
+        name: 'webCategories',
+        builder: (context, state) =>
+            WebFilterCategoriesScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/blocklist',
+        name: 'webBlocklist',
+        builder: (context, state) =>
+            WebBlocklistScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/settings',
+        name: 'webSettings',
+        builder: (context, state) =>
+            WebSettingsScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/history',
+        name: 'webHistory',
+        builder: (context, state) =>
+            WebBlockHistoryScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/history/:hitId',
+        name: 'webHitDetail',
+        builder: (context, state) => WebBlockHitDetailScreen(
+            familyId: state.pathParameters['familyId']!,
+            hitId: state.pathParameters['hitId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/history/:hitId/allow',
+        name: 'webTemporaryAllow',
+        builder: (context, state) => WebTemporaryAllowScreen(
+            familyId: state.pathParameters['familyId']!,
+            hitId: state.pathParameters['hitId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/allowlist',
+        name: 'webAllowlist',
+        builder: (context, state) =>
+            WebAllowlistScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/safety/web/:familyId/:childId',
+        name: 'perChildWebPolicy',
+        builder: (context, state) => PerChildWebPolicyScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      GoRoute(
+        path: '/blocked/:familyId/:childId',
+        name: 'blockedPage',
+        builder: (context, state) => BlockedPageScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
       ),
       ],),
     ],

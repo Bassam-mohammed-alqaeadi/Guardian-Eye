@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 14,
+        version: 15,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -115,6 +115,21 @@ class GuardianDatabase {
         'CREATE TABLE child_enforcement_states(id TEXT PRIMARY KEY, device_id TEXT NOT NULL REFERENCES devices(id), family_id TEXT NOT NULL REFERENCES families(id), state TEXT NOT NULL, outcome TEXT, reason TEXT NOT NULL, decided_at TEXT NOT NULL, applied_at TEXT, policy_version INTEGER, enqueued_for_sync INTEGER NOT NULL DEFAULT 0)');
     batch.execute(
         'CREATE INDEX idx_enforcement_states_device_time ON child_enforcement_states(device_id, decided_at DESC)');
+    // FS-002 — Web Filtering tables: observed block events (hits),
+    // parent-managed blocked/trusted domains, per-child category rules,
+    // and family web settings.
+    batch.execute(
+        'CREATE TABLE web_hits(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, child_display_name TEXT, domain TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'other\', blocked_at TEXT NOT NULL, decision TEXT NOT NULL DEFAULT \'blocked\', overridden_by TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE TABLE web_domains(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), domain TEXT NOT NULL, kind TEXT NOT NULL, reason TEXT, enabled INTEGER NOT NULL DEFAULT 1, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE TABLE web_category_rules(family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, child_display_name TEXT, category TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, sync_state TEXT NOT NULL DEFAULT \'queued\', updated_at TEXT NOT NULL, PRIMARY KEY(family_id, child_id, category))');
+    batch.execute(
+        'CREATE TABLE web_settings(family_id TEXT NOT NULL REFERENCES families(id), key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(family_id, key))');
+    batch.execute(
+        'CREATE INDEX idx_web_hits_family_time ON web_hits(family_id, blocked_at DESC)');
+    batch.execute(
+        'CREATE INDEX idx_web_domains_family_kind ON web_domains(family_id, kind)');
     await batch.commit(noResult: true);
   }
 
@@ -222,6 +237,21 @@ class GuardianDatabase {
       // (new installs hit onCreate, not onUpgrade).
       await db.execute('ALTER TABLE incidents ADD COLUMN device_id TEXT');
       await db.execute('ALTER TABLE incidents ADD COLUMN actor_uid TEXT');
+    }
+    if (oldVersion < 15) {
+      // FS-002 — Web Filtering tables (see onCreate for schema docs).
+      await db.execute(
+          'CREATE TABLE web_hits(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, child_display_name TEXT, domain TEXT NOT NULL, category TEXT NOT NULL DEFAULT \'other\', blocked_at TEXT NOT NULL, decision TEXT NOT NULL DEFAULT \'blocked\', overridden_by TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE TABLE web_domains(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), domain TEXT NOT NULL, kind TEXT NOT NULL, reason TEXT, enabled INTEGER NOT NULL DEFAULT 1, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE TABLE web_category_rules(family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, child_display_name TEXT, category TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, sync_state TEXT NOT NULL DEFAULT \'queued\', updated_at TEXT NOT NULL, PRIMARY KEY(family_id, child_id, category))');
+      await db.execute(
+          'CREATE TABLE web_settings(family_id TEXT NOT NULL REFERENCES families(id), key TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(family_id, key))');
+      await db.execute(
+          'CREATE INDEX idx_web_hits_family_time ON web_hits(family_id, blocked_at DESC)');
+      await db.execute(
+          'CREATE INDEX idx_web_domains_family_kind ON web_domains(family_id, kind)');
     }
   }
 }

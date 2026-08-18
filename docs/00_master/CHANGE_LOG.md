@@ -68,3 +68,22 @@ DOCS REQUIRED:        · MASTER_DEVELOPMENT_PLAN.md, MASTER_FEATURE_MATRIX.md, M
 ROLLBACK:             · Documentation only — no code to revert
 STATUS:               · approved (user directive)
 ```
+
+### CL-003 — FS-002 Web Filtering implemented (WF-001…WF-010)
+- **REQUEST:** User directive: implement the complete FS-002 Web Filtering subsystem (10 screens) with verified integration, icons/assets within the design system.
+- **CURRENT PHASE:** FS-002 implementation (declared in CL-002).
+- **AFFECTED FEATURE:** FS-002 Web Filtering.
+- **AFFECTED SCREENS:** WF-001…WF-010 (routes `/safety/web/:fid[/categories|/blocklist|/settings|/history|/history/:hid|/history/:hid/allow|/allowlist|/child/:cid|/blocked/:hid]`).
+- **AFFECTED FILES:** `lib/data/web_filter_repository.dart` (new), `lib/domain/web_filtering/` (new: categories + data model), `lib/presentation/screens/web_filter_screens.dart` (new), `web_filter_management_screens.dart` (new), `web_filter_child_screens.dart` (new), `lib/core/database/guardian_database.dart` (migration v15), `lib/application/guardian_providers.dart` (4 new providers), `lib/presentation/router/app_router.dart` (10 routes), `lib/core/localization/app_localizations.dart` (~96 AR/EN keys), `docs/06_ux/02_screens/INDEX.md` (WF table).
+- **AFFECTED DATA:** SQLite tables `web_filter_hits`, `web_filter_domains`, `web_filter_category_rules`, `web_filter_settings`; 4 new Riverpod providers (`webHitsProvider`, `webDomainsProvider`, `webSettingsProvider`, `webFilterRepositoryProvider`).
+- **AFFECTED BACKEND:** NONE — local-first via the existing outbox/sync semantics; no Firestore schema or rules changed.
+- **AFFECTED EVENTS:** none new.
+- **AFFECTED SECURITY:** all screens gated by `FamilyRuntimeContext.can(viewPolicies/managePolicies)`; unauthorized surfaces show honest `GuardianStateView`; child-facing blocked page (WF-010) is fail-closed self-scope.
+- **AFFECTED CURRENT PHASE:** FS-002 implemented per CL-002 test floor.
+- **AFFECTED PREVIOUS FOUNDATION:** NONE (M1–M9/Phase 17-18 untouched).
+- **AFFECTED FUTURE PHASES:** FS-003+ (web hits feed L3 behavior analytics); AI copilot consumes `webHitsProvider`.
+- **MIGRATION REQUIRED:** SQLite migration v15 (auto on next DB open; no data loss).
+- **TESTS REQUIRED:** baseline unchanged — 247/247 green; `flutter analyze` 0 errors / 0 warnings (info-only lints 166 → 118).
+- **DOCS REQUIRED:** INDEX.md WF table added (this entry).
+- **ROLLBACK:** `git revert` of this commit; DB migration is additive-only (safe to keep).
+- **STATUS:** approved (user directive)

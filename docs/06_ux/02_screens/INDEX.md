@@ -23,6 +23,24 @@ Phase 0 establishes the design-system baseline (tokens, AppTheme, primitives, bo
 
 Screens already upgraded in Phase 0: Dashboard (Decision Center), Child Context, Firebase Session (no cards). Screens from the FS-002→FS-016 specification set (63 screens) will be added in Phase 2 and later, consuming the primitives and shell defined here so the platform remains one visual product.
 
+## FS-002 — Web Filtering (implemented)
+All ten WF screens ship under the parent shell, gated by `FamilyRuntimeContext.can()` (`viewPolicies` / `managePolicies`), built exclusively from the nine design primitives, with honest states (loading → empty → error → offline → unauthorized) and full AR/EN via `app_localizations.dart`.
+
+| ID | Screen | Route |
+| --- | --- | --- |
+| WF-001 | Web Filtering Dashboard | `/safety/web/:familyId` |
+| WF-002 | Content Categories | `/safety/web/:familyId/categories` |
+| WF-003 | Website Blocklist | `/safety/web/:familyId/blocklist` |
+| WF-004 | Web Settings | `/safety/web/:familyId/settings` |
+| WF-005 | Block History | `/safety/web/:familyId/history` |
+| WF-006 | Block Hit Detail | `/safety/web/:familyId/history/:hitId` |
+| WF-007 | Temporary Allow | `/safety/web/:familyId/history/:hitId/allow` |
+| WF-008 | Site Allowlist | `/safety/web/:familyId/allowlist` |
+| WF-009 | Per-Child Web Policy | `/safety/web/:familyId/child/:childId` |
+| WF-010 | Blocked Page (child) | `/safety/web/blocked/:hitId` |
+
+Code modules: `lib/data/web_filter_repository.dart` (SQLite offline-first `WebFilterRepository` + providers), `lib/domain/web_filtering/` (categories and data model), screens split as `web_filter_screens.dart` (WF-001/002), `web_filter_management_screens.dart` (WF-003–006), `web_filter_child_screens.dart` (WF-007–010). Schema: migration `v15` (`web_filter_hits`, `web_filter_domains`, `web_filter_category_rules`, `web_filter_settings`). Local-first with outbox-style sync semantics — no backend contract changes. Entry tile on the Decision Center dashboard → `/safety/web/:familyId`.
+
 ## Navigation Graph
 
 Parent shell (5 tabs) → each tab is a canonical go_router path. All intra-app navigation uses `context.push`/`context.go`; unknown paths land on the not-found surface (verified by `m1_shell_test` dead-route cases).

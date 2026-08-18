@@ -24,6 +24,7 @@ import '../data/guardian_repositories.dart';
 import '../data/outbox_sync_executor.dart';
 import '../data/outbox_sync_status.dart';
 import '../data/policy_repository.dart';
+import '../data/web_filter_repository.dart';
 import '../data/safety_repositories.dart';
 import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
@@ -222,6 +223,22 @@ final dashboardProvider = FutureProvider<GuardianDashboard>(
     (ref) => ref.watch(familyRepositoryProvider).loadDashboard());
 final capabilityStatusProvider = FutureProvider<List<CapabilityStatus>>(
     (ref) => ref.watch(capabilityGatewayProvider).inspectAll());
+
+/// FS-002 — Web Filtering. Local-first store for observed block events
+/// (hits), parent-managed blocked/trusted domains, per-child category
+/// rules, and family web settings. Reads and mutations are local SQLite
+/// first; the honest outbox carries the same offline-first rhythm.
+final webFilterRepositoryProvider =
+    Provider((ref) => WebFilterRepository(GuardianDatabase.instance));
+final webHitsProvider = FutureProvider.family(
+    (ref, String familyId) =>
+        ref.watch(webFilterRepositoryProvider).hitsForFamily(familyId));
+final webDomainsProvider = FutureProvider.family(
+    (ref, String familyId) =>
+        ref.watch(webFilterRepositoryProvider).domainsForFamily(familyId));
+final webSettingsProvider = FutureProvider.family(
+    (ref, String familyId) =>
+        ref.watch(webFilterRepositoryProvider).settingsForFamily(familyId));
 
 class _UnavailableFamilyMembershipRemoteReader
     implements FamilyMembershipRemoteReader {
