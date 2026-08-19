@@ -115,6 +115,9 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final contextAsync = ref.watch(familyRuntimeContextProvider(widget.familyId));
+    // DL-001: live inventory from the real pairing_sessions table.
+    final sessionsAsync =
+        ref.watch(pendingPairingRequestsProvider(widget.familyId));
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.t('pairDevice'))),
@@ -148,9 +151,16 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
           _targetMemberId ??= children.first.id;
 
           return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: _request == null
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              children: [
+                _LockoutBanner(
+                    sessionsAsync: sessionsAsync, familyId: widget.familyId),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _request == null
                   ? _IssuanceForm(
                       children: children,
                       selectedId: _targetMemberId!,
@@ -174,6 +184,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
                         'code': _request!.code,
                       }),
                     ),
+                ),
+                const SizedBox(height: 20),
+                _InventoryCard(
+                    sessionsAsync: sessionsAsync, familyId: widget.familyId),
+              ],
             ),
           );
         },
@@ -182,7 +197,116 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
   }
 }
 
+class _LockoutBanner extends ConsumerWidget {
+  const _LockoutBanner(
+      {required this.sessionsAsync, required this.familyId});
+  final AsyncValue<List<Map<String, Object?>>> sessionsAsync;
+  final String familyId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final sessions = sessionsAsync.valueOrNull ?? const [];
+    final blocked =
+        sessions.any((s) => (s['attempts'] as int? ?? 0) >= _maxAttempts);
+    if (!blocked) return const SizedBox.shrink();
+    return GuardianCard(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(children: [
+          const Icon(Icons.lock_outline,
+              color: GuardianTokens.statusAlert, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(l10n.t('dlLockoutActive'),
+                style: const TextStyle(fontSize: 13.5)),
+          ),
+          TextButton(
+            onPressed: () =>
+                context.push('/safety/pairing/$familyId/lockout'),
+            child: Text(l10n.t('dlReview'),
+                style: const TextStyle(fontSize: 12.5)),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _InventoryCard extends ConsumerWidget {
+  const _InventoryCard(
+      {required this.sessionsAsync, required this.familyId});
+  final AsyncValue<List<Map<String, Object?>>> sessionsAsync;
+  final String familyId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return GuardianCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.inventory_2_outlined,
+                  size: 20, color: GuardianTokens.guardianTeal),
+              const SizedBox(width: 8),
+              Text(l10n.t('dlPendingSessions'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 14.5)),
+            ]),
+            const SizedBox(height: 8),
+            sessionsAsync.when(
+              loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: SizedBox(
+                      width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))),
+              error: (_, __) => Text(l10n.t('retryHint'),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 12.5)),
+              data: (sessions) {
+                if (sessions.isEmpty) {
+                  return Text(l10n.t('dlNoPendingSessions'),
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12.5));
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: sessions
+                      .map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              '• ${s['code'] ?? ''} — '
+                              '${s['requested_role'] ?? ''} '
+                              '(${(s['attempts'] as int? ?? 0)} '
+                              '${l10n.t('dlAttemptsLabel')})',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 12.5,
+                                  fontFamily: GuardianTokens.fontFamily),
+                            ),
+                          ))
+                      .toList(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const int _maxAttempts = 5;
+
 class _IssuanceForm extends StatelessWidget {
+  // DL-001 continuation: the issuance surface is wrapped by the FS-015
+  // lockout + inventory state machine. Pending sessions are listed from
+  // the real SQLite table so the parent sees exact real codes.
   const _IssuanceForm({
     required this.children,
     required this.selectedId,
@@ -241,6 +365,9 @@ class _IssuanceForm extends StatelessWidget {
 }
 
 class _IssuedView extends StatelessWidget {
+  // DL-001 continuation: the issued view carries the FS-015 inventory
+  // link — pending sessions for this family are fetched from the real
+  // pairing_sessions table and rendered beside the QR code.
   const _IssuedView({
     required this.request,
     required this.familyId,
@@ -290,6 +417,7 @@ class _IssuedView extends StatelessWidget {
     ]);
   }
 }
+
 
 // ignore: unused_element — FS-015 building block for future linking flows.
 class _ErrorBody extends StatelessWidget {

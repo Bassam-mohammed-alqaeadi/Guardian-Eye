@@ -1015,15 +1015,15 @@ class _ModeCreateState extends ConsumerState<ModeCreateScreen> {
               DropdownButtonFormField<ModeKind>(
                 value: _kind,
                 decoration: InputDecoration(labelText: l10n.t('modesKind')),
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: ModeKind.homework, child: Text('Homework')),
+                      value: ModeKind.homework, child: Text(l10n.t('modeKindHomework'))),
                   DropdownMenuItem(
-                      value: ModeKind.bedtime, child: Text('Bedtime')),
+                      value: ModeKind.bedtime, child: Text(l10n.t('modeKindBedtime'))),
                   DropdownMenuItem(
-                      value: ModeKind.travel, child: Text('Travel')),
+                      value: ModeKind.travel, child: Text(l10n.t('modeKindTravel'))),
                   DropdownMenuItem(
-                      value: ModeKind.custom, child: Text('Custom')),
+                      value: ModeKind.custom, child: Text(l10n.t('modeKindCustom'))),
                 ],
                 onChanged: (v) {
                   if (v != null) setState(() => _kind = v);
@@ -1032,14 +1032,14 @@ class _ModeCreateState extends ConsumerState<ModeCreateScreen> {
               DropdownButtonFormField<ModeAction>(
                 value: _action,
                 decoration: InputDecoration(labelText: l10n.t('modesAction')),
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: ModeAction.block, child: Text('Block')),
+                      value: ModeAction.block, child: Text(l10n.t('modeActionBlock'))),
                   DropdownMenuItem(
-                      value: ModeAction.slowDown, child: Text('Slow down')),
+                      value: ModeAction.slowDown, child: Text(l10n.t('modeActionSlowDown'))),
                   DropdownMenuItem(
                       value: ModeAction.allowlistOnly,
-                      child: Text('Allowlist only')),
+                      child: Text(l10n.t('modeActionAllowlistOnly'))),
                 ],
                 onChanged: (v) {
                   if (v != null) setState(() => _action = v);
@@ -1319,15 +1319,15 @@ class _ModeEditState extends ConsumerState<ModeEditScreen> {
               DropdownButtonFormField<ModeKind>(
                 value: _kind,
                 decoration: InputDecoration(labelText: l10n.t('modesKind')),
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: ModeKind.homework, child: Text('Homework')),
+                      value: ModeKind.homework, child: Text(l10n.t('modeKindHomework'))),
                   DropdownMenuItem(
-                      value: ModeKind.bedtime, child: Text('Bedtime')),
+                      value: ModeKind.bedtime, child: Text(l10n.t('modeKindBedtime'))),
                   DropdownMenuItem(
-                      value: ModeKind.travel, child: Text('Travel')),
+                      value: ModeKind.travel, child: Text(l10n.t('modeKindTravel'))),
                   DropdownMenuItem(
-                      value: ModeKind.custom, child: Text('Custom')),
+                      value: ModeKind.custom, child: Text(l10n.t('modeKindCustom'))),
                 ],
                 onChanged: (v) {
                   if (v != null) setState(() => _kind = v);
@@ -1336,14 +1336,14 @@ class _ModeEditState extends ConsumerState<ModeEditScreen> {
               DropdownButtonFormField<ModeAction>(
                 value: _action,
                 decoration: InputDecoration(labelText: l10n.t('modesAction')),
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: ModeAction.block, child: Text('Block')),
+                      value: ModeAction.block, child: Text(l10n.t('modeActionBlock'))),
                   DropdownMenuItem(
-                      value: ModeAction.slowDown, child: Text('Slow down')),
+                      value: ModeAction.slowDown, child: Text(l10n.t('modeActionSlowDown'))),
                   DropdownMenuItem(
                       value: ModeAction.allowlistOnly,
-                      child: Text('Allowlist only')),
+                      child: Text(l10n.t('modeActionAllowlistOnly'))),
                 ],
                 onChanged: (v) {
                   if (v != null) setState(() => _action = v);

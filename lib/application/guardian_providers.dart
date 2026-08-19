@@ -39,6 +39,7 @@ import '../data/location_remote_service.dart';
 import '../data/safety_repositories.dart';
 import '../data/sos_remote_service.dart';
 import '../domain/sos_config.dart';
+import '../domain/device_linking.dart';
 import '../domain/screen_time.dart';
 import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
@@ -538,3 +539,73 @@ final sosRemoteReaderProvider =
 final sosPullProvider =
     FutureProvider.family<int?, String>((ref, String familyId) =>
         ref.watch(sosRemoteReaderProvider).pullPending({}));
+
+// FS-015 — Device Linking & Enrollment. Honest inventory of pairing
+// requests, family devices and health verdicts. Nothing here claims a
+// device is healthy — verdicts are derived from real sync timestamps and
+// lifecycle rows (see `device_linking.dart`).
+final pendingPairingRequestsProvider =
+    FutureProvider.family<List<Map<String, Object?>>, String>(
+        (ref, String familyId) =>
+            ref.watch(pairingRepositoryProvider).pendingRequestsForFamily(familyId));
+final latestPairingSessionProvider =
+    FutureProvider.family<Map<String, Object?>?, String>(
+        (ref, String familyId) =>
+            ref.watch(pairingRepositoryProvider).latestSessionForFamily(familyId));
+final familyDevicesProvider =
+    FutureProvider.family<List<Map<String, Object?>>, String>(
+        (ref, String familyId) =>
+            ref.watch(pairingRepositoryProvider).devicesForFamily(familyId));
+final deviceByIdProvider =
+    FutureProvider.family<Map<String, Object?>?, String>(
+        (ref, String deviceId) =>
+            ref.watch(pairingRepositoryProvider).deviceById(deviceId));
+final deviceLifecycleProvider =
+    FutureProvider.family<Map<String, Object?>?, String>(
+        (ref, String deviceId) =>
+            ref.watch(pairingRepositoryProvider).lifecycleForDevice(deviceId));
+/// DL-010 — one honest [DeviceHealth] record per family device.
+final familyDeviceHealthProvider =
+    FutureProvider.family<List<DeviceHealth>, String>((ref, String familyId) async {
+  final devices =
+      await ref.watch(familyDevicesProvider(familyId).future);
+  final results = <DeviceHealth>[];
+  for (final row in devices) {
+    final life = await ref
+        .watch(pairingRepositoryProvider)
+        .lifecycleForDevice(row['id'] as String);
+    results.add(DeviceHealth.fromRows(row, life));
+  }
+  return results;
+});
+final deviceSyncMarkerProvider =
+    FutureProvider.family<bool, String>((ref, String deviceId) =>
+        ref.watch(pairingRepositoryProvider).markDeviceSynced(deviceId));
+typedef DeviceTransferScope = ({String familyId, String memberId, String ownerMemberId});
+/// DL-011 — transfers a child's enrollment to a fresh device row. The old
+/// device is revoked (record kept, never deleted) and a queued outbox
+/// operation (`device.transferred`) carries the honest migration note.
+final deviceTransferProvider =
+    FutureProvider.family<({bool succeeded, String? newDeviceId, String? failure}), String>(
+        (ref, String oldDeviceId) {
+  final scope = ref.watch(_deviceTransferScopeProvider);
+  return ref.watch(pairingRepositoryProvider).transferDeviceEnrollment(
+      oldDeviceId: oldDeviceId,
+      familyId: scope.familyId,
+      memberId: scope.memberId,
+      ownerMemberId: scope.ownerMemberId);
+});
+final _deviceTransferScopeProvider =
+    StateProvider<DeviceTransferScope>((ref) => throw StateError(
+        'device_transfer_scope_required: set the scope before reading deviceTransferProvider'));
+void setDeviceTransferScope(
+    WidgetRef ref,
+    {required String familyId,
+    required String memberId,
+    required String ownerMemberId}) {
+  ref.read(_deviceTransferScopeProvider.notifier).state = (
+    familyId: familyId,
+    memberId: memberId,
+    ownerMemberId: ownerMemberId
+  );
+}

@@ -353,6 +353,183 @@ class PairingRepository {
     });
   }
 
+  // — FS-015 Device Linking & Enrollment additions ————————————————
+
+  /// Open (pending/verified) pairing requests a parent can present to a
+  /// child's device — the DL-001 issuance list.
+  Future<List<Map<String, Object?>>> pendingRequestsForFamily(
+      String familyId) async {
+    final db = await _database.database;
+    return db.query('pairing_sessions',
+        where: 'family_id = ? AND status IN (?, ?)',
+        whereArgs: [familyId, PairingState.pending.storageKey,
+            PairingState.verified.storageKey],
+        orderBy: 'created_at DESC');
+  }
+
+  /// The most recent pairing session for a family, or null — used by the
+  /// DL-002 lockout view.
+  Future<Map<String, Object?>?> latestSessionForFamily(
+      String familyId) async {
+    final db = await _database.database;
+    final rows = await db.query('pairing_sessions',
+        where: 'family_id = ?',
+        whereArgs: [familyId],
+        orderBy: 'created_at DESC',
+        limit: 1);
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  /// DL-003 — resolves the live pairing session for a raw six-digit code,
+  /// matching the hash the issuing transaction stored. Returns null when no
+  /// family session carries that code (the enrollment surface then reports
+  /// `dlCodeInvalid` honestly instead of guessing).
+  Future<Map<String, Object?>?> sessionForCode(
+      String familyId, String code) async {
+    final db = await _database.database;
+    final rows = await db.query('pairing_sessions',
+        where: 'family_id = ? AND code_hash = ?',
+        whereArgs: [familyId, PairingRepository.hashPairingCode(code)],
+        limit: 1);
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  /// DL-002 — clears the honest failure counter on the family's latest
+  /// pairing session. The session rows themselves are never deleted (audit
+  /// trail kept); only the counter gates unlock.
+  Future<bool> resetFailedAttempts(String familyId) async {
+    final db = await _database.database;
+    final latest = await latestSessionForFamily(familyId);
+    if (latest == null) return false;
+    final updated = await db.update('pairing_sessions',
+        {'failure_count': 0, 'status': PairingState.pending.storageKey},
+        where: 'id = ?', whereArgs: [latest['id']]);
+    return updated > 0;
+  }
+
+  /// Every device bound to a family with its revocation marker — the DL-009
+  /// unlinking, DL-010 health and DL-011 transfer surfaces.
+  Future<List<Map<String, Object?>>> devicesForFamily(String familyId) async {
+    final db = await _database.database;
+    return db.query('devices',
+        where: 'family_id = ?', whereArgs: [familyId],
+        orderBy: 'created_at ASC');
+  }
+
+  /// Raw device row by id — DL-009/DL-011 detail source.
+  Future<Map<String, Object?>?> deviceById(String deviceId) async {
+    final db = await _database.database;
+    final rows = await db.query('devices',
+        where: 'id = ?', whereArgs: [deviceId], limit: 1);
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  /// The child-device lifecycle row for a device, or null (adult devices
+  /// have none).
+  Future<Map<String, Object?>?> lifecycleForDevice(
+      String deviceId) async {
+    final db = await _database.database;
+    final rows = await db.query('child_device_states',
+        where: 'device_id = ?', whereArgs: [deviceId], limit: 1);
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  /// An honest device heartbeat: stamps last_synced_at so DL-010 health
+  /// verdicts reflect real freshness. No-op when the device is revoked.
+  Future<bool> markDeviceSynced(String deviceId) async {
+    final db = await _database.database;
+    final updated = await db.update(
+        'devices',
+        {
+          'last_synced_at': DateTime.now().toUtc().toIso8601String(),
+          'sync_state': SyncState.synced.storageKey
+        },
+        where: 'id = ? AND revoked_at IS NULL',
+        whereArgs: [deviceId]);
+    return updated > 0;
+  }
+
+  /// DL-011 — moves a child's enrollment from the old device to a new one
+  /// with a truthful data-migration record. The old device is revoked
+  /// (revoked record kept, never deleted) and a brand-new device row plus
+  /// lifecycle row are created with sync_state queued. Returns the new
+  /// device id or a failure reason.
+  Future<({bool succeeded, String? newDeviceId, String? failure})>
+      transferDeviceEnrollment({
+    required String oldDeviceId,
+    required String familyId,
+    required String memberId,
+    required String ownerMemberId,
+  }) async {
+    final db = await _database.database;
+    return db.transaction((tx) async {
+      final old = await tx.query('devices',
+          where: 'id = ? AND family_id = ?',
+          whereArgs: [oldDeviceId, familyId], limit: 1);
+      if (old.isEmpty) {
+        return (succeeded: false, newDeviceId: null, failure: 'device_missing');
+      }
+      final oldRow = old.single;
+      if (oldRow['revoked_at'] != null) {
+        return (succeeded: false, newDeviceId: null,
+            failure: 'device_already_revoked');
+      }
+      final now = DateTime.now().toUtc();
+      await tx.update('devices',
+          {
+            'revoked_at': now.toIso8601String(),
+            'sync_state': SyncState.queued.storageKey
+          },
+          where: 'id = ?', whereArgs: [oldDeviceId]);
+      final lifecycle = await tx.query('child_device_states',
+          where: 'device_id = ?', whereArgs: [oldDeviceId], limit: 1);
+      final wasChild = lifecycle.isNotEmpty;
+      if (wasChild) {
+        await tx.update('child_device_states',
+            {
+              'lifecycle': 'transferred',
+              'failure_code': 'device_transferred',
+              'updated_at': now.toIso8601String()
+            },
+            where: 'device_id = ?', whereArgs: [oldDeviceId]);
+      }
+      final newDeviceId = _uuid.v4();
+      await tx.insert('devices', {
+        'id': newDeviceId,
+        'family_id': familyId,
+        'member_id': memberId,
+        'owner_member_id': ownerMemberId,
+        'role': oldRow['role'],
+        'sync_state': SyncState.queued.storageKey,
+        'created_at': now.toIso8601String()
+      });
+      if (wasChild) {
+        await tx.insert('child_device_states', {
+          'device_id': newDeviceId,
+          'family_id': familyId,
+          'member_id': memberId,
+          'lifecycle': 'enrolled',
+          'required_policy_version': 0,
+          'failure_code': 'device_transferred',
+          'updated_at': now.toIso8601String()
+        });
+      }
+      await _enqueue(tx,
+          aggregateType: 'device',
+          aggregateId: newDeviceId,
+          operation: 'device.transferred',
+          payload: {
+            'familyId': familyId,
+            'oldDeviceId': oldDeviceId,
+            'newDeviceId': newDeviceId,
+            'memberId': memberId,
+            'ownerMemberId': ownerMemberId,
+            'transferredAt': now.toIso8601String()
+          });
+      return (succeeded: true, newDeviceId: newDeviceId, failure: null);
+    });
+  }
+
   Future<void> _enqueue(Transaction tx,
       {required String aggregateType,
       required String aggregateId,

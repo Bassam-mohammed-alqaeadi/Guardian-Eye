@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/guardian_models.dart';
+import '../../domain/device_linking.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../application/family_context_provider.dart';
 import '../widgets/guardian_primitives.dart';
@@ -461,6 +462,26 @@ class _Dashboard extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.fact_check),
                 label: Text(l10n.t('sosDrillTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('dlDevicesTitle'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewDeviceLinking)
+                    ? () => context.push('/settings/devices')
+                    : null,
+                icon: const Icon(Icons.devices_outlined),
+                label: Text(l10n.t('dlDevicesTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.manageDevices)
+                    ? () => context.push('/safety/pairing/$familyId')
+                    : null,
+                icon: const Icon(Icons.qr_code_2_outlined),
+                label: Text(l10n.t('pairDevice')),
               ),
             ],
           ),

@@ -24,6 +24,8 @@ enum FamilyPermission {
   viewOwnPolicy,
   viewOwnUsage,
   viewOwnStatus,
+  viewDeviceLinking,
+  viewOwnPermissions,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }

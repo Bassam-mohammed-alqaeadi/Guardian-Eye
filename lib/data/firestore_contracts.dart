@@ -212,6 +212,31 @@ class FirestoreEventContract {
               'revokedByUid': identity.uid,
               'revokedAtClient': payload['revokedAt']
             });
+      case 'device.transferred':
+        // FS-015 DL-011 — the trusted backend treats the transfer as the
+        // new device taking over the child's enrollment under its uid; the
+        // old device row is server-revoked inside the same trusted callable,
+        // so the client only asserts the new device identity here.
+        final newDeviceId = payload['newDeviceId'] as String?;
+        final memberId = payload['memberId'] as String?;
+        if (newDeviceId == null || memberId == null) {
+          throw const FormatException(
+              'device.transferred payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.device(familyId, newDeviceId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'deviceId': newDeviceId,
+              'memberId': memberId,
+              'memberUid': payload['memberUid'],
+              'ownerUid': identity.uid,
+              'role': payload['role'] ?? 'child',
+              'status': 'active',
+              'transferredAtClient': payload['transferredAt'],
+              'oldDeviceId': payload['oldDeviceId']
+            });
       case 'incident.created':
         final incidentId = payload['incidentId'] as String?;
         final category = payload['category'] as String?;
