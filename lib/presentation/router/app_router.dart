@@ -24,6 +24,7 @@ import '../screens/monitoring_screens.dart';
 import '../screens/modes_screens.dart';
 import '../screens/sos_screens.dart';
 import '../screens/device_linking_screens.dart';
+import '../screens/reports_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -601,6 +602,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/location/sharing/self',
         name: 'childLocationSharingLegacy',
         builder: (context, state) => const ChildLocationSharingScreen(),
+      ),
+
+      // FS-009 — Reports & Export routes (RP-001 … RP-008). Authorization
+      // is delegated to FamilyPermission.viewReports inside the screens —
+      // the router only registers the surfaces.
+      GoRoute(
+        path: ReportsDashboardScreen.route,
+        name: 'reportsDashboard',
+        builder: (context, state) => const ReportsDashboardScreen(),
+      ),
+      GoRoute(
+        path: WebReportScreen.route,
+        name: 'webReport',
+        builder: (context, state) => const WebReportScreen(),
+      ),
+      GoRoute(
+        path: UsageReportScreen.route,
+        name: 'usageReport',
+        builder: (context, state) => const UsageReportScreen(),
+      ),
+      GoRoute(
+        path: LocationReportScreen.route,
+        name: 'locationReport',
+        builder: (context, state) => const LocationReportScreen(),
+      ),
+      GoRoute(
+        path: SafetyReportScreen.route,
+        name: 'safetyReport',
+        builder: (context, state) => const SafetyReportScreen(),
+      ),
+      GoRoute(
+        path: ModesReportScreen.route,
+        name: 'modesReport',
+        builder: (context, state) => const ModesReportScreen(),
+      ),
+      GoRoute(
+        path: SosReportScreen.route,
+        name: 'sosReport',
+        builder: (context, state) => const SosReportScreen(),
+      ),
+      GoRoute(
+        path: ReportExportScreen.route,
+        name: 'reportExport',
+        builder: (context, state) => const ReportExportScreen(),
       ),
       ],),
     ],

@@ -487,6 +487,26 @@ class _Dashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _NavGroup(
+            label: l10n.t('rpReportsTitle'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewReports)
+                    ? () => context.push('/reports/$familyId')
+                    : null,
+                icon: const Icon(Icons.insights_outlined),
+                label: Text(l10n.t('rpReportsTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewReports)
+                    ? () => context.push('/reports/$familyId/export')
+                    : null,
+                icon: const Icon(Icons.file_download_outlined),
+                label: Text(l10n.t('rpExportTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
             label: l10n.t('permissionsTitle'),
             children: [
               OutlinedButton.icon(

@@ -45,6 +45,8 @@ import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
 import '../domain/incident_engine.dart';
 import '../domain/guardian_models.dart';
+import '../data/reports_repository.dart';
+import '../domain/reports_domain.dart';
 
 final localeProvider = StateProvider<String>((ref) => 'ar');
 final familyRepositoryProvider =
@@ -609,3 +611,23 @@ void setDeviceTransferScope(
     ownerMemberId: ownerMemberId
   );
 }
+
+// FS-009 — Reports & Export. Aggregates the real subsystem tables into
+// period-scoped snapshots. The period notifier is kept as state so the
+// same detail screens and the export screen read one shared selection.
+// Nothing here invents numbers — an empty window produces an honest
+// empty verdict on every section.
+final reportsRepositoryProvider =
+    Provider<ReportsRepository>((ref) => ReportsRepository(GuardianDatabase.instance));
+
+final reportsPeriodNotifierProvider =
+    StateProvider.family<ReportPeriod, String>(
+        (ref, String familyId) => ReportPeriod.week);
+
+final reportsSnapshotProvider =
+    FutureProvider.family<FamilyReportSnapshot,
+        ({String familyId, ReportPeriod period})>(
+            (ref, ({String familyId, ReportPeriod period}) key) =>
+                ref
+                    .watch(reportsRepositoryProvider)
+                    .snapshotFor(familyId: key.familyId, period: key.period));

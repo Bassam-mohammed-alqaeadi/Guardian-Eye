@@ -26,6 +26,11 @@ enum FamilyPermission {
   viewOwnStatus,
   viewDeviceLinking,
   viewOwnPermissions,
+
+  // FS-009 — Reports & Export. Adult roles may generate family reports;
+  // a child may view its own activity within the exported report data.
+  viewReports,
+  viewOwnReport,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }

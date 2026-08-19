@@ -44,6 +44,11 @@ dependencies:
   path: ^1.9.1
   sqflite: ^2.4.2
   flutter_secure_storage: ^10.0.0
+
+  # Reports & Export (FS-009)
+  pdf: ^3.11.1
+  csv: ^6.0.0
+  share_plus: ^10.1.4
   connectivity_plus: ^7.0.0
   crypto: ^3.0.6
   permission_handler: ^12.0.1

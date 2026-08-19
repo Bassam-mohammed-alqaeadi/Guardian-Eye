@@ -34,6 +34,9 @@ class FamilyAuthorization {
             // FS-015 — Device Linking & Enrollment. All adult actors may
             // observe the family's linking inventory and health verdicts.
             FamilyPermission.viewDeviceLinking,
+            // FS-009 — adult actors may generate family reports and export
+            // them (PDF / CSV). A co-parent reads, the primary parent manages.
+            FamilyPermission.viewReports,
           },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
@@ -44,6 +47,9 @@ class FamilyAuthorization {
             // FS-015 DL-008 — the child device actor may view its own
             // permission ladder (honest, read-only).
             FamilyPermission.viewOwnPermissions,
+            // FS-009 — a child may only see its own activity inside the
+            // family report (honest, read-only view).
+            FamilyPermission.viewOwnReport,
           },
         FamilyRole.spouse => {
             FamilyPermission.viewFamily,
@@ -51,6 +57,8 @@ class FamilyAuthorization {
             // FS-015 — a spouse observes the linking inventory but never
             // mutates device state.
             FamilyPermission.viewDeviceLinking,
+            // FS-009 — a spouse observes reports but never mutates them.
+            FamilyPermission.viewReports,
           },
       };
   bool hasPermission(FamilyMember member, FamilyPermission permission) =>
