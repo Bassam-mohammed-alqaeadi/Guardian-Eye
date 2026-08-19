@@ -1269,6 +1269,7 @@ class _ExceptionRequestTileState
 
 // — Shared error state for async sections ————————————————————
 
+// ignore: unused_element — shared async-section error building block kept for future sections.
 class _SectionError extends StatelessWidget {
   const _SectionError({required this.retry});
   final VoidCallback retry;

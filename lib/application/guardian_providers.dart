@@ -31,9 +31,14 @@ import '../data/application_policy_repository.dart';
 import '../data/application_policy_remote_service.dart';
 import '../data/monitoring_repository.dart';
 import '../data/monitoring_remote_service.dart';
+import '../data/mode_config_repository.dart';
+import '../data/modes_remote_service.dart';
+import '../domain/mode_config.dart';
 import '../data/location_repository.dart';
 import '../data/location_remote_service.dart';
 import '../data/safety_repositories.dart';
+import '../data/sos_remote_service.dart';
+import '../domain/sos_config.dart';
 import '../domain/screen_time.dart';
 import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
@@ -464,3 +469,72 @@ final monitoringRemoteReaderProvider =
 final monitoringPullProvider =
     FutureProvider.family<int?, String>((ref, String familyId) =>
         ref.watch(monitoringRemoteReaderProvider).pullPending({}));
+
+// FS-005 — Special & Custom Modes. Local-first store for situational
+// modes (homework, bedtime, travel, custom) and their activations;
+// reads never fabricate delivery state.
+final modeConfigRepositoryProvider =
+    Provider((ref) => ModeConfigRepository(GuardianDatabase.instance));
+final modeConfigsProvider =
+    FutureProvider.family<List<ModeConfig>, String>(
+        (ref, String familyId) =>
+            ref.watch(modeConfigRepositoryProvider).modesForFamily(familyId));
+final modeChildConfigsProvider =
+    FutureProvider.family<List<ModeConfig>,
+        ({String familyId, String childId})>(
+        (ref, scope) => ref
+            .watch(modeConfigRepositoryProvider)
+            .childModesFor(scope.familyId, scope.childId));
+final modeActivationsProvider =
+    FutureProvider.family<List<ModeActivation>, String>(
+        (ref, String familyId) => ref
+            .watch(modeConfigRepositoryProvider)
+            .activationsForFamily(familyId));
+
+final modesRemoteReaderProvider =
+    Provider<FlutterModesRemoteReader>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return FlutterModesRemoteReader.unavailable();
+  }
+  return FlutterModesRemoteReader(ref.watch(modeConfigRepositoryProvider));
+});
+final modesPullProvider =
+    FutureProvider.family<int?, String>((ref, String familyId) =>
+        ref.watch(modesRemoteReaderProvider).pullPending({}));
+
+// FS-006 — SOS & Emergency. The readiness roster, the honest SOS
+// acknowledgement chain, and the guided drill state. A family only ever
+// sees alert states that the acknowledgement channel actually confirmed.
+final activeSosProvider =
+    FutureProvider.family<Map<String, Object?>?, String>(
+        (ref, String familyId) =>
+            ref.watch(sosRepositoryProvider).activeSosForFamily(familyId));
+/// Resolves the parent SOS event id for a notification row id. Needed by
+/// SO-005 (EmergencyAlertScreen), which is addressed by the notification
+/// row id but scopes its data to the parent sos event.
+final futureSosIdProvider =
+    FutureProvider.family<String?, String>((ref, String notificationId) =>
+        ref.watch(sosRepositoryProvider).sosIdForNotification(notificationId));
+final sosNotificationsProvider =
+    FutureProvider.family<List<Map<String, Object?>>, String>(
+        (ref, String sosId) =>
+            ref.watch(sosRepositoryProvider).notificationsForSos(sosId));
+final sosRecipientsProvider =
+    FutureProvider.family<List<SosRecipient>, String>(
+        (ref, String familyId) =>
+            ref.watch(sosRepositoryProvider).recipientsForFamily(familyId));
+final sosHistoryProvider =
+    FutureProvider.family<List<Map<String, Object?>>, String>(
+        (ref, String familyId) =>
+            ref.watch(sosRepositoryProvider).sosHistoryForFamily(familyId));
+
+final sosRemoteReaderProvider =
+    Provider<FlutterSosRemoteReader>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return FlutterSosRemoteReader.unavailable();
+  }
+  return FlutterSosRemoteReader(ref.watch(sosRepositoryProvider));
+});
+final sosPullProvider =
+    FutureProvider.family<int?, String>((ref, String familyId) =>
+        ref.watch(sosRemoteReaderProvider).pullPending({}));

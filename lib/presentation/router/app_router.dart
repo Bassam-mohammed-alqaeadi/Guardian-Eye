@@ -21,6 +21,8 @@ import '../screens/location_screens.dart';
 import '../screens/location_child_screens.dart';
 import '../screens/application_screens.dart';
 import '../screens/monitoring_screens.dart';
+import '../screens/modes_screens.dart';
+import '../screens/sos_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -407,6 +409,123 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'monitoringEvidenceQueue',
         builder: (context, state) => MonitoringEvidenceQueueScreen(
             familyId: state.pathParameters['familyId']!),
+      ),
+      // FS-005 Special & Custom Modes subsystem routes (MD-001 … MD-010).
+      GoRoute(
+        path: '/modes/:familyId',
+        name: 'modesDashboard',
+        builder: (context, state) =>
+            ModesDashboardScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/:modeId',
+        name: 'modeDetail',
+        builder: (context, state) => ModeDetailScreen(
+            familyId: state.pathParameters['familyId']!,
+            modeId: state.pathParameters['modeId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/new',
+        name: 'modeCreate',
+        builder: (context, state) =>
+            ModeCreateScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/:modeId/edit',
+        name: 'modeEdit',
+        builder: (context, state) => ModeEditScreen(
+            familyId: state.pathParameters['familyId']!,
+            modeId: state.pathParameters['modeId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/:modeId/schedule',
+        name: 'modeSchedule',
+        builder: (context, state) => ModeScheduleScreen(
+            familyId: state.pathParameters['familyId']!,
+            modeId: state.pathParameters['modeId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/:modeId/children',
+        name: 'modeChildren',
+        builder: (context, state) => ModeChildrenScreen(
+            familyId: state.pathParameters['familyId']!,
+            modeId: state.pathParameters['modeId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/:modeId/history',
+        name: 'modeActivationHistory',
+        builder: (context, state) => ModeActivationHistoryScreen(
+            familyId: state.pathParameters['familyId']!,
+            modeId: state.pathParameters['modeId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/conflict',
+        name: 'modeConflict',
+        builder: (context, state) =>
+            ModeConflictScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/modes/:familyId/templates',
+        name: 'modeTemplates',
+        builder: (context, state) =>
+            ModeTemplatesScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/child/:familyId/:childId/mode',
+        name: 'childActiveMode',
+        builder: (context, state) => ChildActiveModeScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      // FS-006 SOS & Emergency subsystem routes (SO-001 … SO-008).
+      GoRoute(
+        path: '/sos/:familyId',
+        name: 'sosDashboard',
+        builder: (context, state) =>
+            SosDashboardScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/activate',
+        name: 'sosActivate',
+        builder: (context, state) =>
+            SosActivationScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/active',
+        name: 'sosActive',
+        builder: (context, state) =>
+            ActiveSosScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/location',
+        name: 'sosEmergencyLocation',
+        builder: (context, state) => EmergencyLocationScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/alert/:alertId',
+        name: 'sosEmergencyAlert',
+        builder: (context, state) => EmergencyAlertScreen(
+            familyId: state.pathParameters['familyId']!,
+            alertId: state.pathParameters['alertId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/ack',
+        name: 'sosAckHistory',
+        builder: (context, state) =>
+            SosAckHistoryScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/recipients',
+        name: 'sosRecipients',
+        builder: (context, state) => SosRecipientsScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/sos/:familyId/drill',
+        name: 'sosDrill',
+        builder: (context, state) =>
+            SosDrillScreen(familyId: state.pathParameters['familyId']!),
       ),
       GoRoute(
         path: '/location/sharing/self',

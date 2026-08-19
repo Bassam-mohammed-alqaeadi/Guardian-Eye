@@ -436,6 +436,7 @@ class _OutcomeView extends StatelessWidget {
   }
 }
 
+// ignore: unused_element — FS-015/FS-016 onboarding building block kept for the startup state machine.
 class _StateView extends StatelessWidget {
   const _StateView({required this.icon, required this.title, required this.message});
 

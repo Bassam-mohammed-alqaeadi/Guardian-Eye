@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 18,
+        version: 20,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -188,7 +188,27 @@ class GuardianDatabase {
         'CREATE INDEX idx_monitoring_shots_family_time ON monitoring_shots(family_id, captured_at DESC)');
     batch.execute(
         'CREATE INDEX idx_monitoring_evidence_family_state ON monitoring_evidence_queue(family_id, state)');
+    // FS-005 — Special & Custom Modes (schema docs in the v19 upgrade block).
+    batch.execute(
+        'CREATE TABLE mode_configs(mode_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'custom\', action TEXT NOT NULL DEFAULT \'slowDown\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', category_restrictions TEXT NOT NULL DEFAULT \'\', app_restrictions TEXT NOT NULL DEFAULT \'\', priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, mode_id))');
+    batch.execute(
+        'CREATE TABLE mode_activations(activation_id TEXT PRIMARY KEY, mode_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, state TEXT NOT NULL DEFAULT \'requested\', started_at TEXT NOT NULL, ends_at TEXT, decided_by TEXT, created_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', FOREIGN KEY(family_id, mode_id) REFERENCES mode_configs(family_id, mode_id))');
+    batch.execute(
+        'CREATE INDEX idx_mode_configs_family ON mode_configs(family_id)');
+    batch.execute(
+        'CREATE INDEX idx_mode_activations_family_time ON mode_activations(family_id, started_at DESC)');
+    // FS-006 — SOS & Emergency. Recipient roster with responder roles for the
+    // readiness drill, plus per-recipient acknowledgement rows on the SOS
+    // notification channel (recipient_id NULL preserves legacy rows).
+    batch.execute(
+        'CREATE TABLE sos_recipients(family_id TEXT NOT NULL REFERENCES families(id), recipient_id TEXT NOT NULL, role TEXT NOT NULL DEFAULT \'responder\', ordering INTEGER NOT NULL DEFAULT 0, added_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, recipient_id))');
+    batch.execute(
+        'CREATE INDEX idx_sos_recipients_family ON sos_recipients(family_id, ordering)');
     await batch.commit(noResult: true);
+    // Per-recipient acknowledgement tracking on the existing notification
+    // channel (NULL preserves legacy rows and outbox semantics).
+    await db.execute(
+        'ALTER TABLE notification_events ADD COLUMN recipient_id TEXT');
   }
 
   Future<void> _upgradeSchema(
@@ -359,6 +379,28 @@ class GuardianDatabase {
           'CREATE INDEX idx_monitoring_shots_family_time ON monitoring_shots(family_id, captured_at DESC)');
       await db.execute(
           'CREATE INDEX idx_monitoring_evidence_family_state ON monitoring_evidence_queue(family_id, state)');
+    }
+    if (oldVersion < 19) {
+      // FS-005 — Special & Custom Modes. Situational modes with schedules,
+      // child assignment and honest activation logs (never fake `applied`).
+      await db.execute(
+          'CREATE TABLE mode_configs(mode_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'custom\', action TEXT NOT NULL DEFAULT \'slowDown\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', category_restrictions TEXT NOT NULL DEFAULT \'\', app_restrictions TEXT NOT NULL DEFAULT \'\', priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, mode_id))');
+      await db.execute(
+          'CREATE TABLE mode_activations(activation_id TEXT PRIMARY KEY, mode_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, state TEXT NOT NULL DEFAULT \'requested\', started_at TEXT NOT NULL, ends_at TEXT, decided_by TEXT, created_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', FOREIGN KEY(family_id, mode_id) REFERENCES mode_configs(family_id, mode_id))');
+      await db.execute(
+          'CREATE INDEX idx_mode_configs_family ON mode_configs(family_id)');
+      await db.execute(
+          'CREATE INDEX idx_mode_activations_family_time ON mode_activations(family_id, started_at DESC)');
+    }
+    if (oldVersion < 20) {
+      // FS-006 — SOS & Emergency. Recipient roster with responder roles and
+      // per-recipient acknowledgement tracking on SOS notifications.
+      await db.execute(
+          'CREATE TABLE sos_recipients(family_id TEXT NOT NULL REFERENCES families(id), recipient_id TEXT NOT NULL, role TEXT NOT NULL DEFAULT \'responder\', ordering INTEGER NOT NULL DEFAULT 0, added_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, recipient_id))');
+      await db.execute(
+          'CREATE INDEX idx_sos_recipients_family ON sos_recipients(family_id, ordering)');
+      await db.execute(
+          'ALTER TABLE notification_events ADD COLUMN recipient_id TEXT');
     }
   }
 }

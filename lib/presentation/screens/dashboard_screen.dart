@@ -426,6 +426,46 @@ class _Dashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _NavGroup(
+            label: l10n.t('modesGroup'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/modes/$familyId')
+                    : null,
+                icon: const Icon(Icons.tune_outlined),
+                label: Text(l10n.t('modesDashboardTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('sosGroup'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewSafetyTimeline)
+                    ? () => context.push('/sos/$familyId')
+                    : null,
+                icon: const Icon(Icons.emergency_outlined),
+                label: Text(l10n.t('sosDashboardTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewSafetyTimeline)
+                    ? () => context.push('/sos/$familyId/recipients')
+                    : null,
+                icon: const Icon(Icons.people_outline),
+                label: Text(l10n.t('sosRecipientsTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewSafetyTimeline)
+                    ? () => context.push('/sos/$familyId/drill')
+                    : null,
+                icon: const Icon(Icons.fact_check),
+                label: Text(l10n.t('sosDrillTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
             label: l10n.t('permissionsTitle'),
             children: [
               OutlinedButton.icon(
@@ -516,6 +556,7 @@ class _AddChildSheetState extends ConsumerState<_AddChildSheet> {
   }
 }
 
+// ignore: unused_element — FS-009/FS-014 aggregate metric tile kept for the reporting dashboard.
 class _Metric extends StatelessWidget {
   const _Metric({required this.icon, required this.label, required this.value});
   final IconData icon;

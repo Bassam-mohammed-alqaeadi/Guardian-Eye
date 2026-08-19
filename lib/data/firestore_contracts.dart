@@ -26,6 +26,10 @@ class FirestorePaths {
       '${family(familyId)}/incidents/$incidentId';
   static String sos(String familyId, String sosId) =>
       '${family(familyId)}/sos/$sosId';
+  // FS-006 — SOS readiness roster. Each family owns its recipient list;
+  // the documents mirror the local sos_recipients table.
+  static String sosRecipient(String familyId, String recipientId) =>
+      '${family(familyId)}/sos/recipients/$recipientId';
   static String location(String familyId, String locationId) =>
       '${family(familyId)}/locations/$locationId';
   static String geofence(String familyId, String geofenceId) =>
@@ -73,6 +77,11 @@ class FirestorePaths {
       '${family(familyId)}/monitoring_schedules/$scheduleId';
   static String monitoringEvidence(String familyId, String evidenceId) =>
       '${family(familyId)}/monitoring_evidence/$evidenceId';
+  // FS-005 — Special & Custom Modes.
+  static String modeConfig(String familyId, String modeId) =>
+      '${family(familyId)}/mode_configs/$modeId';
+  static String modeActivation(String familyId, String activationId) =>
+      '${family(familyId)}/mode_activations/$activationId';
 }
 
 class FirestoreMutation {
@@ -1011,6 +1020,88 @@ class FirestoreEventContract {
               'state': payload['state'] ?? 'queued',
               'decidedBy': payload['decidedBy'],
               'decidedAt': payload['decidedAt']
+            });
+      // FS-005 — Special & Custom Modes. Modes are parent-authored; the
+      // activation log stays honest because a child device agent decides
+      // whether a requested mode is actually applied on-device.
+      case 'mode.config':
+        final mModeId = payload['modeId'] as String?;
+        if (mModeId == null) {
+          throw const FormatException('mode.config payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.modeConfig(familyId, mModeId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'modeId': mModeId,
+              'name': payload['name'],
+              'kind': payload['kind'] ?? 'custom',
+              'action': payload['action'] ?? 'slowDown',
+              'enabled': payload['enabled'] ?? true,
+              'startMinute': payload['startMinute'] ?? 0,
+              'endMinute': payload['endMinute'] ?? 0,
+              'scheduleKind': payload['scheduleKind'] ?? 'daily',
+              'weekdays': payload['weekdays'] ?? '',
+              'oneshotAt': payload['oneshotAt'],
+              'assignedChildIds': payload['assignedChildIds'] ?? '',
+              'categoryRestrictions': payload['categoryRestrictions'] ?? '',
+              'appRestrictions': payload['appRestrictions'] ?? '',
+              'priority': payload['priority'] ?? 50,
+              'note': payload['note'],
+              'updatedAt': payload['updatedAt']
+            });
+      case 'mode.activation':
+        final mActivationId = payload['activationId'] as String?;
+        if (mActivationId == null) {
+          throw const FormatException('mode.activation payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.modeActivation(familyId, mActivationId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'activationId': mActivationId,
+              'modeId': payload['modeId'],
+              'childId': payload['childId'],
+              'state': payload['state'] ?? 'requested',
+              'startedAt': payload['startedAt'],
+              'endsAt': payload['endsAt'],
+              'decidedBy': payload['decidedBy']
+            });
+      // FS-006 — SOS readiness roster. Recipients are parent-authored and
+      // read by the notification pipeline for honest delivery tracking.
+      case 'sos.recipient':
+        final sRecipientId = payload['recipientId'] as String?;
+        if (sRecipientId == null) {
+          throw const FormatException('sos.recipient payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.sosRecipient(familyId, sRecipientId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'recipientId': sRecipientId,
+              'role': payload['role'] ?? 'responder',
+              'ordering': payload['ordering'] ?? 0,
+              'addedAt': payload['addedAt']
+            });
+      case 'notification.acknowledged':
+        final sNotificationId = payload['notificationId'] as String?;
+        if (sNotificationId == null) {
+          throw const FormatException(
+              'notification.acknowledged payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.notification(familyId, sNotificationId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'notificationId': sNotificationId,
+              'sosId': payload['sosId'],
+              'recipientId': payload['recipientId'],
+              'status': 'acknowledged',
+              'acknowledgedAt': payload['acknowledgedAt']
             });
       default:
         return syncMetadata(

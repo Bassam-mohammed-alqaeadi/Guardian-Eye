@@ -291,6 +291,7 @@ class _IssuedView extends StatelessWidget {
   }
 }
 
+// ignore: unused_element — FS-015 building block for future linking flows.
 class _ErrorBody extends StatelessWidget {
   const _ErrorBody({required this.message});
   final String message;
@@ -310,6 +311,7 @@ class _ErrorBody extends StatelessWidget {
   }
 }
 
+// ignore: unused_element — FS-015 building block for future linking flows.
 class _UnauthorizedBody extends StatelessWidget {
   const _UnauthorizedBody({required this.title, required this.message});
   final String title;

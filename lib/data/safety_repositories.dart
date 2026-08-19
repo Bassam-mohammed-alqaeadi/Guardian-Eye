@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../core/database/guardian_database.dart';
 import '../domain/guardian_models.dart';
 import '../domain/incident_engine.dart';
+import '../domain/sos_config.dart';
 
 class IncidentRepository {
   IncidentRepository(this._database, this._riskEngine, {Uuid? uuid})
@@ -186,6 +187,31 @@ class SosRepository {
       return true;
     });
   }
+
+  /// Applies remotely-delivered recipient documents for the readiness
+  /// roster. Replaces the local row regardless of timestamp — the roster
+  /// is authoritatively maintained by the parent platform. Never
+  /// fabricates rows for malformed documents.
+  Future<int> upsertRecipients(List<Map<String, Object?>> documents) async {
+    final db = await _database.database;
+    var applied = 0;
+    for (final doc in documents) {
+      final familyId = doc['familyId'] as String?;
+      final recipientId = doc['recipientId'] as String?;
+      if (familyId == null || recipientId == null) continue;
+      await db.insert('sos_recipients', {
+        'family_id': familyId,
+        'recipient_id': recipientId,
+        'role': doc['role'] ?? SosRecipientRole.responder.storageKey,
+        'ordering': doc['ordering'] ?? 0,
+        'added_at': doc['addedAt'] ??
+            DateTime.now().toUtc().toIso8601String(),
+        'sync_state': SyncState.synced.name
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      applied += 1;
+    }
+    return applied;
+  }
 }
 
 Future<void> _requestNotification(Transaction tx,
@@ -225,4 +251,233 @@ Future<void> _enqueueOutbox(Transaction tx, Uuid uuid, String aggregateType,
     'next_attempt_at': now.toIso8601String(),
     'created_at': now.toIso8601String()
   });
+}
+
+// ─────────────────────────── FS-006 extensions ───────────────────────
+//
+// SOS readiness: the recipient roster, the honest acknowledgement chain,
+// and the guided drill. Nothing is ever assumed delivered — every row
+// reflects an observed state.
+
+extension SosRepositoryExtensions on SosRepository {
+  /// Returns responders + notify-only recipients for a family, ordered.
+  Future<List<SosRecipient>> recipientsForFamily(String familyId) async {
+    final db = await _database.database;
+    final rows = await db.query('sos_recipients',
+        where: 'family_id = ?',
+        whereArgs: [familyId],
+        orderBy: 'ordering ASC, added_at ASC');
+    return rows.map(SosRecipient.fromMap).toList();
+  }
+
+  /// Stores (inserts or replaces) one roster recipient. Honesty: the roster
+  /// is the single source of truth for the readiness dashboard.
+  Future<void> saveRecipient(SosRecipient recipient) async {
+    final db = await _database.database;
+    await db.transaction((tx) async {
+      await tx.insert('sos_recipients', recipient.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+      await _enqueueOutbox(tx, _uuid, 'sosRecipient', recipient.recipientId,
+          'sos.recipient', {
+        'familyId': recipient.familyId,
+        'recipientId': recipient.recipientId,
+        'role': recipient.role.storageKey,
+        'ordering': recipient.ordering,
+        'addedAt': recipient.addedAt.toUtc().toIso8601String()
+      });
+    });
+  }
+
+  /// Removes a recipient from the roster. Does not delete past alert
+  /// rows — acknowledgement history stays honest.
+  Future<bool> deleteRecipient(
+      {required String familyId, required String recipientId}) async {
+    final db = await _database.database;
+    final deleted = await db.delete('sos_recipients',
+        where: 'family_id = ? AND recipient_id = ?',
+        whereArgs: [familyId, recipientId]);
+    return deleted > 0;
+  }
+
+  /// Activates SOS for the family: one honest event plus one notification
+  /// row per recipient, so the acknowledgement chain is recipient-scoped.
+  /// Returns the new event id, or null when an active SOS already exists.
+  Future<String?> activateSosForFamily(String familyId,
+      {String? deviceId,
+      double? latitude,
+      double? longitude,
+      double? accuracyMeters}) async {
+    final db = await _database.database;
+    String? existingId;
+    await db.transaction((tx) async {
+      final events = await tx.query('sos_events',
+          where:
+              'family_id = ? AND status NOT IN (?, ?)',
+          whereArgs: [familyId, SosState.cancelled.storageKey,
+            SosState.acknowledged.storageKey],
+          orderBy: 'created_at DESC',
+          limit: 1);
+      if (events.isNotEmpty) {
+        existingId = events.single['id'] as String;
+        return;
+      }
+      final id = _uuid.v4();
+      final now = DateTime.now().toUtc();
+      await tx.insert('sos_events', {
+        'id': id,
+        'family_id': familyId,
+        'device_id': deviceId,
+        'status': SosState.localCreated.storageKey,
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracy_m': accuracyMeters,
+        'created_at': now.toIso8601String()
+      });
+      await _enqueueOutbox(tx, _uuid, 'sos', id, 'sos.created', {
+        'familyId': familyId,
+        'sosEventId': id,
+        'deviceId': deviceId,
+        'status': SosState.localCreated.storageKey,
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracyMeters': accuracyMeters,
+        'createdAt': now.toIso8601String()
+      });
+      // One honest notification row per roster recipient — the recipient
+      // id is what acknowledgement and history screens key off of.
+      final roster = await tx.query('sos_recipients',
+          where: 'family_id = ?',
+          whereArgs: [familyId],
+          orderBy: 'ordering ASC');
+      final nowStr = now.toIso8601String();
+      for (final row in roster) {
+        final recipientId = row['recipient_id'] as String;
+        await tx.insert('notification_events', {
+          'id': _uuid.v4(),
+          'family_id': familyId,
+          'sos_id': id,
+          'recipient_id': recipientId,
+          'kind': 'sos',
+          'status': NotificationState.pendingBackend.storageKey,
+          'requested_at': nowStr
+        });
+        await _enqueueOutbox(tx, _uuid, 'notification', id,
+            'notification.requested', {
+          'familyId': familyId,
+          'notificationId': id,
+          'sosId': id,
+          'recipientId': recipientId,
+          'kind': 'sos'
+        });
+      }
+      existingId = id;
+    });
+    return existingId;
+  }
+
+  /// All notification rows (with recipient identity) for one SOS event.
+  Future<List<Map<String, Object?>>> notificationsForSos(String sosId) async {
+    final db = await _database.database;
+    return db.query('notification_events',
+        where: 'sos_id = ?',
+        whereArgs: [sosId],
+        orderBy: 'requested_at ASC');
+  }
+
+  /// The SOS event id that owns the given notification row — needed by
+  /// SO-005, which is addressed by the notification row id but must scope
+  /// its provider and drill queries to the parent sos event.
+  Future<String?> sosIdForNotification(String notificationId) async {
+    final db = await _database.database;
+    final rows = await db.query('notification_events',
+        where: 'id = ?', whereArgs: [notificationId], limit: 1);
+    if (rows.isEmpty) return null;
+    return rows.single['sos_id'] as String?;
+  }
+
+  /// The currently live SOS event for a family, if any.
+  Future<Map<String, Object?>?> activeSosForFamily(String familyId) async {
+    final db = await _database.database;
+    final rows = await db.query('sos_events',
+        where:
+            'family_id = ? AND status NOT IN (?, ?)',
+        whereArgs: [familyId, SosState.cancelled.storageKey,
+          SosState.acknowledged.storageKey],
+        orderBy: 'created_at DESC',
+        limit: 1);
+    if (rows.isEmpty) return null;
+    return rows.single;
+  }
+
+  /// Stands an SOS down. The honest record keeps the event as cancelled
+  /// rather than erasing it.
+  Future<bool> standDownSos(String sosId) =>
+      transition(sosId: sosId, next: SosState.cancelled);
+
+  /// A recipient acknowledges one SOS notification row. Only honest states
+  /// are allowed to move (pendingBackend → ... → acknowledged).
+  Future<bool> acknowledgeNotification(String notificationId) async {
+    final db = await _database.database;
+    return db.transaction((tx) async {
+      final rows = await tx.query('notification_events',
+          where: 'id = ?', whereArgs: [notificationId], limit: 1);
+      if (rows.isEmpty) return false;
+      final row = rows.single;
+      final current =
+          NotificationState.values.byName(row['status'] as String);
+      final allowed = {
+        NotificationState.pendingBackend,
+        NotificationState.queued,
+        NotificationState.notified,
+      };
+      if (!allowed.contains(current)) return false;
+      final now = DateTime.now().toUtc().toIso8601String();
+      await tx.update('notification_events',
+          {'status': NotificationState.acknowledged.storageKey,
+            'acknowledged_at': now},
+          where: 'id = ?',
+          whereArgs: [notificationId]);
+      await _enqueueOutbox(tx, _uuid, 'notification', notificationId,
+          'notification.acknowledged', {
+        'familyId': row['family_id'],
+        'notificationId': notificationId,
+        'sosId': row['sos_id'],
+        'recipientId': row['recipient_id'],
+        'acknowledgedAt': now
+      });
+      // Advance the parent event to acknowledged only when every responder
+      // row has acknowledged — the responder chain is the honest gate.
+      final events = await tx.query('sos_events',
+          where: 'id = ?', whereArgs: [row['sos_id']], limit: 1);
+      if (events.isEmpty) return true;
+      final event = events.single;
+      final responders = await tx.query('notification_events',
+          where: 'sos_id = ? AND recipient_id IS NOT NULL',
+          whereArgs: [row['sos_id']]);
+      final allRespondersAcks = responders.every((r) =>
+          NotificationState.values.byName(r['status'] as String) ==
+          NotificationState.acknowledged);
+      final currentEvent = SosState.values.byName(event['status'] as String);
+      if (allRespondersAcks &&
+          SosLifecycle.canTransition(currentEvent, SosState.acknowledged)) {
+        await tx.update('sos_events',
+            {'status': SosState.acknowledged.storageKey,
+              'delivered_at': DateTime.now().toUtc().toIso8601String()},
+            where: 'id = ?',
+            whereArgs: [event['id']]);
+      }
+      return true;
+    });
+  }
+
+  /// Recent SOS events for the alert history view (SO-001).
+  Future<List<Map<String, Object?>>> sosHistoryForFamily(String familyId,
+      {int limit = 20}) async {
+    final db = await _database.database;
+    return db.query('sos_events',
+        where: 'family_id = ?',
+        whereArgs: [familyId],
+        orderBy: 'created_at DESC',
+        limit: limit);
+  }
 }

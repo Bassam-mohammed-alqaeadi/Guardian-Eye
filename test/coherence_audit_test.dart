@@ -9,11 +9,10 @@
 ///   identifiers and enforces self-scope semantics on the data contract.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:guardian_ai/core/localization/app_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:guardian_ai/application/guardian_providers.dart';
 import 'package:guardian_ai/presentation/router/app_router.dart';
 import 'package:guardian_ai/presentation/screens/location_screens.dart'
     show GeofenceTemplate;
@@ -43,6 +42,31 @@ const Map<String, String> _canonicalRoutes = {
   // Cross-subsystem entries registered during the audit
   'safetyActions': '/safety/actions/:familyId',
   'childDeviceExperience': '/child/:familyId/:childId/device',
+  // FS-003 Application Control (AC-001 … AC-008)
+  'AC-001 applicationControlDashboard': '/apps/:familyId',
+  'AC-002 applicationsList': '/apps/:familyId/apps-list',
+  'AC-003 applicationDetails': '/apps/:familyId/details/:appId',
+  'AC-004 applicationAllowlist': '/apps/:familyId/allowlist',
+  // FS-004 Screen & Camera Monitoring (SC-001 … SC-009)
+  'SC-001 monitoringDashboard': '/monitoring/:familyId',
+  'SC-002 screenshotGallery': '/monitoring/:familyId/screenshots',
+  'SC-003 screenshotDetail': '/monitoring/:familyId/screenshots/:shotId',
+  'SC-004 liveMonitoring': '/monitoring/:familyId/live',
+  'SC-005 cameraMonitoring': '/monitoring/:familyId/camera',
+  // FS-005 Custom Modes (MD-001 … MD-010)
+  'MD-001 modesDashboard': '/modes/:familyId',
+  'MD-002 createMode': '/modes/:familyId/new',
+  'MD-003 modeEditor': '/modes/:familyId/:modeId/edit',
+  'MD-005 modeDetail': '/modes/:familyId/:modeId',
+  // FS-006 SOS Expansion (SO-001 … SO-008)
+  'SO-001 sosDashboard': '/sos/:familyId',
+  'SO-002 sosActivate': '/sos/:familyId/activate',
+  'SO-003 sosActiveAlert': '/sos/:familyId/active',
+  'SO-004 sosEmergencyLocation': '/sos/:familyId/location',
+  'SO-005 sosAcknowledgementDetail': '/sos/:familyId/alert/:alertId',
+  'SO-006 sosAcknowledgement': '/sos/:familyId/ack',
+  'SO-007 sosRecipients': '/sos/:familyId/recipients',
+  'SO-008 sosDrill': '/sos/:familyId/drill',
 };
 
 /// Collects every registered route path from the app router by walking its

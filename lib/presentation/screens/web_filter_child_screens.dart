@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -821,6 +820,9 @@ class _BlockedPageScreenState extends ConsumerState<BlockedPageScreen> {
                         } catch (_) {
                           // The request never left — honesty over comfort.
                           if (mounted) setState(() => _requested = false);
+                          if (mounted) {
+                            _message(l10n.t('somethingWentWrong'));
+                          }
                         }
                       },
                       style: FilledButton.styleFrom(
