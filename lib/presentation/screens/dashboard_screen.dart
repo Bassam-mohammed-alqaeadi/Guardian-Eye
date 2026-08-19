@@ -399,6 +399,33 @@ class _Dashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _NavGroup(
+            label: l10n.t('monitoringDashboard'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewChildStatus)
+                    ? () => context.push('/monitoring/$familyId')
+                    : null,
+                icon: const Icon(Icons.videocam_outlined),
+                label: Text(l10n.t('monitoringDashboard')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewChildStatus)
+                    ? () => context.push('/monitoring/$familyId/screenshots')
+                    : null,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: Text(l10n.t('screenshotsTimeline')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/monitoring/$familyId/evidence')
+                    : null,
+                icon: const Icon(Icons.flag_outlined),
+                label: Text(l10n.t('evidenceReviewQueue')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
             label: l10n.t('permissionsTitle'),
             children: [
               OutlinedButton.icon(

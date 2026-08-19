@@ -29,6 +29,8 @@ import '../data/web_filter_repository.dart';
 import '../data/web_filter_remote_service.dart';
 import '../data/application_policy_repository.dart';
 import '../data/application_policy_remote_service.dart';
+import '../data/monitoring_repository.dart';
+import '../data/monitoring_remote_service.dart';
 import '../data/location_repository.dart';
 import '../data/location_remote_service.dart';
 import '../data/safety_repositories.dart';
@@ -417,3 +419,48 @@ class _UnavailableAppPolicyRemoteReader implements AppPolicyRemoteReader {
       Future<RemoteAppPolicy?>.error(
           StateError('firebase_app_policy_reader_unavailable'));
 }
+
+// FS-004 — Screenshot & Camera Control. Local-first store for monitoring
+// data delivered by child device agents; reads never fabricate shots.
+final monitoringRepositoryProvider = Provider((ref) =>
+    MonitoringRepository(GuardianDatabase.instance));
+final monitoringShotsProvider =
+    FutureProvider.family<List<MonitoringShot>, String>(
+        (ref, String familyId) =>
+            ref.watch(monitoringRepositoryProvider).shotsForFamily(familyId));
+final monitoringChildShotsProvider =
+    FutureProvider.family<List<MonitoringShot>, ({String familyId, String childId})>(
+        (ref, scope) => ref
+            .watch(monitoringRepositoryProvider)
+            .shotsForChild(scope.familyId, scope.childId));
+final monitoringRequestsProvider =
+    FutureProvider.family<List<MonitoringRequest>, String>(
+        (ref, String familyId) => ref
+            .watch(monitoringRepositoryProvider)
+            .requestsForFamily(familyId));
+final monitoringSchedulesProvider =
+    FutureProvider.family<List<MonitoringSchedule>, String>(
+        (ref, String familyId) => ref
+            .watch(monitoringRepositoryProvider)
+            .schedulesForFamily(familyId));
+final monitoringEvidenceProvider =
+    FutureProvider.family<List<MonitoringEvidence>, String>(
+        (ref, String familyId) => ref
+            .watch(monitoringRepositoryProvider)
+            .evidenceForFamily(familyId));
+final monitoringSessionsProvider =
+    FutureProvider.family<List<MonitoringSession>, String>(
+        (ref, String familyId) => ref
+            .watch(monitoringRepositoryProvider)
+            .sessionsForFamily(familyId));
+
+final monitoringRemoteReaderProvider =
+    Provider<FlutterMonitoringRemoteReader>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return FlutterMonitoringRemoteReader.unavailable();
+  }
+  return FlutterMonitoringRemoteReader(ref.watch(monitoringRepositoryProvider));
+});
+final monitoringPullProvider =
+    FutureProvider.family<int?, String>((ref, String familyId) =>
+        ref.watch(monitoringRemoteReaderProvider).pullPending({}));

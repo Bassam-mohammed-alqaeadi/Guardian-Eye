@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 17,
+        version: 18,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -173,6 +173,21 @@ class GuardianDatabase {
         'CREATE INDEX idx_app_block_history_family_time ON app_block_history(family_id, created_at DESC)');
     batch.execute(
         'CREATE INDEX idx_app_policies_family ON app_policies(family_id)');
+    // FS-004 — Screenshot & Camera Control.
+    batch.execute(
+        'CREATE TABLE monitoring_shots(family_id TEXT NOT NULL REFERENCES families(id), shot_id TEXT NOT NULL, device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, captured_at TEXT NOT NULL, bytes_length INTEGER NOT NULL DEFAULT 0, mime_type TEXT NOT NULL DEFAULT \'image/png\', request_id TEXT, schedule_id TEXT, is_evidence INTEGER NOT NULL DEFAULT 0, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, shot_id))');
+    batch.execute(
+        'CREATE TABLE monitoring_sessions(session_id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, kind TEXT NOT NULL DEFAULT \'live\', state TEXT NOT NULL DEFAULT \'pending\', started_at TEXT, ended_at TEXT, created_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\')');
+    batch.execute(
+        'CREATE TABLE monitoring_requests(family_id TEXT NOT NULL REFERENCES families(id), request_id TEXT NOT NULL, device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, kind TEXT NOT NULL, state TEXT NOT NULL DEFAULT \'queued\', reason TEXT, created_at TEXT NOT NULL, delivered_at TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, request_id))');
+    batch.execute(
+        'CREATE TABLE monitoring_schedules(family_id TEXT NOT NULL REFERENCES families(id), schedule_id TEXT NOT NULL, device_id TEXT REFERENCES devices(id), child_id TEXT, start_hour INTEGER NOT NULL, end_hour INTEGER NOT NULL, interval_minutes INTEGER NOT NULL DEFAULT 30, enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, schedule_id))');
+    batch.execute(
+        'CREATE TABLE monitoring_evidence_queue(family_id TEXT NOT NULL REFERENCES families(id), evidence_id TEXT NOT NULL, shot_id TEXT NOT NULL, device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, flag_reason TEXT NOT NULL, state TEXT NOT NULL DEFAULT \'queued\', decided_by TEXT, decided_at TEXT, created_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, evidence_id))');
+    batch.execute(
+        'CREATE INDEX idx_monitoring_shots_family_time ON monitoring_shots(family_id, captured_at DESC)');
+    batch.execute(
+        'CREATE INDEX idx_monitoring_evidence_family_state ON monitoring_evidence_queue(family_id, state)');
     await batch.commit(noResult: true);
   }
 
@@ -327,6 +342,23 @@ class GuardianDatabase {
           'CREATE INDEX idx_app_block_history_family_time ON app_block_history(family_id, created_at DESC)');
       await db.execute(
           'CREATE INDEX idx_app_policies_family ON app_policies(family_id)');
+    }
+    if (oldVersion < 18) {
+      // FS-004 — Screenshot & Camera Control (see onCreate for schema docs).
+      await db.execute(
+          'CREATE TABLE monitoring_shots(family_id TEXT NOT NULL REFERENCES families(id), shot_id TEXT NOT NULL, device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, captured_at TEXT NOT NULL, bytes_length INTEGER NOT NULL DEFAULT 0, mime_type TEXT NOT NULL DEFAULT \'image/png\', request_id TEXT, schedule_id TEXT, is_evidence INTEGER NOT NULL DEFAULT 0, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, shot_id))');
+      await db.execute(
+          'CREATE TABLE monitoring_sessions(session_id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, kind TEXT NOT NULL DEFAULT \'live\', state TEXT NOT NULL DEFAULT \'pending\', started_at TEXT, ended_at TEXT, created_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\')');
+      await db.execute(
+          'CREATE TABLE monitoring_requests(family_id TEXT NOT NULL REFERENCES families(id), request_id TEXT NOT NULL, device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, kind TEXT NOT NULL, state TEXT NOT NULL DEFAULT \'queued\', reason TEXT, created_at TEXT NOT NULL, delivered_at TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, request_id))');
+      await db.execute(
+          'CREATE TABLE monitoring_schedules(family_id TEXT NOT NULL REFERENCES families(id), schedule_id TEXT NOT NULL, device_id TEXT REFERENCES devices(id), child_id TEXT, start_hour INTEGER NOT NULL, end_hour INTEGER NOT NULL, interval_minutes INTEGER NOT NULL DEFAULT 30, enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, schedule_id))');
+      await db.execute(
+          'CREATE TABLE monitoring_evidence_queue(family_id TEXT NOT NULL REFERENCES families(id), evidence_id TEXT NOT NULL, shot_id TEXT NOT NULL, device_id TEXT NOT NULL REFERENCES devices(id), child_id TEXT, flag_reason TEXT NOT NULL, state TEXT NOT NULL DEFAULT \'queued\', decided_by TEXT, decided_at TEXT, created_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, evidence_id))');
+      await db.execute(
+          'CREATE INDEX idx_monitoring_shots_family_time ON monitoring_shots(family_id, captured_at DESC)');
+      await db.execute(
+          'CREATE INDEX idx_monitoring_evidence_family_state ON monitoring_evidence_queue(family_id, state)');
     }
   }
 }

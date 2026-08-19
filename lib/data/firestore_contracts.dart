@@ -60,6 +60,19 @@ class FirestorePaths {
       '${family(familyId)}/app_block_history/$eventId';
   static String usageAlertSetting(String familyId, String settingId) =>
       '${family(familyId)}/usage_alert_settings/$settingId';
+  // FS-004 — Screenshot & Camera Control. Parent devices request captures;
+  // child device agents deliver shots back to these collections. Every row
+  // stays honest: a shot exists only after the agent ships it.
+  static String monitoringShot(String familyId, String shotId) =>
+      '${family(familyId)}/monitoring_shots/$shotId';
+  static String monitoringSession(String familyId, String sessionId) =>
+      '${family(familyId)}/monitoring_sessions/$sessionId';
+  static String monitoringRequest(String familyId, String requestId) =>
+      '${family(familyId)}/monitoring_requests/$requestId';
+  static String monitoringSchedule(String familyId, String scheduleId) =>
+      '${family(familyId)}/monitoring_schedules/$scheduleId';
+  static String monitoringEvidence(String familyId, String evidenceId) =>
+      '${family(familyId)}/monitoring_evidence/$evidenceId';
 }
 
 class FirestoreMutation {
@@ -903,6 +916,101 @@ class FirestoreEventContract {
               'thresholdMilliseconds': payload['thresholdMilliseconds'],
               'enabled': payload['enabled'] ?? true,
               'updatedAtClient': payload['updatedAt']
+            });
+      case 'monitoring.shot':
+        final mShotId = payload['shotId'] as String?;
+        if (mShotId == null) {
+          throw const FormatException('monitoring.shot payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.monitoringShot(familyId, mShotId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'shotId': mShotId,
+              'deviceId': payload['deviceId'],
+              'childId': payload['childId'],
+              'capturedAt': payload['capturedAt'],
+              'bytesLength': payload['bytesLength'],
+              'mimeType': payload['mimeType'] ?? 'image/png',
+              'requestId': payload['requestId'],
+              'scheduleId': payload['scheduleId'],
+              'isEvidence': payload['isEvidence'] ?? false
+            });
+      case 'monitoring.session':
+        final mSessionId = payload['sessionId'] as String?;
+        if (mSessionId == null) {
+          throw const FormatException('monitoring.session payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.monitoringSession(familyId, mSessionId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'sessionId': mSessionId,
+              'deviceId': payload['deviceId'],
+              'childId': payload['childId'],
+              'kind': payload['kind'] ?? 'live',
+              'state': payload['state'] ?? 'pending',
+              'startedAt': payload['startedAt'],
+              'endedAt': payload['endedAt']
+            });
+      case 'monitoring.request':
+        final mRequestId = payload['requestId'] as String?;
+        if (mRequestId == null) {
+          throw const FormatException('monitoring.request payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.monitoringRequest(familyId, mRequestId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'requestId': mRequestId,
+              'deviceId': payload['deviceId'],
+              'childId': payload['childId'],
+              'kind': payload['kind'] ?? 'shot',
+              'state': payload['state'] ?? 'queued',
+              'reason': payload['reason'],
+              'createdAt': payload['createdAt'],
+              'deliveredAt': payload['deliveredAt']
+            });
+      case 'monitoring.schedule':
+        final mScheduleId = payload['scheduleId'] as String?;
+        if (mScheduleId == null) {
+          throw const FormatException('monitoring.schedule payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.monitoringSchedule(familyId, mScheduleId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'scheduleId': mScheduleId,
+              'deviceId': payload['deviceId'],
+              'childId': payload['childId'],
+              'startHour': payload['startHour'],
+              'endHour': payload['endHour'],
+              'intervalMinutes': payload['intervalMinutes'] ?? 30,
+              'enabled': payload['enabled'] ?? true,
+              'updatedAt': payload['updatedAt']
+            });
+      case 'monitoring.evidence':
+        final mEvidenceId = payload['evidenceId'] as String?;
+        if (mEvidenceId == null) {
+          throw const FormatException('monitoring.evidence payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.monitoringEvidence(familyId, mEvidenceId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'evidenceId': mEvidenceId,
+              'shotId': payload['shotId'],
+              'deviceId': payload['deviceId'],
+              'childId': payload['childId'],
+              'flagReason': payload['flagReason'] ?? 'parent_review',
+              'state': payload['state'] ?? 'queued',
+              'decidedBy': payload['decidedBy'],
+              'decidedAt': payload['decidedAt']
             });
       default:
         return syncMetadata(

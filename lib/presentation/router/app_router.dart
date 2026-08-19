@@ -20,6 +20,7 @@ import '../screens/web_filter_child_screens.dart';
 import '../screens/location_screens.dart';
 import '../screens/location_child_screens.dart';
 import '../screens/application_screens.dart';
+import '../screens/monitoring_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -349,6 +350,63 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => ChildAppUsageScreen(
             familyId: state.pathParameters['familyId']!,
             childId: state.pathParameters['childId']!),
+      ),
+      // FS-004 Screen & Camera Monitoring subsystem routes (SC-001 … SC-009).
+      GoRoute(
+        path: '/monitoring/:familyId',
+        name: 'monitoringDashboard',
+        builder: (context, state) => MonitoringDashboardScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/screenshots',
+        name: 'monitoringScreenshotsTimeline',
+        builder: (context, state) => MonitoringScreenshotsTimelineScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/screenshots/:shotId',
+        name: 'monitoringShotViewer',
+        builder: (context, state) => MonitoringShotViewerScreen(
+            familyId: state.pathParameters['familyId']!,
+            shotId: state.pathParameters['shotId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/live',
+        name: 'monitoringLiveSession',
+        builder: (context, state) => MonitoringLiveSessionScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/camera',
+        name: 'monitoringCameraControl',
+        builder: (context, state) => MonitoringCameraControlScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/:childId/session',
+        name: 'monitoringChildSession',
+        builder: (context, state) => MonitoringChildSessionScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/requests',
+        name: 'monitoringRequestsHistory',
+        builder: (context, state) => MonitoringRequestsHistoryScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/schedule',
+        name: 'monitoringSchedules',
+        builder: (context, state) => MonitoringSchedulesScreen(
+            familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/monitoring/:familyId/evidence',
+        name: 'monitoringEvidenceQueue',
+        builder: (context, state) => MonitoringEvidenceQueueScreen(
+            familyId: state.pathParameters['familyId']!),
       ),
       GoRoute(
         path: '/location/sharing/self',
