@@ -36,18 +36,20 @@
 | WF-009 | Per-Child Web Policy | COMPLETED | `/safety/web/:familyId/:childId` | — |
 | WF-010 | Blocked Page Explanation | COMPLETED | device-side `/blocked` | — |
 
-## C. FS-003 Application System
+## C. FS-003 Application Control — IMPLEMENTED (pending commit, docs/00_master/FS003_DEVELOPMENT_REPORT.md)
+
+Implementation deliberately consolidated per-child scope onto per-child rules and per-app scope onto family alerts (same information, fewer navigation hops). Full spec: `docs/00_master/FS003_DEVELOPMENT_REPORT.md`.
 
 | Screen ID | Name | Status | Route |
 | --- | --- | --- | --- |
-| AC-001 | Application Control Dashboard | PLANNED | `/apps/:familyId` |
-| AC-002 | Installed Applications | PLANNED | `/apps/:familyId/:childId` |
-| AC-003 | Application Details | PLANNED | `/apps/:familyId/:childId/:appId` |
-| AC-004 | Allowlist | PLANNED | `/apps/:familyId/allowlist` |
-| AC-005 | App Usage Detail | PLANNED | `/apps/:familyId/:childId/:appId/usage` |
-| AC-006 | Usage Alert Settings | PLANNED | `/apps/:familyId/:childId/:appId/alerts` |
-| AC-007 | Age-Rating Policy | PLANNED | `/apps/:familyId/ratings` |
-| AC-008 | App Block History | PLANNED | `/apps/:familyId/history` |
+| AC-001 | Application Control Dashboard | IMPLEMENTED | `/apps/:familyId` |
+| AC-002 | Installed Applications | IMPLEMENTED | `/apps/:familyId/apps-list` |
+| AC-003 | Application Details & Policy | IMPLEMENTED | `/apps/:familyId/details/:appId` |
+| AC-004 | Allowlist | IMPLEMENTED | `/apps/:familyId/allowlist` |
+| AC-005 | Per-Child App Rules | IMPLEMENTED | `/apps/:familyId/:childId/rules` |
+| AC-006 | Usage Alert Settings | IMPLEMENTED | `/apps/:familyId/alerts` |
+| AC-007 | App Block History | IMPLEMENTED | `/apps/:familyId/history` |
+| AC-008 | Child App Usage View (self) | IMPLEMENTED | `/child/:familyId/:childId/apps` |
 
 ## D. FS-004 Screenshot & Camera Control
 

@@ -281,6 +281,10 @@ final List<MapEntry<String, String>> _screens = [
   const MapEntry('/safety/web/fam-audit/allowlist', 'web-allowlist'),
   const MapEntry('/safety/web/fam-audit/kid-audit', 'web-child'),
   const MapEntry('/blocked/fam-audit/kid-audit', 'child-blocked'),
+  const MapEntry('/apps/fam-audit', 'app-control-dashboard'),
+  const MapEntry('/apps/fam-audit/apps-list', 'app-installed-list'),
+  const MapEntry('/apps/fam-audit/allowlist', 'app-allowlist'),
+  const MapEntry('/apps/fam-audit/history', 'app-block-history'),
 ];
 
 const String _shotsDir = '/home/ubuntu/validation_shots';

@@ -372,6 +372,33 @@ class _Dashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _NavGroup(
+            label: l10n.t('appControlDashboard'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/apps/$familyId')
+                    : null,
+                icon: const Icon(Icons.apps_outlined),
+                label: Text(l10n.t('appControlDashboard')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/apps/$familyId/history')
+                    : null,
+                icon: const Icon(Icons.history_outlined),
+                label: Text(l10n.t('appBlockHistory')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.managePolicies)
+                    ? () => context.push('/apps/$familyId/alerts')
+                    : null,
+                icon: const Icon(Icons.notifications_outlined),
+                label: Text(l10n.t('usageAlerts')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
             label: l10n.t('permissionsTitle'),
             children: [
               OutlinedButton.icon(

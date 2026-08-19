@@ -48,6 +48,18 @@ class FirestorePaths {
       '${family(familyId)}/web_category_rules/$ruleId';
   static String webSetting(String familyId, String key) =>
       '${family(familyId)}/web_settings/$key';
+  // FS-003 — Application Control. Per-app policies are parent-written;
+  // child device agents read them for on-device enforcement and report
+  // block history back. Allowlist entries and usage alert settings follow
+  // the same document shape discipline as web domains and settings.
+  static String appPolicy(String familyId, String policyId) =>
+      '${family(familyId)}/app_policies/$policyId';
+  static String appAllowlist(String familyId, String allowlistId) =>
+      '${family(familyId)}/app_allowlist/$allowlistId';
+  static String appBlockEvent(String familyId, String eventId) =>
+      '${family(familyId)}/app_block_history/$eventId';
+  static String usageAlertSetting(String familyId, String settingId) =>
+      '${family(familyId)}/usage_alert_settings/$settingId';
 }
 
 class FirestoreMutation {
@@ -778,6 +790,118 @@ class FirestoreEventContract {
               ...common,
               'key': locSettingKey,
               'value': payload['value'],
+              'updatedAtClient': payload['updatedAt']
+            });
+      // FS-003 — Application Control. Per-app block/allow/limit policies,
+      // the trusted-app allowlist, the honest audit log of enforcement
+      // events, and per-app usage alert thresholds. Child devices read
+      // `app_policies` to enforce on-device and write `app_block_history`
+      // back; only the owning device may write its own block history.
+      case 'app.policy':
+        final appPolicyId = payload['policyId'] as String?;
+        final appPolicyTarget = payload['target'] as String?;
+        final appPolicyAction = payload['action'] as String?;
+        if (appPolicyId == null ||
+            appPolicyTarget == null ||
+            appPolicyAction == null) {
+          throw const FormatException('app.policy payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.appPolicy(familyId, appPolicyId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'policyId': appPolicyId,
+              'childId': payload['childId'],
+              'target': appPolicyTarget,
+              'action': appPolicyAction,
+              'limitMilliseconds': payload['limitMilliseconds'],
+              'ratingMax': payload['ratingMax'] ?? 'all',
+              'syncState': payload['syncState'] ?? 'queued',
+              'updatedByUid': identity.uid,
+              'updatedAtClient': payload['updatedAt']
+            });
+      case 'app.policy.removed':
+        final remPolicyId = payload['policyId'] as String?;
+        if (remPolicyId == null) {
+          throw const FormatException('app.policy.removed payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.appPolicy(familyId, remPolicyId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'policyId': remPolicyId,
+              'removed': true,
+              'removedAtClient': payload['removedAt']
+            });
+      case 'app.allowlist':
+        final wlId = payload['allowlistId'] as String?;
+        final wlTarget = payload['target'] as String?;
+        if (wlId == null || wlTarget == null) {
+          throw const FormatException('app.allowlist payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.appAllowlist(familyId, wlId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'allowlistId': wlId,
+              'target': wlTarget,
+              'reason': payload['reason'],
+              'addedByUid': identity.uid,
+              'createdAtClient': payload['createdAt']
+            });
+      case 'app.allowlist.removed':
+        final remWlId = payload['allowlistId'] as String?;
+        if (remWlId == null) {
+          throw const FormatException(
+              'app.allowlist.removed payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.appAllowlist(familyId, remWlId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'allowlistId': remWlId,
+              'removed': true,
+              'removedAtClient': payload['removedAt']
+            });
+      case 'app.block.history':
+        final bhId = payload['eventId'] as String?;
+        final bhTarget = payload['target'] as String?;
+        if (bhId == null || bhTarget == null) {
+          throw const FormatException('app.block.history payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.appBlockEvent(familyId, bhId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventId': bhId,
+              'deviceId': payload['deviceId'],
+              'childId': payload['childId'],
+              'target': bhTarget,
+              'eventType': payload['eventType'],
+              'reason': payload['reason'],
+              'createdAtClient': payload['createdAt']
+            });
+      case 'app.alert.setting':
+        final asId = payload['settingId'] as String?;
+        final asTarget = payload['target'] as String?;
+        if (asId == null || asTarget == null) {
+          throw const FormatException('app.alert.setting payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.usageAlertSetting(familyId, asId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'settingId': asId,
+              'childId': payload['childId'],
+              'target': asTarget,
+              'thresholdMilliseconds': payload['thresholdMilliseconds'],
+              'enabled': payload['enabled'] ?? true,
               'updatedAtClient': payload['updatedAt']
             });
       default:

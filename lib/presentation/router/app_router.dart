@@ -19,6 +19,7 @@ import '../screens/web_filter_management_screens.dart';
 import '../screens/web_filter_child_screens.dart';
 import '../screens/location_screens.dart';
 import '../screens/location_child_screens.dart';
+import '../screens/application_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -294,6 +295,58 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/child/:familyId/:childId/location-sharing',
         name: 'childLocationSharing',
         builder: (context, state) => ChildLocationSharingScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      // FS-003 Application Control subsystem routes (AC-001 … AC-008).
+      GoRoute(
+        path: '/apps/:familyId',
+        name: 'appControlDashboard',
+        builder: (context, state) =>
+            AppControlDashboardScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/apps/:familyId/apps-list',
+        name: 'installedAppsList',
+        builder: (context, state) =>
+            InstalledAppsListScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/apps/:familyId/details/:appId',
+        name: 'appDetail',
+        builder: (context, state) => AppDetailScreen(
+            familyId: state.pathParameters['familyId']!,
+            appTarget: state.pathParameters['appId']!),
+      ),
+      GoRoute(
+        path: '/apps/:familyId/allowlist',
+        name: 'appAllowlist',
+        builder: (context, state) =>
+            AppAllowlistScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/apps/:familyId/:childId/rules',
+        name: 'perChildAppRules',
+        builder: (context, state) => PerChildAppRulesScreen(
+            familyId: state.pathParameters['familyId']!,
+            childId: state.pathParameters['childId']!),
+      ),
+      GoRoute(
+        path: '/apps/:familyId/alerts',
+        name: 'usageAlerts',
+        builder: (context, state) =>
+            UsageAlertsScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/apps/:familyId/history',
+        name: 'appBlockHistory',
+        builder: (context, state) =>
+            AppBlockHistoryScreen(familyId: state.pathParameters['familyId']!),
+      ),
+      GoRoute(
+        path: '/child/:familyId/:childId/apps',
+        name: 'childAppUsage',
+        builder: (context, state) => ChildAppUsageScreen(
             familyId: state.pathParameters['familyId']!,
             childId: state.pathParameters['childId']!),
       ),

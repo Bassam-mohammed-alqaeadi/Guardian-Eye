@@ -637,6 +637,88 @@ class AppLocalizations {
       'childDeviceExperience': 'الجهاز',
       'sosUtilityNotice': 'تسجيل حدث طوارئ ومزامنة الطابور المحلي.',
       'open': 'فتح',
+      'appControlDashboard': 'التحكم بالتطبيقات',
+      'blockedApps': 'تطبيقات محظورة',
+      'blockedTodayApps': 'حظر اليوم',
+      'appProtectionSummary': 'مستوى الحماية الحالية',
+      'appProtectionActive': 'الحماية مفعّلة: بعض التطبيقات محظورة أو مقيّدة.',
+      'appProtectionRelaxed': 'لا توجد سياسات حظر نشطة حالياً.',
+      'installedAppsNav': 'جميع التطبيقات',
+      'appsBlocked': '{count} تطبيق محظور',
+      'noAppsBlocked': 'لا توجد تطبيقات محظورة',
+      'protected': 'محمي',
+      'notProtected': 'غير محمي',
+      'limited': 'مقيّد',
+      'appControlSyncFailed': 'تعذّر مزامنة التحكم بالتطبيقات',
+      'installedApps': 'التطبيقات المثبّتة',
+      'installedAppsDescription': 'تطبيقات الأجهزة المرتبطة بحالة كل تطبيق',
+      'appAllowlist': 'قائمة السماح',
+      'appAllowlistDescription': 'تطبيقات موثوقة لا تُحظر أبداً',
+      'usageAlerts': 'تنبيهات الاستخدام',
+      'usageAlertsDescription': 'عتبات تنبيه لكل تطبيق',
+      'appBlockHistory': 'سجل حظر التطبيقات',
+      'appBlockHistoryDescription': 'سجل تدقيق لجميع أحداث الإنفاذ',
+      'noAppsUsage': 'لا توجد بيانات تطبيقات بعد',
+      'noAppsUsageDescription': 'ستظهر التطبيقات فور إرسال الأجهزة بيانات الاستخدام الأولى.',
+      'searchApps': 'ابحث عن تطبيق...',
+      'appUsageChip': 'الاستخدام: {usage}',
+      'allowed': 'مسموح',
+      'blocked': 'محظور',
+      'timeLimited': 'مقيّد زمنياً',
+      'trusted': 'موثوق',
+      'unrestricted': 'بدون قيود',
+      'allowApp': 'السماح',
+      'blockApp': 'حظر التطبيق',
+      'appBlockedNotice': 'تمت إضافة التطبيق إلى قائمة الحظر (قيد المزامنة)',
+      'appAllowedNotice': 'تم السماح بالتطبيق (قيد المزامنة)',
+      'usageToday': 'استخدام اليوم',
+      'policyAction': 'إجراء السياسة',
+      'currentAction': 'الإجراء الحالي',
+      'choosePolicyAction': 'اختر إجراء السياسة',
+      'dailyAllowance': 'المهلة اليومية',
+      'dailyTimeLimit': 'الحد اليومي',
+      'syncEvidence': 'دليل المزامنة',
+      'policySyncState': 'حالة المزامنة',
+      'syncStateLabel': '{state}',
+      'addTrustedApp': 'إضافة تطبيق موثوق',
+      'appAllowlistSummary': 'تطبيقات لا تُحظر مهما تغيّرت الأوضاع',
+      'noTrustedApps': 'لا توجد تطبيقات موثوقة بعد',
+      'noTrustedAppsDescription': 'أضف تطبيقات المتجر والمدرسة حتى تبقى متاحة دائماً.',
+      'noReasonGiven': 'بدون مبرر مسجّل',
+      'removeFromAllowlist': 'إزالة من قائمة السماح',
+      'trustAddedNotice': 'أُضيف التطبيق إلى قائمة السماح (قيد المزامنة)',
+      'appTargetHint': 'معرف التطبيق (مثال: com.example.app)',
+      'trustReasonHint': 'سبب الثقة (مسجّل في التدقيق)',
+      'addTrustedAppAction': 'إضافة',
+      'perChildRules': 'قواعد الطفل للتطبيقات',
+      'childAppPolicies': 'السياسات',
+      'noChildRules': 'لا توجد قواعد خاصة بهذا الطفل',
+      'noChildRulesDescription': 'السياسات العامة للعائلة تنطبق حالياً.',
+      'limitChip': 'الحد: {limit}',
+      'actionChip': 'الإجراء: {action}',
+      'noAlertsConfigured': 'لا توجد تنبيهات مهيّأة',
+      'noAlertsConfiguredDescription': 'أضف عتبة تنبيه لتطبيق ما ليُنبهك عند تجاوزه.',
+      'alertThresholdChip': 'العتبة: {threshold}',
+      'usageAlertsSummary': 'تنبيه عند تجاوز الاستخدام لحد معيّن',
+      'noUsageData': 'لا توجد بيانات استخدام بعد',
+      'noUsageDataDescription': 'يحتاج تسجيل الاستخدام إلى أول حملة مزامنة من الأجهزة.',
+      'alertSet': 'تنبيه مفعّل',
+      'noBlockEvents': 'لا توجد أحداث حظر',
+      'noBlockEventsDescription': 'لم يُسجَّل أي حدث إنفاذ بعد. سيظهر السجل هنا بأمانة.',
+      'eventTypeLabel': 'حدث: {event}',
+      'myAppRules': 'قواعد تطبيقي',
+      'myAppRulesDescription': 'القواعد المطبّقة على تطبيقاتي فقط — لا شيء غير ذلك.',
+      'appliedRules': 'القواعد المطبّقة',
+      'noRulesApplied': 'لا توجد قواعد مطبّقة عليّ',
+      'noRulesAppliedDescription': 'تطبيقاتي تعمل بحرية حالياً.',
+      'exceptionRequestCta': 'طلب استثناء',
+      'exceptionRequestDescription': 'هل تعتقد أن قاعدة خاطئة؟ اطلب مراجعة من الوالد.',
+      'block': 'حظر',
+      'unblock': 'إلغاء حظر',
+      'override': 'تجاوز',
+      'timeout': 'انتهاء المهلة',
+      'addedToAllowlist': 'أُضيف لقائمة السماح',
+      'removedFromAllowlist': 'أُزيل من قائمة السماح',
     },
 'en': {
       'appTitle': 'Guardian Eye Pro',
@@ -1165,6 +1247,88 @@ class AppLocalizations {
       ,'childDeviceExperience': 'Device'
       ,'sosUtilityNotice': 'Record an emergency event and sync the local queue.'
       ,'open': 'Open'
+      ,'appControlDashboard': 'App control'
+      ,'blockedApps': 'Blocked apps'
+      ,'blockedTodayApps': 'Blocked today'
+      ,'appProtectionSummary': 'Current protection level'
+      ,'appProtectionActive': 'Protection active: some apps are blocked or limited.'
+      ,'appProtectionRelaxed': 'No active blocking policies right now.'
+      ,'installedAppsNav': 'All apps'
+      ,'appsBlocked': '{count} apps blocked'
+      ,'noAppsBlocked': 'No apps blocked'
+      ,'protected': 'Protected'
+      ,'notProtected': 'Not protected'
+      ,'limited': 'Limited'
+      ,'appControlSyncFailed': 'App control sync failed'
+      ,'installedApps': 'Installed apps'
+      ,'installedAppsDescription': 'Apps on linked devices with each app status'
+      ,'appAllowlist': 'Allowlist'
+      ,'appAllowlistDescription': 'Trusted apps that are never blocked'
+      ,'usageAlerts': 'Usage alerts'
+      ,'usageAlertsDescription': 'Per-app alert thresholds'
+      ,'appBlockHistory': 'App block history'
+      ,'appBlockHistoryDescription': 'Audit log of all enforcement events'
+      ,'noAppsUsage': 'No app data yet'
+      ,'noAppsUsageDescription': 'Apps appear as soon as devices send their first usage report.'
+      ,'searchApps': 'Search apps...'
+      ,'appUsageChip': 'Usage: {usage}'
+      ,'allowed': 'Allowed'
+      ,'blocked': 'Blocked'
+      ,'timeLimited': 'Time-limited'
+      ,'trusted': 'Trusted'
+      ,'unrestricted': 'Unrestricted'
+      ,'allowApp': 'Allow'
+      ,'blockApp': 'Block app'
+      ,'appBlockedNotice': 'App added to the block list (syncing)'
+      ,'appAllowedNotice': 'App allowed (syncing)'
+      ,'usageToday': 'Usage today'
+      ,'policyAction': 'Policy action'
+      ,'currentAction': 'Current action'
+      ,'choosePolicyAction': 'Choose policy action'
+      ,'dailyAllowance': 'Daily allowance'
+      ,'dailyTimeLimit': 'Daily limit'
+      ,'syncEvidence': 'Sync evidence'
+      ,'policySyncState': 'Sync state'
+      ,'syncStateLabel': '{state}'
+      ,'addTrustedApp': 'Add trusted app'
+      ,'appAllowlistSummary': 'Apps that are never blocked regardless of conditions'
+      ,'noTrustedApps': 'No trusted apps yet'
+      ,'noTrustedAppsDescription': 'Add store and school apps so they always stay available.'
+      ,'noReasonGiven': 'No reason recorded'
+      ,'removeFromAllowlist': 'Remove from allowlist'
+      ,'trustAddedNotice': 'App added to the allowlist (syncing)'
+      ,'addTrustedAppAction': 'Add'
+      ,'appTargetHint': 'App identifier (e.g. com.example.app)'
+      ,'trustReasonHint': 'Reason for trust (recorded in audit)'
+      ,'perChildRules': 'Child app rules'
+      ,'childAppPolicies': 'Policies'
+      ,'noChildRules': 'No rules specific to this child'
+      ,'noChildRulesDescription': 'Family-wide policies apply for now.'
+      ,'limitChip': 'Limit: {limit}'
+      ,'actionChip': 'Action: {action}'
+      ,'noAlertsConfigured': 'No alerts configured'
+      ,'noAlertsConfiguredDescription': 'Add an alert threshold for an app to be notified when exceeded.'
+      ,'alertThresholdChip': 'Threshold: {threshold}'
+      ,'usageAlertsSummary': 'Alert when usage exceeds a set limit'
+      ,'noUsageData': 'No usage data yet'
+      ,'noUsageDataDescription': 'Usage tracking needs the first device sync batch.'
+      ,'alertSet': 'Alert set'
+      ,'noBlockEvents': 'No block events'
+      ,'noBlockEventsDescription': 'No enforcement event recorded yet. The log will appear here honestly.'
+      ,'eventTypeLabel': 'Event: {event}'
+      ,'myAppRules': 'My app rules'
+      ,'myAppRulesDescription': 'The rules applied to my apps only — nothing else.'
+      ,'appliedRules': 'Applied rules'
+      ,'noRulesApplied': 'No rules applied to me'
+      ,'noRulesAppliedDescription': 'My apps are running freely right now.'
+      ,'exceptionRequestCta': 'Request exception'
+      ,'exceptionRequestDescription': 'Think a rule is wrong? Ask a parent to review it.'
+      ,'block': 'Block'
+      ,'unblock': 'Unblock'
+      ,'override': 'Override'
+      ,'timeout': 'Time limit'
+      ,'addedToAllowlist': 'Added to allowlist'
+      ,'removedFromAllowlist': 'Removed from allowlist'
     },
   };
   String t(String key) => _values[locale.languageCode]?[key] ?? key;

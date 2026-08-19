@@ -70,6 +70,16 @@ class ScreenTimePoliciesScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
               const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.asset(
+                  'assets/images/onboarding_screen_time.png',
+                  height: 168,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 16),
               if (auth.valueOrNull == null)
                 GuardianCard(
                     color: GuardianTokens.statusAlertSoft,

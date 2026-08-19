@@ -1974,6 +1974,16 @@ class _LocationAlertsBody extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'assets/images/onboarding_alerts.png',
+                height: 168,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 16),
             GuardianOfflineBanner(),
             const SizedBox(height: 16),
             values.isEmpty

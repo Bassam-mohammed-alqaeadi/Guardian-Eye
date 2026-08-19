@@ -319,6 +319,24 @@ class ChildDeviceRepository {
     return rows.map(_summaryFromMap).toList();
   }
 
+  /// FS-003 — Application Control. Latest daily usage summary per target
+  /// across every child device in the family, collapsed per target so the
+  /// parent app-protection dashboard can rank the family's most-used apps
+  /// without re-aggregating. Honest and local: derived only from synced
+  /// usage summaries written by the child devices themselves.
+  Future<List<DailyUsageSummary>> summariesForFamily(String familyId) async {
+    final db = await _database.database;
+    final rows = await db.rawQuery(
+        'SELECT cs.* FROM child_usage_summaries cs '
+        'INNER JOIN (SELECT family_id, target, MAX(captured_at) AS latest '
+        'FROM child_usage_summaries WHERE family_id = ? '
+        'GROUP BY target) latest ON latest.family_id = cs.family_id '
+        'AND latest.target = cs.target AND latest.latest = cs.captured_at '
+        'ORDER BY cs.total_milliseconds DESC',
+        [familyId]);
+    return rows.map(_summaryFromMap).toList();
+  }
+
   /// Honest sync evidence for the device's usage observations. Returns the
   /// outbox rows that are still queued, failed, syncing, or blocked — the only
   /// evidence the measurement UI may use to claim that a usage observation is

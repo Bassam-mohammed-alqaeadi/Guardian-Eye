@@ -27,9 +27,12 @@ import '../data/outbox_sync_status.dart';
 import '../data/policy_repository.dart';
 import '../data/web_filter_repository.dart';
 import '../data/web_filter_remote_service.dart';
+import '../data/application_policy_repository.dart';
+import '../data/application_policy_remote_service.dart';
 import '../data/location_repository.dart';
 import '../data/location_remote_service.dart';
 import '../data/safety_repositories.dart';
+import '../domain/screen_time.dart';
 import 'sync_coordinator.dart';
 import '../core/platform/network_connectivity_service.dart';
 import '../domain/incident_engine.dart';
@@ -346,10 +349,71 @@ final familyLocationPullProvider =
 class _UnavailableFamilyLocationRemoteReader
     implements FamilyLocationRemoteReader {
   const _UnavailableFamilyLocationRemoteReader();
-
   @override
   Future<RemoteLocationPolicy?> readLocationPolicy(
           {required String familyId}) =>
       Future<RemoteLocationPolicy?>.error(
           StateError('firebase_location_reader_unavailable'));
+}
+
+/// FS-003 — Application Control. Local-first store for per-app
+/// block/allow/limit policies, the trusted-app allowlist, the honest audit
+/// log of enforcement events, and per-app usage alert thresholds. Reads and
+/// mutations are local SQLite first; the honest outbox carries the same
+/// offline-first rhythm as the rest of the platform.
+final appPolicyRepositoryProvider =
+    Provider((ref) => ApplicationPolicyRepository(GuardianDatabase.instance));
+final appPoliciesProvider =
+    FutureProvider.family<List<AppPolicyEntry>, String>(
+        (ref, String familyId) =>
+            ref.watch(appPolicyRepositoryProvider).resolvePolicies(familyId));
+final appAllowlistProvider =
+    FutureProvider.family<List<AppAllowlistEntry>, String>(
+        (ref, String familyId) =>
+            ref.watch(appPolicyRepositoryProvider).allowlistEntries(familyId));
+final appBlockEventsProvider =
+    FutureProvider.family<List<AppBlockEvent>, String>(
+        (ref, String familyId) =>
+            ref.watch(appPolicyRepositoryProvider).blockEvents(familyId));
+final usageAlertSettingsProvider =
+    FutureProvider.family<List<UsageAlertSetting>, String>(
+        (ref, String familyId) => ref
+            .watch(appPolicyRepositoryProvider)
+            .resolveAlertSettings(familyId));
+/// FS-003 — per-child device usage totals for the day, joined against the
+/// policy repository for on-screen allowance math. Local-only: device agents
+/// sync their usage into SQLite, so the parent view is honest even offline.
+final appUsageForFamilyProvider =
+    FutureProvider.family<List<DailyUsageSummary>, String>(
+        (ref, String familyId) => ref
+            .watch(childDeviceRepositoryProvider)
+            .summariesForFamily(familyId));
+
+// FS-003 — Application Control remote bridge. Reads verified server facts
+// from Firestore (`/families/{id}/app_policy`) and applies them into the
+// local store. When Firebase is unconfigured the reader is a safe no-op so
+// the local offline-first store remains the single honest source of truth.
+final appPolicyRemoteReaderProvider =
+    Provider<AppPolicyRemoteReader>((ref) {
+  if (!GuardianFirebaseBootstrap.current.isReady) {
+    return const _UnavailableAppPolicyRemoteReader();
+  }
+  return FirestoreAppPolicyRemoteReader(FirebaseFirestore.instance);
+});
+final appPolicySyncApplierProvider = Provider((ref) =>
+    AppPolicySyncApplier(ref.watch(appPolicyRepositoryProvider)));
+final appPolicyPullProvider =
+    FutureProvider.family<AppPolicyPullResult, String>(
+        (ref, String familyId) => AppPolicyPullService(
+            ref.watch(appPolicyRemoteReaderProvider),
+            ref.watch(appPolicySyncApplierProvider))
+            .pull(familyId));
+
+class _UnavailableAppPolicyRemoteReader implements AppPolicyRemoteReader {
+  const _UnavailableAppPolicyRemoteReader();
+
+  @override
+  Future<RemoteAppPolicy?> readAppPolicy({required String familyId}) =>
+      Future<RemoteAppPolicy?>.error(
+          StateError('firebase_app_policy_reader_unavailable'));
 }

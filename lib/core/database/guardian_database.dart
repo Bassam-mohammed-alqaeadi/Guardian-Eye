@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 16,
+        version: 17,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -152,6 +152,27 @@ class GuardianDatabase {
         'CREATE INDEX idx_location_points_family_time ON location_points(family_id, captured_at DESC)');
     batch.execute(
         'CREATE INDEX idx_location_alerts_family_time ON location_alerts(family_id, occurred_at DESC)');
+    // FS-003 — Application Control tables: per-app block/allow/limit
+    // policies (app_policies), trusted apps that survive mode changes
+    // (app_allowlist), an honest audit log of enforcement events
+    // (app_block_history), and per-app usage alert thresholds
+    // (usage_alert_settings). Policies are parent-written; device agents
+    // read them to enforce on the child's device and write block history.
+    // Every write enters the outbox through the same honesty rhythm as
+    // the rest of the platform: local SQLite first, sync_state 'queued'
+    // until the server confirms.
+    batch.execute(
+        'CREATE TABLE app_policies(family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL DEFAULT \'\', target TEXT NOT NULL, action TEXT NOT NULL, limit_milliseconds INTEGER, rating_max TEXT NOT NULL DEFAULT \'all\', sync_state TEXT NOT NULL DEFAULT \'queued\', updated_at TEXT NOT NULL, PRIMARY KEY(family_id, child_id, target))');
+    batch.execute(
+        'CREATE TABLE app_allowlist(family_id TEXT NOT NULL REFERENCES families(id), target TEXT NOT NULL, reason TEXT, added_by TEXT, created_at TEXT NOT NULL, PRIMARY KEY(family_id, target))');
+    batch.execute(
+        'CREATE TABLE app_block_history(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), target TEXT NOT NULL, child_id TEXT, event TEXT NOT NULL, reason TEXT, created_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE TABLE usage_alert_settings(family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, target TEXT NOT NULL, threshold_milliseconds INTEGER NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY(family_id, target))');
+    batch.execute(
+        'CREATE INDEX idx_app_block_history_family_time ON app_block_history(family_id, created_at DESC)');
+    batch.execute(
+        'CREATE INDEX idx_app_policies_family ON app_policies(family_id)');
     await batch.commit(noResult: true);
   }
 
@@ -291,6 +312,21 @@ class GuardianDatabase {
           'CREATE INDEX idx_location_points_family_time ON location_points(family_id, captured_at DESC)');
       await db.execute(
           'CREATE INDEX idx_location_alerts_family_time ON location_alerts(family_id, occurred_at DESC)');
+    }
+    if (oldVersion < 17) {
+      // FS-003 — Application Control (see onCreate for schema docs).
+      await db.execute(
+          'CREATE TABLE app_policies(family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL DEFAULT \'\', target TEXT NOT NULL, action TEXT NOT NULL, limit_milliseconds INTEGER, rating_max TEXT NOT NULL DEFAULT \'all\', sync_state TEXT NOT NULL DEFAULT \'queued\', updated_at TEXT NOT NULL, PRIMARY KEY(family_id, child_id, target))');
+      await db.execute(
+          'CREATE TABLE app_allowlist(family_id TEXT NOT NULL REFERENCES families(id), target TEXT NOT NULL, reason TEXT, added_by TEXT, created_at TEXT NOT NULL, PRIMARY KEY(family_id, target))');
+      await db.execute(
+          'CREATE TABLE app_block_history(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), target TEXT NOT NULL, child_id TEXT, event TEXT NOT NULL, reason TEXT, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE TABLE usage_alert_settings(family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, target TEXT NOT NULL, threshold_milliseconds INTEGER NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, PRIMARY KEY(family_id, target))');
+      await db.execute(
+          'CREATE INDEX idx_app_block_history_family_time ON app_block_history(family_id, created_at DESC)');
+      await db.execute(
+          'CREATE INDEX idx_app_policies_family ON app_policies(family_id)');
     }
   }
 }
