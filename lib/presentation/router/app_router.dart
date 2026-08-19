@@ -25,6 +25,7 @@ import '../screens/modes_screens.dart';
 import '../screens/sos_screens.dart';
 import '../screens/device_linking_screens.dart';
 import '../screens/reports_screens.dart';
+import '../screens/rules_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -646,6 +647,46 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: ReportExportScreen.route,
         name: 'reportExport',
         builder: (context, state) => const ReportExportScreen(),
+      ),
+
+      // FS-011 — Family Rules & Policy Engine routes (FR-001 … FR-007).
+      // Authorization is delegated to FamilyPermission.viewFamilyRules /
+      // manageFamilyRules inside the screens — the router only registers
+      // the surfaces.
+      GoRoute(
+        path: FamilyRulesDashboardScreen.route,
+        name: 'familyRulesDashboard',
+        builder: (context, state) => const FamilyRulesDashboardScreen(),
+      ),
+      GoRoute(
+        path: RuleBuilderScreen.route,
+        name: 'familyRuleBuilder',
+        builder: (context, state) => const RuleBuilderScreen(),
+      ),
+      GoRoute(
+        path: RuleEditScreen.route,
+        name: 'familyRuleEdit',
+        builder: (context, state) => const RuleEditScreen(),
+      ),
+      GoRoute(
+        path: RuleScheduleScreen.route,
+        name: 'ruleSchedule',
+        builder: (context, state) => const RuleScheduleScreen(),
+      ),
+      GoRoute(
+        path: RuleImpactScreen.route,
+        name: 'ruleImpact',
+        builder: (context, state) => const RuleImpactScreen(),
+      ),
+      GoRoute(
+        path: RuleConflictsScreen.route,
+        name: 'ruleConflicts',
+        builder: (context, state) => const RuleConflictsScreen(),
+      ),
+      GoRoute(
+        path: RuleExecutionLogScreen.route,
+        name: 'ruleExecutionLog',
+        builder: (context, state) => const RuleExecutionLogScreen(),
       ),
       ],),
     ],

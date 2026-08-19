@@ -115,7 +115,6 @@ List<Override> _dataSourceOverrides() => [
       childDeviceRepositoryProvider.overrideWithValue(
           _NoChildDevicesRepository()),
       recentIncidentsProvider(_familyId).overrideWith((ref) async => const []),
-      incidentRepositoryProvider.overrideWithValue(_NoIncidentRepository()),
       familyRepositoryProvider.overrideWithValue(_NoFamilyRepository()),
       locationGeofenceRepositoryProvider
           .overrideWithValue(_NoLocationGeofenceRepository()),
@@ -127,16 +126,6 @@ List<Override> _dataSourceOverrides() => [
 class _NoChildDevicesRepository implements ChildDeviceRepository {
   @override
   Future<List<ChildDeviceState>> statesForFamily(String familyId) async =>
-      const [];
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _NoIncidentRepository implements IncidentRepository {
-  @override
-  Future<List<GuardianIncident>> unacknowledgedIncidentsForFamily(
-          String familyId,
-          {int limit = 10}) async =>
       const [];
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -219,20 +208,6 @@ class _RouteConsumer extends ConsumerWidget {
       final next = queue.isNotEmpty ? queue.removeAt(0) : null;
       if (next != null) router.go(next);
     });
-    return const SizedBox.shrink();
-  }
-}
-
-/// One-shot consumer that navigates to a fixed location after the first
-/// frame (used by the single-pump helpers for journeys and forms).
-class _RouteConsumerOnce extends ConsumerWidget {
-  const _RouteConsumerOnce(this.location);
-  final String location;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(appRouterProvider);
-    WidgetsBinding.instance.addPostFrameCallback((_) => router.go(location));
     return const SizedBox.shrink();
   }
 }

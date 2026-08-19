@@ -8,7 +8,6 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/theme/guardian_tokens.dart';
 import '../../application/family_context_provider.dart';
 import '../../domain/guardian_models.dart';
-import '../../domain/device_linking.dart';
 import '../../data/reports_export_service.dart';
 import '../../domain/reports_domain.dart';
 import '../widgets/guardian_primitives.dart';
@@ -65,18 +64,6 @@ Widget _guardedScaffold({
   }
   return child;
 }
-
-String _periodValue(ReportPeriod p) => switch (p) {
-      ReportPeriod.week => 'week',
-      ReportPeriod.month => 'month',
-      ReportPeriod.custom => 'custom',
-    };
-
-ReportPeriod _periodFrom(String v) => switch (v) {
-      'month' => ReportPeriod.month,
-      'custom' => ReportPeriod.custom,
-      _ => ReportPeriod.week,
-    };
 
 // ── RP-001 Reports dashboard ─────────────────────────────────────────────────
 
@@ -224,12 +211,10 @@ class _Scaffold extends StatelessWidget {
       required this.child});
   final AppLocalizations l10n;
   final String title;
-  final AsyncValue<dynamic> runtime;
+    final AsyncValue<dynamic> runtime;
   final Widget child;
-
   @override
   Widget build(BuildContext context) {
-    final ctx = runtime.valueOrNull as FamilyRuntimeContext?;
     return Scaffold(
       backgroundColor: GuardianTokens.guardianNavy.withOpacity(0.04),
       appBar: AppBar(
@@ -295,6 +280,16 @@ class _FamilyBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.asset(
+              'assets/images/family_reports.png',
+              height: 110,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(children: [
             const Icon(Icons.insights, size: 22, color: Colors.white),
             const SizedBox(width: 8),
@@ -395,7 +390,6 @@ class WebReportScreen extends ConsumerWidget {
         GoRouterState.of(context).pathParameters['familyId'] ?? '';
     final runtime =
         ref.watch(familyRuntimeContextProvider(familyId));
-    final period = ref.watch(reportsPeriodNotifierProvider(familyId));
 
     return _guardedScaffold(
       context: context,
@@ -989,7 +983,6 @@ class _ReportExportScreenState extends ConsumerState<ReportExportScreen> {
 
 class _SectionDetailScaffold extends ConsumerWidget {
   const _SectionDetailScaffold({
-    super.key,
     required this.l10n,
     required this.title,
     required this.familyId,
@@ -1023,10 +1016,29 @@ class _SectionDetailScaffold extends ConsumerWidget {
     } else if (section == null) {
       body = const GuardianStateView(state: GuardianViewState.loading);
     } else {
-      body = SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: childBuilder(section),
-      );
+      body = Column(children: [
+        // Period context strip: keeps the selected window visible so the
+        // detail page never reads as period-less.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Align(
+            alignment: l10n.isRtl ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text(
+              l10n.t(period == ReportPeriod.month ? 'rpPeriodMonth' : 'rpPeriodWeek'),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: GuardianTokens.guardianTeal,
+                  fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: childBuilder(section),
+          ),
+        ),
+      ]);
     }
 
     return Scaffold(

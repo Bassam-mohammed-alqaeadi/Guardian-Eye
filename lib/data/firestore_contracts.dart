@@ -82,6 +82,11 @@ class FirestorePaths {
       '${family(familyId)}/mode_configs/$modeId';
   static String modeActivation(String familyId, String activationId) =>
       '${family(familyId)}/mode_activations/$activationId';
+  // FS-011 — Family Rules & Policy Engine. Parent-authored rules travel
+  // through the outbox to Firestore; sibling devices read them through
+  // the same collection so the policy stays family-wide.
+  static String familyRule(String familyId, String ruleId) =>
+      '${family(familyId)}/family_rules/$ruleId';
 }
 
 class FirestoreMutation {
@@ -1094,8 +1099,51 @@ class FirestoreEventContract {
               'endsAt': payload['endsAt'],
               'decidedBy': payload['decidedBy']
             });
-      // FS-006 — SOS readiness roster. Recipients are parent-authored and
-      // read by the notification pipeline for honest delivery tracking.
+      // FS-011 — Family Rules & Policy Engine. Parent-authored rules
+      // travel through the outbox to Firestore; sibling devices read the
+      // same collection so the policy stays family-wide.
+      case 'family.rule.created' ||
+          'family.rule.updated' ||
+          'family.rule.deleted' ||
+          'family.rule.toggled' ||
+          'create' ||
+          'update' ||
+          'delete':
+        // FS-011 outbox rows dispatch with operation 'create'|'update'|
+        // 'delete' (aggregate_type 'family_rule'); the writer tags the
+        // aggregate through the idempotencyKey family_rule:op:family:rule.
+        final dispatchedEventType = operation == 'delete'
+            ? 'family.rule.deleted'
+            : 'family.rule.updated';
+        final rRuleId = payload['ruleId'] as String?;
+        if (rRuleId == null) {
+          throw const FormatException('family.rule payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.familyRule(familyId, rRuleId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventType': dispatchedEventType,
+              'ruleId': rRuleId,
+              'kind': payload['kind'],
+              'name': payload['name'],
+              'summary': payload['summary'],
+              'enabled': payload['enabled'] ?? true,
+              'startMinute': payload['startMinute'] ?? 0,
+              'endMinute': payload['endMinute'] ?? 0,
+              'scheduleKind': payload['scheduleKind'] ?? 'daily',
+              'weekdays': payload['weekdays'] ?? '',
+              'oneshotAt': payload['oneshotAt'],
+              'assignedChildIds': payload['assignedChildIds'] ?? '',
+              'categoryTargets': payload['categoryTargets'] ?? '',
+              'appTargets': payload['appTargets'] ?? '',
+              'priority': payload['priority'] ?? 50,
+              'action': payload['action'],
+              'createdAt': payload['createdAt'],
+              'updatedAt': payload['updatedAt'],
+              'syncState': payload['syncState']
+            });
       case 'sos.recipient':
         final sRecipientId = payload['recipientId'] as String?;
         if (sRecipientId == null) {

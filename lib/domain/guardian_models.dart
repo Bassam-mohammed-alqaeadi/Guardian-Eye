@@ -31,6 +31,13 @@ enum FamilyPermission {
   // a child may view its own activity within the exported report data.
   viewReports,
   viewOwnReport,
+
+  // FS-011 — Family Rules & Policy Engine. Parents author and edit the
+  // unified rule book; a spouse observes it read-only; a child sees only
+  // the rules that apply to them (honest, read-only view).
+  viewFamilyRules,
+  manageFamilyRules,
+  viewOwnRules,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }

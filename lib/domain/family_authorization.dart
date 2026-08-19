@@ -37,6 +37,9 @@ class FamilyAuthorization {
             // FS-009 — adult actors may generate family reports and export
             // them (PDF / CSV). A co-parent reads, the primary parent manages.
             FamilyPermission.viewReports,
+            // FS-011 — a co-parent observes and amends the rule book.
+            FamilyPermission.viewFamilyRules,
+            FamilyPermission.manageFamilyRules,
           },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
@@ -50,6 +53,9 @@ class FamilyAuthorization {
             // FS-009 — a child may only see its own activity inside the
             // family report (honest, read-only view).
             FamilyPermission.viewOwnReport,
+            // FS-011 — a child sees only the rules applied to them
+            // (honest, read-only view).
+            FamilyPermission.viewOwnRules,
           },
         FamilyRole.spouse => {
             FamilyPermission.viewFamily,
@@ -59,6 +65,8 @@ class FamilyAuthorization {
             FamilyPermission.viewDeviceLinking,
             // FS-009 — a spouse observes reports but never mutates them.
             FamilyPermission.viewReports,
+            // FS-011 — a spouse observes the rule book but never amends it.
+            FamilyPermission.viewFamilyRules,
           },
       };
   bool hasPermission(FamilyMember member, FamilyPermission permission) =>

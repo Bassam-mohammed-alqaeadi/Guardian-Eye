@@ -143,9 +143,28 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
           }
           final children = runtimeContext.children;
           if (children.isEmpty) {
-            return GuardianStateView(
-                state: GuardianViewState.empty,
-                message: l10n.t('noChildToPair'));
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/images/device_pairing.png',
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GuardianStateView(
+                    state: GuardianViewState.empty,
+                    message: l10n.t('noChildToPair'),
+                  ),
+                ],
+              ),
+            );
           }
 
           _targetMemberId ??= children.first.id;

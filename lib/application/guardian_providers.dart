@@ -47,6 +47,8 @@ import '../domain/incident_engine.dart';
 import '../domain/guardian_models.dart';
 import '../data/reports_repository.dart';
 import '../domain/reports_domain.dart';
+import '../data/family_rules_repository.dart';
+import '../domain/family_rules.dart';
 
 final localeProvider = StateProvider<String>((ref) => 'ar');
 final familyRepositoryProvider =
@@ -105,11 +107,6 @@ final remoteProvisioningServiceProvider = Provider(
 final childExceptionRequestRepositoryProvider = Provider((ref) =>
     ChildExceptionRequestRepository(GuardianDatabase.instance,
         ref.watch(policyRepositoryProvider)));
-final familySafetyExperienceRepositoryProvider = Provider((ref) =>
-    FamilySafetyExperienceRepository(
-        GuardianDatabase.instance,
-        ref.watch(policyRepositoryProvider),
-        ref.watch(childExceptionRequestRepositoryProvider)));
 final childDeviceStatesProvider = FutureProvider.family(
     (ref, String familyId) =>
         ref.watch(childDeviceRepositoryProvider).statesForFamily(familyId));
@@ -118,10 +115,20 @@ final childUsageForTodayProvider = FutureProvider.family((ref, String deviceId) 
         deviceId: deviceId, day: DateTime.now()));
 final deliveredChildPoliciesProvider = FutureProvider.family((ref, String deviceId) =>
     ref.watch(childDeviceRepositoryProvider).deliveredPolicies(deviceId));
-final familyDailySafetyProvider = FutureProvider.family((ref, String familyId) =>
-    ref.watch(familySafetyExperienceRepositoryProvider).childrenForFamily(familyId));
-final familySafetyTimelineProvider = FutureProvider.family((ref, String familyId) =>
-    ref.watch(familySafetyExperienceRepositoryProvider).timelineForFamily(familyId));
+final familyDailySafetyProvider = FutureProvider.family((ref, String familyId) {
+  final repo = FamilySafetyExperienceRepository(
+      GuardianDatabase.instance,
+      ref.watch(policyRepositoryProvider),
+      ref.watch(childExceptionRequestRepositoryProvider));
+  return repo.childrenForFamily(familyId);
+});
+final familySafetyTimelineProvider = FutureProvider.family((ref, String familyId) {
+  final repo = FamilySafetyExperienceRepository(
+      GuardianDatabase.instance,
+      ref.watch(policyRepositoryProvider),
+      ref.watch(childExceptionRequestRepositoryProvider));
+  return repo.timelineForFamily(familyId);
+});
 final familyExceptionRequestsProvider = FutureProvider.family((ref, String familyId) =>
     ref.watch(childExceptionRequestRepositoryProvider).forFamily(familyId));
 typedef ChildRequestScope = ({String familyId, String deviceId, String childUid});
@@ -134,13 +141,10 @@ final childExceptionRequestsProvider = FutureProvider.family(
             childUid: scope.childUid));
 final sosRepositoryProvider =
     Provider((ref) => SosRepository(GuardianDatabase.instance));
-final incidentRepositoryProvider = Provider(
-    (ref) => IncidentRepository(GuardianDatabase.instance, const RiskEngine()));
 /// Unacknowledged incidents for the family — drives the dashboard safety
 /// signal. A pure local read; never called directly from a widget.
 final recentIncidentsProvider = FutureProvider.family<List<GuardianIncident>, String>(
-    (ref, String familyId) => ref
-        .watch(incidentRepositoryProvider)
+    (ref, String familyId) => IncidentRepository(GuardianDatabase.instance, const RiskEngine())
         .unacknowledgedIncidentsForFamily(familyId));
 final firebaseAuthContextProvider =
     Provider<FirebaseAuthContext>((ref) => const FirebaseAuthContext());
@@ -148,18 +152,16 @@ final firebaseAuthServiceProvider = Provider(
     (ref) => FirebaseAuthService(ref.watch(firebaseAuthContextProvider)));
 final firebaseAuthSessionProvider = StreamProvider<AuthSession>(
     (ref) => ref.watch(firebaseAuthContextProvider).changes);
-final familyMembershipRemoteReaderProvider =
-    Provider<FamilyMembershipRemoteReader>((ref) {
-  if (!GuardianFirebaseBootstrap.current.isReady) {
-    return _UnavailableFamilyMembershipRemoteReader();
-  }
-  return FirestoreFamilyMembershipRemoteReader(FirebaseFirestore.instance);
+final familyActorBindingServiceProvider = Provider((ref) {
+  final FamilyMembershipRemoteReader reader =
+      GuardianFirebaseBootstrap.current.isReady
+          ? FirestoreFamilyMembershipRemoteReader(FirebaseFirestore.instance)
+          : _UnavailableFamilyMembershipRemoteReader();
+  return FamilyActorBindingService(
+      ref.watch(firebaseAuthContextProvider),
+      FamilyMembershipRepository(GuardianDatabase.instance),
+      reader);
 });
-final familyActorBindingServiceProvider = Provider((ref) =>
-    FamilyActorBindingService(
-        ref.watch(firebaseAuthContextProvider),
-        FamilyMembershipRepository(GuardianDatabase.instance),
-        ref.watch(familyMembershipRemoteReaderProvider)));
 final familyActorBindingProvider =
     FutureProvider.family<FamilyActorBindingResult, String>((ref, familyId) =>
         ref.watch(familyActorBindingServiceProvider).resolveForFamily(familyId));
@@ -228,14 +230,11 @@ final childUsageMeasurementProvider =
 /// evaluation for a child device: honest enforcement state, application
 /// evidence, policy freshness, and sync evidence derived only from the
 /// actual outbox row state. Offline-safe: all inputs are local.
-final childEnforcementCoordinatorProvider = Provider<ChildEnforcementCoordinator>(
-    (ref) => ChildEnforcementCoordinator(
-        ref.watch(childDeviceRepositoryProvider),
-        ref.watch(androidEnforcementAdapterProvider)));
 final enforcementStateProvider =
-    FutureProvider.family((ref, String deviceId) =>
-        ref.watch(childEnforcementCoordinatorProvider).evaluate(deviceId,
-            moment: DateTime.now().toUtc()));
+    FutureProvider.family((ref, String deviceId) => ChildEnforcementCoordinator(
+        ref.watch(childDeviceRepositoryProvider),
+        ref.watch(androidEnforcementAdapterProvider))
+            .evaluate(deviceId, moment: DateTime.now().toUtc()));
 final dashboardProvider = FutureProvider<GuardianDashboard>(
     (ref) => ref.watch(familyRepositoryProvider).loadDashboard());
 final capabilityStatusProvider = FutureProvider<List<CapabilityStatus>>(
@@ -436,11 +435,6 @@ final monitoringShotsProvider =
     FutureProvider.family<List<MonitoringShot>, String>(
         (ref, String familyId) =>
             ref.watch(monitoringRepositoryProvider).shotsForFamily(familyId));
-final monitoringChildShotsProvider =
-    FutureProvider.family<List<MonitoringShot>, ({String familyId, String childId})>(
-        (ref, scope) => ref
-            .watch(monitoringRepositoryProvider)
-            .shotsForChild(scope.familyId, scope.childId));
 final monitoringRequestsProvider =
     FutureProvider.family<List<MonitoringRequest>, String>(
         (ref, String familyId) => ref
@@ -562,10 +556,6 @@ final deviceByIdProvider =
     FutureProvider.family<Map<String, Object?>?, String>(
         (ref, String deviceId) =>
             ref.watch(pairingRepositoryProvider).deviceById(deviceId));
-final deviceLifecycleProvider =
-    FutureProvider.family<Map<String, Object?>?, String>(
-        (ref, String deviceId) =>
-            ref.watch(pairingRepositoryProvider).lifecycleForDevice(deviceId));
 /// DL-010 — one honest [DeviceHealth] record per family device.
 final familyDeviceHealthProvider =
     FutureProvider.family<List<DeviceHealth>, String>((ref, String familyId) async {
@@ -580,9 +570,6 @@ final familyDeviceHealthProvider =
   }
   return results;
 });
-final deviceSyncMarkerProvider =
-    FutureProvider.family<bool, String>((ref, String deviceId) =>
-        ref.watch(pairingRepositoryProvider).markDeviceSynced(deviceId));
 typedef DeviceTransferScope = ({String familyId, String memberId, String ownerMemberId});
 /// DL-011 — transfers a child's enrollment to a fresh device row. The old
 /// device is revoked (record kept, never deleted) and a queued outbox
@@ -631,3 +618,39 @@ final reportsSnapshotProvider =
                 ref
                     .watch(reportsRepositoryProvider)
                     .snapshotFor(familyId: key.familyId, period: key.period));
+
+// FS-011 — Family Rules & Policy Engine. The unified rule book reads the
+// real family_rules table and computes conflicts deterministically
+// (priority desc, creation asc). The execution log records every verdict
+// honestly; nothing here invents enforcement states the device never
+// produced.
+final familyRulesRepositoryProvider =
+    Provider<FamilyRulesRepository>((ref) => FamilyRulesRepository(GuardianDatabase.instance));
+final rulesListProvider =
+    FutureProvider.family<List<FamilyRule>, String>(
+        (ref, String familyId) =>
+            ref.watch(familyRulesRepositoryProvider).listForFamily(familyId));
+final ruleDetailProvider = FutureProvider.family<FamilyRule?,
+    ({String familyId, String ruleId})>(
+        (ref, ({String familyId, String ruleId}) key) =>
+            ref
+                .watch(familyRulesRepositoryProvider)
+                .find(key.familyId, key.ruleId));
+final ruleConflictsProvider =
+    FutureProvider.family<List<RuleConflict>, String>(
+        (ref, String familyId) => ref
+            .watch(rulesListProvider(familyId))
+            .when(
+              data: (rules) =>
+                  ref.read(familyRulesRepositoryProvider).conflictsFor(rules),
+              loading: () async =>
+                  ref.read(familyRulesRepositoryProvider).conflictsFor(
+                      await ref.read(rulesListProvider(familyId).future)),
+              error: (_, __) =>
+                  ref.read(familyRulesRepositoryProvider).conflictsFor(const []),
+            ));
+final ruleExecutionLogProvider =
+    FutureProvider.family<List<RuleExecutionEntry>, String>(
+        (ref, String familyId) => ref
+            .watch(familyRulesRepositoryProvider)
+            .logForFamily(familyId: familyId));

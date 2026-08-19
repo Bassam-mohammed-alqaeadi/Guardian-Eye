@@ -275,6 +275,9 @@ class ReportsRepository {
     final webBlocked = await webBlockedHits(familyId, start, end);
     final webByDay = await webHitsByDay(familyId, start, end);
     final webTop = await webTopBlocked(familyId, start, end);
+    // Active-day count: days within the window that recorded any web
+    // activity — honest context about how spread-out browsing was.
+    final webActiveDays = webByDay.where((row) => _asInt(row['total']) > 0).length;
     final webSection = ReportSection(
       kind: ReportSectionKind.web,
       titleKey: 'rpWebTitle',
@@ -289,6 +292,12 @@ class ReportsRepository {
             value: '$webBlocked',
             numericValue: webBlocked,
             tone: webBlocked > 0 ? ReportTone.warning : ReportTone.neutral),
+        if (webByDay.isNotEmpty)
+          ReportMetric(
+              labelKey: 'rpActiveDays',
+              value: '$webActiveDays',
+              numericValue: webActiveDays,
+              tone: ReportTone.neutral),
       ],
             rows: webTop
           .map<List<String>>((r) => [

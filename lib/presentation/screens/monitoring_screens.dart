@@ -549,6 +549,20 @@ class MonitoringScreenshotsTimelineScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             GuardianOfflineBanner(),
             const SizedBox(height: 16),
+            if (days.isEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/images/monitoring_guard.png',
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ],
             if (days.isEmpty)
               GuardianStateView(
                 state: GuardianViewState.empty,

@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 20,
+        version: 21,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -204,6 +204,16 @@ class GuardianDatabase {
         'CREATE TABLE sos_recipients(family_id TEXT NOT NULL REFERENCES families(id), recipient_id TEXT NOT NULL, role TEXT NOT NULL DEFAULT \'responder\', ordering INTEGER NOT NULL DEFAULT 0, added_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, recipient_id))');
     batch.execute(
         'CREATE INDEX idx_sos_recipients_family ON sos_recipients(family_id, ordering)');
+    // FS-011 — Family Rules & Policy Engine. One coherent rule book per
+    // family plus the honest execution log that records every verdict.
+    batch.execute(
+        'CREATE TABLE family_rules(rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'dailyScreenTime\', action TEXT NOT NULL DEFAULT \'restrict\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', app_targets TEXT NOT NULL DEFAULT \'\', category_targets TEXT NOT NULL DEFAULT \'\', geofence_ids TEXT NOT NULL DEFAULT \'\', geofence_trigger TEXT NOT NULL DEFAULT \'entering\', limit_minutes INTEGER, priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, rule_id))');
+    batch.execute(
+        'CREATE TABLE rule_execution_log(id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, outcome TEXT NOT NULL, reason TEXT NOT NULL, evaluated_at TEXT NOT NULL, FOREIGN KEY(family_id, rule_id) REFERENCES family_rules(family_id, rule_id))');
+    batch.execute(
+        'CREATE INDEX idx_family_rules_family ON family_rules(family_id)');
+    batch.execute(
+        'CREATE INDEX idx_rule_execution_family_time ON rule_execution_log(family_id, evaluated_at DESC)');
     await batch.commit(noResult: true);
     // Per-recipient acknowledgement tracking on the existing notification
     // channel (NULL preserves legacy rows and outbox semantics).
@@ -401,6 +411,19 @@ class GuardianDatabase {
           'CREATE INDEX idx_sos_recipients_family ON sos_recipients(family_id, ordering)');
       await db.execute(
           'ALTER TABLE notification_events ADD COLUMN recipient_id TEXT');
+    }
+    if (oldVersion < 21) {
+      // FS-011 — Family Rules & Policy Engine. One coherent, versioned,
+      // scheduled rule book per family; the execution log records every
+      // honest verdict so nothing is ever silently overridden.
+      await db.execute(
+          'CREATE TABLE family_rules(rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'dailyScreenTime\', action TEXT NOT NULL DEFAULT \'restrict\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', app_targets TEXT NOT NULL DEFAULT \'\', category_targets TEXT NOT NULL DEFAULT \'\', geofence_ids TEXT NOT NULL DEFAULT \'\', geofence_trigger TEXT NOT NULL DEFAULT \'entering\', limit_minutes INTEGER, priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, rule_id))');
+      await db.execute(
+          'CREATE TABLE rule_execution_log(id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, outcome TEXT NOT NULL, reason TEXT NOT NULL, evaluated_at TEXT NOT NULL, FOREIGN KEY(family_id, rule_id) REFERENCES family_rules(family_id, rule_id))');
+      await db.execute(
+          'CREATE INDEX idx_family_rules_family ON family_rules(family_id)');
+      await db.execute(
+          'CREATE INDEX idx_rule_execution_family_time ON rule_execution_log(family_id, evaluated_at DESC)');
     }
   }
 }

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../domain/guardian_models.dart';
-import '../../domain/device_linking.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../application/family_context_provider.dart';
 import '../widgets/guardian_primitives.dart';
@@ -502,6 +501,33 @@ class _Dashboard extends ConsumerWidget {
                     : null,
                 icon: const Icon(Icons.file_download_outlined),
                 label: Text(l10n.t('rpExportTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('frRulesTitle'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewFamilyRules)
+                    ? () => context.push('/rules/$familyId')
+                    : null,
+                icon: const Icon(Icons.rule_outlined),
+                label: Text(l10n.t('frRulesTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.manageFamilyRules)
+                    ? () => context.push('/rules/$familyId/new')
+                    : null,
+                icon: const Icon(Icons.note_add_outlined),
+                label: Text(l10n.t('frNewRuleTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewFamilyRules)
+                    ? () => context.push('/rules/$familyId/conflicts')
+                    : null,
+                icon: const Icon(Icons.balance_outlined),
+                label: Text(l10n.t('frConflictsTitle')),
               ),
             ],
           ),
