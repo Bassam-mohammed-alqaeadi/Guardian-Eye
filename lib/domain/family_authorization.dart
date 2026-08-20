@@ -55,25 +55,6 @@ class FamilyAuthorization {
             FamilyPermission.viewCoupleHarmony,
             FamilyPermission.manageCoupleDecisions,
           },
-        FamilyRole.parent => {
-            // parent (member-added parent) mirrors coParent observation
-            // plus proposal authorship; plan changes stay with the owner.
-            FamilyPermission.viewFamily,
-            FamilyPermission.viewMembers,
-            FamilyPermission.viewChildren,
-            FamilyPermission.viewPolicies,
-            FamilyPermission.viewSafetyTimeline,
-            FamilyPermission.viewUsage,
-            FamilyPermission.viewChildStatus,
-            FamilyPermission.viewDeviceLinking,
-            FamilyPermission.viewReports,
-            FamilyPermission.viewFamilyRules,
-            FamilyPermission.viewTasks,
-            FamilyPermission.viewRewards,
-            FamilyPermission.viewAiInsights,
-            FamilyPermission.viewCoupleHarmony,
-            FamilyPermission.manageCoupleDecisions,
-          },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
             FamilyPermission.requestOwnException,

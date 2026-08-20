@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
-import 'package:uuid/uuid.dart';
 import '../core/database/guardian_database.dart';
 import '../domain/family_events.dart';
 import '../domain/guardian_event.dart';
-import '../domain/guardian_models.dart';
 
 /// Guardian AI — Layer 1 persistence: the family event registry.
 ///

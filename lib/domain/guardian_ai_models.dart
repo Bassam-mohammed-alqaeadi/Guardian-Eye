@@ -21,7 +21,6 @@ library guardian_ai_models;
 
 import 'dart:convert';
 
-import '../domain/family_events.dart';
 
 // ---------------------------------------------------------------------------
 // Shared enumerations

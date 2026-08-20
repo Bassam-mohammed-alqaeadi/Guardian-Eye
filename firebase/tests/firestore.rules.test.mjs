@@ -13,8 +13,8 @@ before(async () => {
     await setDoc(doc(db, 'families/family-a/members/parent-a'), {role: 'primaryParent', memberUid: 'parent-a', memberId: 'owner-local', status: 'active'});
     await setDoc(doc(db, 'families/family-a/members/child-a'), {role: 'child', memberUid: 'child-a', memberId: 'child-local', status: 'active'});
     await setDoc(doc(db, 'families/family-a/members/coparent-a'), {role: 'coParent', memberUid: 'coparent-a', memberId: 'coparent-local', status: 'active'});
-    await setDoc(doc(db, 'families/family-a/devices/device-a'), {ownerUid: 'parent-a', memberUid: 'child-a', status: 'active'});
-    await setDoc(doc(db, 'families/family-a/devices/revoked-a'), {ownerUid: 'parent-a', memberUid: 'child-a', status: 'revoked'});
+    await setDoc(doc(db, 'families/family-a/devices/device-a'), {familyId: 'family-a', ownerUid: 'parent-a', memberUid: 'child-a', status: 'active'});
+    await setDoc(doc(db, 'families/family-a/devices/revoked-a'), {familyId: 'family-a', ownerUid: 'parent-a', memberUid: 'child-a', status: 'revoked'});
     await setDoc(doc(db, 'families/family-b'), {ownerUid: 'parent-b', status: 'active'});
     await setDoc(doc(db, 'families/family-b/members/parent-b'), {role: 'primaryParent', memberUid: 'parent-b', memberId: 'owner-b-local', status: 'active'});
   });
@@ -48,7 +48,7 @@ test('primary parent cannot escalate a child role or rebind its Firebase UID', a
   await assertFails(setDoc(child, {memberUid: 'parent-a'}, {merge: true}));
 });
 
-function invitationData({invitationId, targetEmail, proposedRole = 'coParent', expiresAt = new Date('2026-08-20T00:00:00.000Z')}) {
+function invitationData({invitationId, targetEmail, proposedRole = 'coParent', expiresAt = new Date('2030-01-01T00:00:00.000Z')}) {
   return {
     familyId: 'family-a', invitationId, inviterMemberId: 'owner-local', targetEmail,
     proposedRole, status: 'pending', createdAtClient: '2026-08-12T12:00:00.000Z',
@@ -133,7 +133,7 @@ test('invitation acceptance rejects wrong, replayed, expired, cancelled, and chi
   await assertFails(acceptanceBatch(target, {invitationId: acceptedId, uid: 'adult-target-a', memberId: 'adult-target-local-a', displayName: 'Target', role: 'parent', invitation: acceptedInvitation}).commit());
 
   const expiredId = 'invite-expired-a';
-  const expiredInvitation = invitationData({invitationId: expiredId, targetEmail: 'target@example.test', expiresAt: new Date('2026-08-11T00:00:00.000Z')});
+  const expiredInvitation = invitationData({invitationId: expiredId, targetEmail: 'target@example.test', expiresAt: new Date('2020-08-11T00:00:00.000Z')});
   await environment.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), `families/family-a/invitations/${expiredId}`), expiredInvitation);
   });

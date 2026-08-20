@@ -271,21 +271,38 @@ test('revoked member: status!=active loses member() privileges (reads)', async (
   });
 });
 
+// REMEDIATION CHECK (BUG A): even with an active member, device-forged safety
+// events are denied — the revoked-member branch above plus these cases.
+test('remediation BUG A: incidents/SOS require device binding', async () => {
+  const child = environment.authenticatedContext('child-a').firestore();
+  // missing deviceId → deny
+  await assertFails(setDoc(doc(child, 'families/fam-a/incidents/inc-n1'), {
+    familyId: 'fam-a', category: 'test', severity: 'medium',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/sos/sos-n1'), {
+    familyId: 'fam-a', category: 'test', severity: 'high',
+  }));
+  // revoked device → deny
+  await assertFails(setDoc(doc(child, 'families/fam-a/incidents/inc-n2'), {
+    familyId: 'fam-a', deviceId: 'dev-revoked-a', category: 'test', severity: 'medium',
+  }));
+  // device the actor does not own → deny
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  await assertFails(setDoc(doc(parent, 'families/fam-a/incidents/inc-n3'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', category: 'test', severity: 'medium',
+  }));
+});
+
 // ============================================================================
 // 6. UNTRUSTED DEVICES
 // ============================================================================
-// ACTUAL BEHAVIOR for locations create (L187-191):
-// - create via active-owned device: the rules reference
-//   `request.resource.data.deviceId` through activeOwnedDevice — evaluation
-//   error at L189:26 in this environment means the location create rule is
-//   UNRELIABLE for the active-device case too; the seed device lookup fails
-//   the same way everywhere. Document observed denials; the family-a
-//   active-device write also denied here — so locations writes are
-//   effectively DENIED-ALL under the current local rules. Flagged as a GAP.
-test('untrusted device: locations writes under current rules (gap documented)', async () => {
+// REMEDIATED (BUG B): activeOwnedDevice now evaluates cleanly — an active
+// owned device CAN write locations; missing/unknown deviceId writes are
+// denied with a normal permission error (no evaluation failure).
+test('untrusted device: locations writes (remediated BUG B)', async () => {
   const child = environment.authenticatedContext('child-a').firestore();
-  // Active owned device — rules evaluation error at L189 → denied (BUG: active device should be allowed)
-  await assertFails(setDoc(doc(child, 'families/fam-a/locations/loc-a'), {
+  // Active owned device → ALLOWED (was an evaluation-error deny before fix)
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/locations/loc-a'), {
     familyId: 'fam-a', deviceId: 'dev-child-a', latitude: 0, longitude: 0,
   }));
   // Revoked device — denied (as required)
@@ -296,11 +313,21 @@ test('untrusted device: locations writes under current rules (gap documented)', 
   await assertFails(setDoc(doc(child, 'families/fam-a/locations/loc-c'), {
     familyId: 'fam-a', deviceId: 'dev-unknown', latitude: 0, longitude: 0,
   }));
+  // Missing deviceId — denied cleanly
+  await assertFails(setDoc(doc(child, 'families/fam-a/locations/loc-d'), {
+    familyId: 'fam-a', latitude: 0, longitude: 0,
+  }));
+  // Device the actor does not own — denied
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  await assertFails(setDoc(doc(parent, 'families/fam-a/locations/loc-e'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', latitude: 0, longitude: 0,
+  }));
 });
 
 test('untrusted device: enforcement status and usage scoped to active owned device', async () => {
   const child = environment.authenticatedContext('child-a').firestore();
   const parent = environment.authenticatedContext('parent-a').firestore();
+
   await assertSucceeds(setDoc(doc(child, 'families/fam-a/devices/dev-child-a/enforcement_status/current'), {
     familyId: 'fam-a', deviceId: 'dev-child-a', memberUid: 'child-a', lifecycle: 'online',
   }));
@@ -314,25 +341,91 @@ test('untrusted device: enforcement status and usage scoped to active owned devi
 });
 
 // ============================================================================
-// 7. FS-007 / FS-008 — tasks and rewards: NOT COVERED by local rules (implicit deny)
+// 7. FS-007 / FS-008 — tasks and rewards (REMEDIATED GAP C: rules added)
 // ============================================================================
-test('FS-007: tasks path has no rule — remote write denied (coverage gap documented)', async () => {
+test('FS-007: tasks — parent manages, child reads only', async () => {
   const parent = environment.authenticatedContext('parent-a').firestore();
-  // No match clause exists for families/{id}/tasks → implicit deny
-  await assertFails(setDoc(doc(parent, 'families/fam-a/tasks/task-a'), {
-    familyId: 'fam-a', taskId: 'task-a', title: 'Homework',
+  const child = environment.authenticatedContext('child-a').firestore();
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/tasks/task-a'), {
+    familyId: 'fam-a', taskId: 'task-a', title: 'Homework', status: 'scheduled',
   }));
+  await assertSucceeds(getDoc(doc(child, 'families/fam-a/tasks/task-a')));
+  await assertFails(setDoc(doc(child, 'families/fam-a/tasks/task-x'), {
+    familyId: 'fam-a', taskId: 'task-x', title: 'Forged', status: 'scheduled',
+  }));
+  // Contract-aligned (outbox sends no deviceId): a child may request
+  // completion only for their own member record; a forged request naming
+  // another child is denied, and a child cannot review its own request.
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/task_completions/c-y'), {
+    familyId: 'fam-a', taskId: 'task-a', childId: 'mem-child-a', action: 'requested',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/task_completions/c-z'), {
+    familyId: 'fam-a', taskId: 'task-a', childId: 'mem-spouse-a', action: 'requested',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/task_completions/c-y'), {
+    familyId: 'fam-a', taskId: 'task-a', childId: 'mem-child-a', action: 'completed',
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/task_completions/c-y'), {
+    familyId: 'fam-a', taskId: 'task-a', childId: 'mem-child-a', action: 'completed',
+  }, { merge: true }));
 });
 
-test('FS-008: rewards path has no rule — remote write denied (coverage gap documented)', async () => {
+test('FS-008: rewards — parent manages catalog and ledger; child claims', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
   const child = environment.authenticatedContext('child-a').firestore();
-  // child cannot create rewards (no rule; even if rules were added, child lacks parent() permission)
   await assertFails(setDoc(doc(child, 'families/fam-a/rewards/reward-a'), {
     familyId: 'fam-a', rewardId: 'reward-a', title: 'Ice cream', cost: 50,
   }));
-  await assertFails(setDoc(doc(child, 'families/fam-a/reward_claims/claim-a'), {
-    familyId: 'fam-a', claimId: 'claim-a', rewardId: 'reward-a',
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/rewards/reward-a'), {
+    familyId: 'fam-a', rewardId: 'reward-a', title: 'Ice cream', cost: 50,
   }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/reward_ledger/l-a'), {
+    familyId: 'fam-a', ledgerId: 'l-a', childId: 'mem-child-a', delta: 5, balanceAfter: 5,
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/reward_ledger/l-a'), {
+    familyId: 'fam-a', ledgerId: 'l-a', childId: 'mem-child-a', delta: 5, balanceAfter: 5,
+  }));
+  // Contract-aligned: child claim requests carry childId (no deviceId);
+  // the child may only claim for their own member record, never self-decide.
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/reward_claims/claim-a'), {
+    familyId: 'fam-a', claimId: 'claim-a', rewardId: 'reward-a', childId: 'mem-child-a',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/reward_claims/claim-b'), {
+    familyId: 'fam-a', claimId: 'claim-b', rewardId: 'reward-a', childId: 'mem-spouse-a',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/reward_claims/claim-a'), {
+    familyId: 'fam-a', claimId: 'claim-a', rewardId: 'reward-a', childId: 'mem-child-a', decision: 'approved',
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/reward_claims/claim-a'), {
+    familyId: 'fam-a', claimId: 'claim-a', rewardId: 'reward-a', childId: 'mem-child-a', decision: 'approved', decidedBy: 'parent-a',
+  }, { merge: true }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/reward_claims/claim-a'), {
+    familyId: 'fam-a', claimId: 'claim-a', rewardId: 'reward-a', childId: 'mem-child-a', decision: 'approved', decidedBy: 'child-a',
+  }));
+});
+
+test('FS-011: family rules — parent manages, family reads', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const child = environment.authenticatedContext('child-a').firestore();
+  const spouse = environment.authenticatedContext('spouse-a').firestore();
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/family_rules/rule-a'), {
+    familyId: 'fam-a', ruleId: 'rule-a', kind: 'app', enabled: true,
+  }));
+  await assertSucceeds(getDoc(doc(child, 'families/fam-a/family_rules/rule-a')));
+  await assertSucceeds(getDoc(doc(spouse, 'families/fam-a/family_rules/rule-a')));
+  await assertFails(setDoc(doc(child, 'families/fam-a/family_rules/rule-x'), {
+    familyId: 'fam-a', ruleId: 'rule-x', kind: 'app', enabled: true,
+  }));
+  await assertFails(setDoc(doc(spouse, 'families/fam-a/family_rules/rule-x'), {
+    familyId: 'fam-a', ruleId: 'rule-x', kind: 'app', enabled: true,
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/family_rules/rule-a'), {
+    familyId: 'fam-a', ruleId: 'rule-a', kind: 'app', enabled: false,
+  }, { merge: true }));
+  // An empty merge lacks the idempotency fields (familyId/ruleId) the update
+  // rule requires, so a partial write that could corrupt a rule document is
+  // cleanly denied — correct defense-in-depth behavior.
+  await assertFails(setDoc(doc(parent, 'families/fam-a/family_rules/rule-a'), {}));
 });
 
 // ============================================================================
@@ -384,7 +477,126 @@ test('device pairings and notification events are permanently denied', async () 
 });
 
 // ============================================================================
-// 12. DEVICE OWNERSHIP BOUNDARIES
+// 12. GAP E — geofences, web, app, monitoring, mode paths (REMEDIATED: rules added)
+// ============================================================================
+test('GAP E: geofencing — parent configures, child/family read only', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const child = environment.authenticatedContext('child-a').firestore();
+  const spouse = environment.authenticatedContext('spouse-a').firestore();
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/geofences/gf-a'), {
+    familyId: 'fam-a', geofenceId: 'gf-a', latitude: 24.7, longitude: 46.6, radius: 200,
+  }));
+  await assertSucceeds(getDoc(doc(child, 'families/fam-a/geofences/gf-a')));
+  await assertSucceeds(getDoc(doc(spouse, 'families/fam-a/geofences/gf-a')));
+  await assertFails(setDoc(doc(child, 'families/fam-a/geofences/gf-x'), {
+    familyId: 'fam-a', geofenceId: 'gf-x', latitude: 0, longitude: 0, radius: 100,
+  }));
+  await assertFails(setDoc(doc(spouse, 'families/fam-a/geofences/gf-x'), {
+    familyId: 'fam-a', geofenceId: 'gf-x', latitude: 0, longitude: 0, radius: 100,
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/favorite_places/fp-a'), {
+    familyId: 'fam-a', name: 'Home', latitude: 0, longitude: 0,
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/favorite_places/fp-x'), {
+    familyId: 'fam-a', name: 'Forged', latitude: 0, longitude: 0,
+  }));
+});
+
+test('GAP E: web filtering — device reports hits; parent configures rules', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const child = environment.authenticatedContext('child-a').firestore();
+  // hits are device-bound telemetry
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/web_hits/hit-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', domain: 'example.com',
+  }));
+  await assertFails(setDoc(doc(parent, 'families/fam-a/web_hits/hit-x'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', domain: 'example.com',
+  }));
+  await assertSucceeds(getDoc(doc(parent, 'families/fam-a/web_hits/hit-a')));
+  await assertFails(getDoc(doc(child, 'families/fam-a/web_hits/hit-a')));
+  // domain/category config is parent-only
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/web_domains/d-a'), { familyId: 'fam-a', domain: 'x.com' }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/web_domains/d-x'), { familyId: 'fam-a', domain: 'x.com' }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/web_category_rules/cr-a'), { familyId: 'fam-a', category: 'social' }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/web_category_rules/cr-x'), { familyId: 'fam-a', category: 'social' }));
+});
+
+test('GAP E: app usage — device reports blocks; parent configures policies', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const child = environment.authenticatedContext('child-a').firestore();
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/app_block_events/blk-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', packageName: 'com.x',
+  }));
+  await assertFails(setDoc(doc(parent, 'families/fam-a/app_block_events/blk-x'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', packageName: 'com.x',
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/app_policies/pol-a'), {
+    familyId: 'fam-a', category: 'games', dailyLimitMs: 3600000,
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/app_policies/pol-x'), {
+    familyId: 'fam-a', category: 'games', dailyLimitMs: 3600000,
+  }));
+});
+
+test('GAP E: monitoring — device provides evidence; parent runs sessions', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const child = environment.authenticatedContext('child-a').firestore();
+  // evidence comes from the child device, parent reads only
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/monitoring_shots/shot-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/monitoring_shots/shot-x'), {
+    familyId: 'fam-a', deviceId: 'dev-revoked-a',
+  }));
+  await assertSucceeds(getDoc(doc(parent, 'families/fam-a/monitoring_shots/shot-a')));
+  await assertFails(getDoc(doc(child, 'families/fam-a/monitoring_shots/shot-a')));
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/monitoring_evidence/ev-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', kind: 'screenshot',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/monitoring_evidence/ev-x'), {
+    familyId: 'fam-a', deviceId: 'dev-revoked-a', kind: 'screenshot',
+  }));
+  // sessions/requests/schedules are parent-authored
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/monitoring_sessions/sess-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', status: 'scheduled',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/monitoring_sessions/sess-x'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', status: 'scheduled',
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/monitoring_requests/req-a'), {
+    familyId: 'fam-a', kind: 'location',
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/monitoring_schedules/sch-a'), {
+    familyId: 'fam-a', cadenceMinutes: 30,
+  }));
+});
+
+test('GAP E: modes — config is parent-authored; activations are device-requested and parent-reviewed', async () => {
+  const parent = environment.authenticatedContext('parent-a').firestore();
+  const child = environment.authenticatedContext('child-a').firestore();
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/mode_configs/mode-a'), {
+    familyId: 'fam-a', mode: 'focus', enabled: true,
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/mode_configs/mode-x'), {
+    familyId: 'fam-a', mode: 'focus', enabled: true,
+  }));
+  // child device requests; parent decides
+  await assertSucceeds(setDoc(doc(child, 'families/fam-a/mode_activations/act-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', state: 'requested',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/mode_activations/act-b'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', state: 'activated',
+  }));
+  await assertFails(setDoc(doc(child, 'families/fam-a/mode_activations/act-c'), {
+    familyId: 'fam-a', deviceId: 'dev-revoked-a', state: 'requested',
+  }));
+  await assertSucceeds(setDoc(doc(parent, 'families/fam-a/mode_activations/act-a'), {
+    familyId: 'fam-a', deviceId: 'dev-child-a', state: 'activated',
+  }, { merge: true }));
+});
+
+// ============================================================================
+// 13. DEVICE OWNERSHIP BOUNDARIES
 // ============================================================================
 test('device ownership: only recorded parent owner can update device; child cannot register devices', async () => {
   const child = environment.authenticatedContext('child-a').firestore();

@@ -383,7 +383,10 @@ class GuardianAiDeterministicEngine {
     final existingIds =
         existing.map((s) => '$s.titleKey:${s.appliesToChildIds}').toSet();
     for (final state in states) {
-      final profile = profiles.firstWhere((p) => p.childId == state.childId);
+      // L8 only acts on children that have a registered behavior profile
+      // (a risk state without a profile means the data pipeline is
+      // incomplete — no suggestion would be well-founded).
+      if (!profiles.any((p) => p.childId == state.childId)) continue;
       if (state.level == AiRiskLevel.watch ||
           state.level == AiRiskLevel.alert) {
         final hasSos = state.contributors

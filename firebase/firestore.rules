@@ -10,21 +10,47 @@ service cloud.firestore {
     }
     function parent(familyId) { return activeMember(familyId) && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role in ['primaryParent', 'parent', 'coParent']; }
     function owner(familyId) { return activeMember(familyId) && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role == 'primaryParent'; }
+    function memberId(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.memberId;
+    }
     function creatingOwnFamily(familyId) { return signedIn() && existsAfter(/databases/$(database)/documents/families/$(familyId)) && getAfter(/databases/$(database)/documents/families/$(familyId)).data.ownerUid == request.auth.uid; }
+    // FIX (BUG A + BUG B): the device lookup is guarded with exists() and
+    // the deviceId field is required to be a non-empty string AND to match
+    // the device's own familyId before any get() is evaluated. This removes
+    // the silent evaluation failure that made locations writes unreliable,
+    // and it binds every device-originated write to an active owned device.
     function activeOwnedDevice(familyId, deviceId) {
       return signedIn()
+        && deviceId is string && deviceId != ''
         && exists(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId))
+        && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.familyId == familyId
         && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.status == 'active'
         && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.memberUid == request.auth.uid;
     }
     function activeTokenDevice(familyId, deviceId) {
       return signedIn()
+        && deviceId is string && deviceId != ''
         && exists(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId))
+        && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.familyId == familyId
         && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.status == 'active'
         && (get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.memberUid == request.auth.uid
           || (get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.ownerUid == request.auth.uid
             && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.memberUid == null
             && get(/databases/$(database)/documents/families/$(familyId)/devices/$(deviceId)).data.role in ['parentDevice', 'coParentDevice', 'spouseDevice']));
+    }
+    // FIX (BUG A): safety-event writes are device-bound. A member reporting
+    // from the parent app must tag the originating device; a bare
+    // activeMember branch allowed revoked-device members to forge events.
+    function deviceBoundEvent(familyId, data) {
+      // FIX (revoked members): membership status is enforced in addition to
+      // device binding. A revoked member keeps their device records active
+      // until purged, so a device-bound write without a member check would
+      // let a revoked member forge events from their still-active device.
+      return activeMember(familyId)
+        && data.familyId == familyId
+        && data.keys().hasAll(['deviceId'])
+        && data.deviceId is string && data.deviceId != ''
+        && activeOwnedDevice(familyId, data.deviceId);
     }
     match /families/{familyId} {
       allow read: if activeMember(familyId);
@@ -158,40 +184,265 @@ service cloud.firestore {
       match /device_pairings/{pairingId} { allow read, write: if false; }
       match /incidents/{incidentId} {
         allow read: if parent(familyId);
-        // Incidents may be written by:
-        //   a) A child device that owns itself (activeOwnedDevice) — AI/detection path.
-        //   b) Any active family member (activeMember) — parent-side observation.
-        // Family isolation is enforced in both branches via familyId field.
-        allow create: if (
-            activeMember(familyId)
-            && request.resource.data.familyId == familyId
-          ) || (
-            activeOwnedDevice(familyId, request.resource.data.deviceId)
-          );
+        // FIX (BUG A): every incident write must be bound to an active
+        // owned device belonging to the reporting member, in the same
+        // family as the incident. The old activeMember branch allowed any
+        // active member (including one whose own device had been revoked)
+        // to forge safety events without device attribution.
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
         allow update: if parent(familyId) && resource.data.familyId == familyId;
         allow delete: if owner(familyId);
       }
       match /sos/{sosId} {
         allow read: if parent(familyId);
-        // SOS may be written by an active child-owned device OR any active member.
-        allow create: if (
-            activeMember(familyId)
-            && request.resource.data.familyId == familyId
-          ) || (
-            request.resource.data.deviceId is string
-            && activeOwnedDevice(familyId, request.resource.data.deviceId)
-          );
+        // FIX (BUG A): SOS writes are device-bound; a bare activeMember
+        // branch is removed for the same forgery reasons as incidents.
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
         allow update: if parent(familyId) && resource.data.familyId == familyId;
         allow delete: if false;
       }
+      // FIX (BUG B): the device helper evaluates cleanly even when the
+      // payload deviceId is missing/empty (explicit deny), a cross-family
+      // deviceId is rejected by deviceStatus familyId check, and a valid
+      // active owned device write is explicitly allowed.
       match /locations/{locationId} {
         allow read: if parent(familyId);
-        allow create: if activeOwnedDevice(familyId, request.resource.data.deviceId);
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
         allow update, delete: if owner(familyId);
       }
       match /messages/{messageId} { allow read, create: if member(familyId); allow update: if member(familyId); allow delete: if parent(familyId); }
       match /sync_events/{eventId} { allow read: if parent(familyId); allow create: if member(familyId) && request.resource.data.authorUid == request.auth.uid; allow update, delete: if false; }
       match /notification_events/{eventId} { allow read: if parent(familyId); allow create, update, delete: if false; }
+
+      // ============================================================
+      // GAP C — FS-007 tasks, FS-008 rewards, FS-011 family rules
+      // Contract: lib/data/firestore_contracts.dart (outbox sync paths).
+      // ============================================================
+      // FS-007 tasks: parent-authored; family-wide read.
+      match /tasks/{taskId} {
+        allow read: if member(familyId);
+        allow create: if parent(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.taskId == taskId
+          && request.resource.data.status is string;
+        allow update: if parent(familyId)
+          && resource.data.familyId == familyId
+          && request.resource.data.familyId == resource.data.familyId
+          && request.resource.data.taskId == resource.data.taskId;
+        allow delete: if false;
+      }
+      // FS-007 completions: a child completes its own assigned task;
+      // the parent reviews the completion lifecycle.
+      match /task_completions/{logId} {
+        allow read: if member(familyId);
+        // FIX (evaluation safety + contract alignment): the completion log
+        // comes from the outbox sync and carries NO deviceId (lib/data
+        // firestore_contracts.dart family_task_completion fields only).
+        // The child request branch therefore requires an active member
+        // whose member record is the claimed child; the parent branch
+        // requires a parent role. Each branch guards its own fields so
+        // a missing field on one branch cannot raise a Property undefined
+        // evaluation error across the whole expression.
+        allow create: if (request.resource.data.familyId == familyId
+            && request.resource.data.action is string
+            && request.resource.data.action == 'requested'
+            && request.resource.data.childId == memberId(familyId)
+            && activeMember(familyId)
+          ) || (
+            parent(familyId)
+            && request.resource.data.familyId == familyId
+            && request.resource.data.action is string
+            && request.resource.data.action in ['completed', 'declined']
+          );
+        allow update: if (
+            parent(familyId)
+            && resource.data.familyId == familyId
+            && request.resource.data.familyId == resource.data.familyId
+            && request.resource.data.action in ['completed', 'declined']
+          );
+        allow delete: if false;
+      }
+      // FS-008 reward catalog: parent manages; everyone reads.
+      match /rewards/{rewardId} {
+        allow read: if member(familyId);
+        allow create: if parent(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.rewardId == rewardId;
+        allow update: if parent(familyId)
+          && resource.data.familyId == familyId
+          && request.resource.data.familyId == resource.data.familyId
+          && request.resource.data.rewardId == resource.data.rewardId
+          && request.resource.data.name == resource.data.name;
+        allow delete: if false;
+      }
+      // FS-008 claims: child requests its own claim; parent decides.
+      match /reward_claims/{claimId} {
+        allow read: if member(familyId);
+        // FIX (evaluation safety + contract alignment): the child claim
+        // request comes from the child member context (lib/data
+        // family_rewards_repository.dart sends no deviceId), so the child
+        // branch checks active member ownership of the claim instead of a
+        // device. Each OR branch guards its own fields so a missing
+        // 'decision'/'decidedBy' can never raise a Property undefined
+        // evaluation error across the expression.
+        allow create: if (request.resource.data.familyId == familyId
+            && request.resource.data.claimId == claimId
+            && request.resource.data.childId == memberId(familyId)
+            && !('decision' in request.resource.data)
+            && !('decidedBy' in request.resource.data)
+          ) || (
+            'decision' in request.resource.data
+            && request.resource.data.decision is string
+            && parent(familyId)
+            && request.resource.data.familyId == familyId
+            && request.resource.data.claimId == claimId
+            && request.resource.data.decision in ['approved', 'declined']
+            && request.resource.data.decidedBy == request.auth.uid
+          );
+        allow update: if parent(familyId)
+          && resource.data.familyId == familyId
+          && request.resource.data.familyId == resource.data.familyId
+          && request.resource.data.decision in ['approved', 'declined']
+          && request.resource.data.decidedBy == request.auth.uid;
+        allow delete: if false;
+      }
+      // FS-008 ledger: append-only, parent-authored entries.
+      match /reward_ledger/{ledgerId} {
+        allow read: if parent(familyId);
+        allow create: if parent(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.ledgerId == ledgerId
+          && request.resource.data.childId is string
+          && request.resource.data.delta is int
+          && request.resource.data.balanceAfter is int
+          && request.resource.data.balanceAfter >= 0;
+        allow update, delete: if false;
+      }
+      // FS-011 family rules: parent-authored; family-wide read.
+      match /family_rules/{ruleId} {
+        allow read: if member(familyId);
+        allow create: if parent(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.ruleId == ruleId
+          && request.resource.data.kind is string;
+        allow update: if parent(familyId)
+          && resource.data.familyId == familyId
+          && request.resource.data.familyId == resource.data.familyId
+          && request.resource.data.ruleId == resource.data.ruleId;
+        allow delete: if parent(familyId) && resource.data.familyId == familyId;
+      }
+
+      // ============================================================
+      // GAP E — geofencing, web filtering, app usage, monitoring, modes.
+      // Contract: lib/data/firestore_contracts.dart (outbox sync paths).
+      // ============================================================
+      // FS-001 geofence configuration: parent-authored, family read.
+      match /geofences/{geofenceId} {
+        allow read: if member(familyId);
+        allow create: if parent(familyId)
+          && request.resource.data.familyId == familyId
+          && request.resource.data.geofenceId == geofenceId
+          && request.resource.data.latitude is number
+          && request.resource.data.longitude is number
+          && request.resource.data.radius is number;
+        allow update: if parent(familyId)
+          && resource.data.familyId == familyId
+          && request.resource.data.familyId == resource.data.familyId
+          && request.resource.data.geofenceId == resource.data.geofenceId;
+        allow delete: if parent(familyId) && resource.data.familyId == familyId;
+      }
+      match /favorite_places/{placeKey} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      match /location_settings/{key} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      // FS-002 web filtering: hits arrive from child devices (device-bound);
+      // domain/category rule config is parent-authored.
+      match /web_hits/{hitId} {
+        allow read: if parent(familyId);
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
+        allow update, delete: if false;
+      }
+      match /web_domains/{domainId} {
+        allow read: if member(familyId);
+        allow create, update: if parent(familyId) && request.resource.data.familyId == familyId;
+        allow delete: if parent(familyId) && resource.data.familyId == familyId;
+      }
+      match /web_category_rules/{ruleId} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      match /web_settings/{key} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      // FS-003 app usage: parent policy config; block events are
+      // device-reported telemetry.
+      match /app_policies/{policyId} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      match /app_allowlists/{entryId} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      match /app_block_events/{eventId} {
+        allow read: if parent(familyId);
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
+        allow update, delete: if false;
+      }
+      match /usage_alert_settings/{key} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      // FS-014 monitoring: evidence comes from the child device (device-bound);
+      // sessions, requests and schedules are parent-authored.
+      match /monitoring_shots/{shotId} {
+        allow read: if parent(familyId);
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
+        allow update, delete: if false;
+      }
+      match /monitoring_sessions/{sessionId} {
+        allow read: if parent(familyId);
+        allow create: if parent(familyId) && request.resource.data.familyId == familyId;
+        allow update: if parent(familyId) && resource.data.familyId == familyId;
+        allow delete: if parent(familyId);
+      }
+      match /monitoring_requests/{requestId} {
+        allow read: if parent(familyId);
+        allow create: if parent(familyId) && request.resource.data.familyId == familyId;
+        allow update, delete: if false;
+      }
+      match /monitoring_schedules/{scheduleId} {
+        allow read: if parent(familyId);
+        allow create: if parent(familyId) && request.resource.data.familyId == familyId;
+        allow update: if parent(familyId);
+        allow delete: if parent(familyId);
+      }
+      match /monitoring_evidence/{evidenceId} {
+        allow read: if parent(familyId);
+        allow create: if deviceBoundEvent(familyId, request.resource.data);
+        allow update, delete: if false;
+      }
+      // FS-005 modes: config is parent-authored; activations are requested
+      // by the child's own device and reviewed by a parent.
+      match /mode_configs/{modeId} {
+        allow read: if member(familyId);
+        allow create, update, delete: if parent(familyId);
+      }
+      match /mode_activations/{activationId} {
+        allow read: if member(familyId);
+        allow create: if deviceBoundEvent(familyId, request.resource.data)
+          && request.resource.data.state == 'requested'
+          || (parent(familyId) && request.resource.data.familyId == familyId);
+        allow update: if parent(familyId)
+          && resource.data.familyId == familyId
+          && request.resource.data.state in ['activated', 'denied', 'expired'];
+        allow delete: if parent(familyId);
+      }
     }
   }
 }
