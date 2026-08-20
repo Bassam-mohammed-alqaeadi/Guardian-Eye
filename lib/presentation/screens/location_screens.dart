@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +9,7 @@ import '../../domain/guardian_models.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/theme/guardian_tokens.dart';
 import '../../data/location_repository.dart';
+import '../../core/platform/android_location_tracking_adapter.dart';
 import '../widgets/guardian_map_widget.dart';
 import '../widgets/guardian_primitives.dart';
 
@@ -1837,6 +1839,10 @@ class _LocationSettingsBodyState extends ConsumerState<_LocationSettingsBody> {
                   ),
                 ]),
                 const SizedBox(height: 16),
+                GuardianSection(title: l10n.t('m9TrackingTitle'), children: [
+                  _BackgroundTrackingCard(familyId: widget.familyId),
+                ]),
+                const SizedBox(height: 16),
                 GuardianSection(title: l10n.t('sharingMatrix'), children: [
                   GuardianCard(
                     child: members.isEmpty
@@ -1894,6 +1900,203 @@ class _LocationSettingsBodyState extends ConsumerState<_LocationSettingsBody> {
         );
       },
     );
+  }
+}
+
+// ──────────────────── M9 Background tracking card ─────────────────────
+/// Honest M9 background tracking state inside location settings.
+///
+/// Shows only what the native layer confirmed: armed state from the
+/// durable pref + service, a real fix when the OS returned one, and the
+/// permission gap when it did not. The enable path requests fine and
+/// background consent before arming; disable disarms both layers.
+/// `GuardianStateView.error` is used (never a fake "on" card) when the
+/// native side reports a failure.
+class _BackgroundTrackingCard extends ConsumerStatefulWidget {
+  const _BackgroundTrackingCard({required this.familyId});
+  final String familyId;
+
+  @override
+  ConsumerState<_BackgroundTrackingCard> createState() =>
+      _BackgroundTrackingCardState();
+}
+
+class _BackgroundTrackingCardState
+    extends ConsumerState<_BackgroundTrackingCard> {
+  Future<TrackingState>? _stateFuture;
+  bool _busy = false;
+
+  Future<TrackingState> _loadState() =>
+      ref.read(backgroundLocationServiceProvider).getTrackingState();
+
+  Future<void> _toggle(bool turnOn) async {
+    if (_busy || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final service = ref.read(backgroundLocationServiceProvider);
+      final l10n = AppLocalizations.of(context);
+      if (turnOn) {
+        final result = await service.enable(
+            familyId: widget.familyId, intervalMs: 60000);
+        if (result.status == 'permissionRequired') {
+          final snackBar = SnackBar(
+              content:
+                  Text(l10n.t('m9TrackingBackgroundPermissionRequired')));
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(snackBar);
+            if (await openAppSettings()) return;
+            if (await Permission.locationAlways
+                .request()
+                .then((status) => status.isGranted)) {
+              await service.enable(familyId: widget.familyId);
+            }
+          }
+        } else if (result.status != 'started') {
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                  SnackBar(content: Text(l10n.t('m9TrackingServiceFailed'))));
+          }
+        }
+      } else {
+        await service.disable();
+      }
+    } catch (_) {
+      // Honest failure: the snapshot will still be readable on the
+      // next refresh; never present a fabricated state.
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        _stateFuture = null;
+      }
+    }
+  }
+
+  Future<void> _refresh() async {
+    _stateFuture = null;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    _stateFuture ??= _loadState();
+    return FutureBuilder<TrackingState>(
+      future: _stateFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const GuardianStateView(state: GuardianViewState.loading);
+        }
+        final state = snapshot.data ??
+            const TrackingState(
+                enabled: false, intervalMs: 60000, permissionsGranted: false);
+        if (state.reason != null && !state.enabled && !state.permissionsGranted) {
+          return GuardianStateView(
+            state: GuardianViewState.error,
+            title: l10n.t('m9TrackingPermissionRequired'),
+            message: l10n.t('m9TrackingPermissionsNote'),
+            onRetry: _refresh,
+            onPrimaryAction: () async {
+              if (await openAppSettings()) await _refresh();
+            },
+            primaryActionLabel: l10n.t('settings'),
+          );
+        }
+        if (state.reason == 'service_start_failed:exception' ||
+            state.reason == 'service_start_failed') {
+          return GuardianStateView(
+            state: GuardianViewState.error,
+            title: l10n.t('m9TrackingServiceFailed'),
+            onRetry: () async => _toggle(true),
+          );
+        }
+        final armed = state.enabled;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              GuardianIconBadge(
+                  icon: Icons.location_on_outlined,
+                  background: armed
+                      ? GuardianTokens.guardianTeal.withValues(alpha: 0.25)
+                      : Colors.white12,
+                  foreground: armed ? GuardianTokens.guardianTeal : Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        armed
+                            ? l10n.t('m9TrackingStatusOn')
+                            : l10n.t('m9TrackingStatusOff'),
+                        style: Theme.of(context).textTheme.titleSmall),
+                    if (!armed) ...[
+                      const SizedBox(height: 2),
+                      Text(l10n.t('m9TrackingPermissionsNote'),
+                          style:
+                              TextStyle(color: Colors.white38, fontSize: 12)),
+                    ],
+                  ],
+                ),
+              ),
+              if (state.latestCapturedAt != null) ...[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                        '${state.latestLatitude!.toStringAsFixed(4)}, '
+                        '${state.latestLongitude!.toStringAsFixed(4)}',
+                        style: Theme.of(context).textTheme.labelSmall),
+                    const SizedBox(height: 2),
+                    Text('${l10n.t('m9TrackingCapturedAt')}: '
+                        '${_formatTime(state.latestCapturedAt!)}',
+                        style: TextStyle(
+                            color: Colors.white38, fontSize: 10)),
+                  ],
+                ),
+              ],
+            ]),
+            if (armed) ...[
+              const SizedBox(height: 10),
+              Text(
+                  '${l10n.t('m9TrackingIntervalLabel')}: '
+                  '${(state.intervalMs ~/ 1000)}s · '
+                  '${l10n.t('m9TrackingAccuracyLabel')}: '
+                  '${(state.latestAccuracyMeters ?? 0).round()}m',
+                  style: TextStyle(color: Colors.white38, fontSize: 12)),
+            ],
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _busy ? null : () => _toggle(!armed),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: armed
+                          ? Colors.white12
+                          : GuardianTokens.guardianTeal),
+                  child: Text(
+                      armed ? l10n.t('m9TrackingDisable') : l10n.t('m9TrackingEnable')),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white54),
+                onPressed: _busy ? null : _refresh,
+              ),
+            ]),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatTime(DateTime at) {
+    return '${at.hour.toString().padLeft(2, '0')}:'
+        '${at.minute.toString().padLeft(2, '0')}';
   }
 }
 

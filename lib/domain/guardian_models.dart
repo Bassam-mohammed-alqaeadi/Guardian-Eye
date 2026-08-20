@@ -55,6 +55,22 @@ enum FamilyPermission {
   manageRewards,
   requestOwnRedemption,
   viewOwnRewards,
+
+  // Guardian AI (9 layers) — parents observe the intelligence hub, may
+  // manage consent scopes and transparency deletions; a spouse observes
+  // insights read-only.
+  viewAiInsights,
+  manageAiConsent,
+
+  // FS-013 — Couple Harmony. Spouses view harmony screens and read their
+  // own linking state; decision and routine authorship stay with the
+  // primary parent / co-parent roles.
+  viewCoupleHarmony,
+  manageCoupleDecisions,
+
+  // ST-001 — Subscription. Only the primary parent views or changes the
+  // family plan, entitlements, and billing.
+  manageSubscription,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }

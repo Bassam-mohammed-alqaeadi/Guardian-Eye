@@ -7,6 +7,16 @@
     <!-- Required on Android 15+ (API 35+) when a foreground service uses the
          dataSync type; declared for the M8 monitoring service (M8C closure). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Location permissions for real-time background location tracking
+         (foreground service of Android type `location`). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- ACCESS_BACKGROUND_LOCATION is a runtime grant on Android 10+; the app
+         asks for it through the permission flow before starting tracking. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <!-- Required on Android 14+ (API 34+) when a foreground service uses the
+         `location` type; without it the OS rejects startForeground entirely. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 <application
@@ -40,6 +50,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Background location tracking: transparent foreground service of
+             Android type `location`. Captures fresh positions on a fixed
+             interval so the family map and location history stay fresh while
+             the app is in the background (boot resilience via BootReceiver).
+             Android 14+ (API 34+): foregroundServiceType MUST match the
+             workload; `location` is the legitimate type for position capture
+             and requires the FOREGROUND_SERVICE_LOCATION permission declared
+             above. -->
+        <service
+            android:name=".LocationTrackingService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         <!-- M8 screen-time enforcement: transparent foreground monitoring service.
              foregroundServiceType="dataSync" (M8C closure, 2026-08-16): the service's
              real workload is collecting usage observations that feed the family

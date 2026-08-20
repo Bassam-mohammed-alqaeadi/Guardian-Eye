@@ -5,6 +5,8 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -103,6 +105,106 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+
+        // Background location tracking channel (com.guardianeye.app/location_tracking).
+        // Honest contract: the Flutter side owns persistence (recordPoint + outbox);
+        // this channel only starts/stops the Android foreground service and reports
+        // its actual observed state. No coordinates are ever fabricated: when the
+        // human has not granted location permissions the state reports
+        // `permissionRequired` rather than a synthetic point.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.guardianeye.app/location_tracking")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getLocationTrackingState" -> result.success(buildLocationTrackingStateMap())
+                    "startLocationTracking" -> {
+                        val intervalMs = ((call.argument<Int>("intervalMs") ?: 60000).toInt())
+                            .coerceIn(30000, 300000)
+                        if (!areLocationPermissionsGranted()) {
+                            result.success(mapOf(
+                                "status" to "permissionRequired",
+                                "reason" to "location_permission_not_granted"
+                            ))
+                            return@setMethodCallHandler
+                        }
+                        val trackingPrefs = getSharedPreferences(
+                            LocationTrackingService.LOCATION_PREFS, Context.MODE_PRIVATE)
+                        trackingPrefs.edit()
+                            .putBoolean(LocationTrackingService.KEY_ENABLED, true)
+                            .putInt(LocationTrackingService.KEY_INTERVAL_MS, intervalMs)
+                            .apply()
+                        val intent = Intent(this@MainActivity, LocationTrackingService::class.java)
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(intent)
+                            } else {
+                                startService(intent)
+                            }
+                            result.success(mapOf("status" to "started"))
+                        } catch (exception: Exception) {
+                            trackingPrefs.edit()
+                                .putBoolean(LocationTrackingService.KEY_ENABLED, false)
+                                .apply()
+                            result.success(mapOf(
+                                "status" to "failed",
+                                "reason" to "service_start_failed:${exception.javaClass.simpleName}"
+                            ))
+                        }
+                    }
+                    "stopLocationTracking" -> {
+                        val trackingPrefs = getSharedPreferences(
+                            LocationTrackingService.LOCATION_PREFS, Context.MODE_PRIVATE)
+                        trackingPrefs.edit()
+                            .putBoolean(LocationTrackingService.KEY_ENABLED, false)
+                            .apply()
+                        val intent = Intent(this@MainActivity, LocationTrackingService::class.java)
+                        try {
+                            stopService(intent)
+                        } catch (exception: Exception) {
+                            // Stopping an already-stopped service can throw harmlessly
+                            // on some Android versions; the enabled flag is durable so
+                            // the service will not restart itself.
+                        }
+                        result.success(mapOf("status" to "stopped"))
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun areLocationPermissionsGranted(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+                return false
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+                // Tracking will run while the app is in the foreground either way,
+                // but the Flutter channel reports honestly that background updates
+                // are unavailable until the human grants the extra permission.
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun buildLocationTrackingStateMap(): Map<String, Any?> {
+        val latest = LocationTrackingService.latestPoint(this)
+        val latestAt = LocationTrackingService.latestPointAt(this)
+        val trackingPrefs = getSharedPreferences(
+            LocationTrackingService.LOCATION_PREFS, Context.MODE_PRIVATE)
+        val enabled = trackingPrefs.getBoolean(LocationTrackingService.KEY_ENABLED, false)
+        val intervalMs = trackingPrefs.getInt(LocationTrackingService.KEY_INTERVAL_MS, 60000)
+        return mapOf(
+            "enabled" to enabled,
+            "intervalMs" to intervalMs,
+            "permissionsGranted" to areLocationPermissionsGranted(),
+            "latestPoint" to (latest ?: mapOf("status" to "noPoint", "reason" to "no_capture_yet")),
+            "lastPointAt" to if (latestAt > 0L) Instant.ofEpochMilli(latestAt).toString() else null,
+            "serviceRunning" to if (enabled) "expected" else "not_expected"
+        )
+    }
 
     private fun buildEnforcementStateMap(): Map<String, Any?> {
         val granted = try {

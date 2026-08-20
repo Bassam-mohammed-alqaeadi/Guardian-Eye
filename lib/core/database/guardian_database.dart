@@ -15,13 +15,17 @@ class GuardianDatabase {
   Database? _database;
   final DatabaseFactory? _factory;
   final Future<String> Function()? _pathResolver;
+
+  /// Synchronous access to the already-initialized database, or `null` if it has not been opened yet. Repositories that need a [Database] today must first ensure initialization via [initialize] and then read this.
+  Database? get activeDatabase => _database;
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     final path = _pathResolver != null
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 24,
+        version: 28,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -247,6 +251,74 @@ class GuardianDatabase {
     // channel (NULL preserves legacy rows and outbox semantics).
     await db.execute(
         'ALTER TABLE notification_events ADD COLUMN recipient_id TEXT');
+
+    // Phases 9 / Guardian AI / FS-013 / ST — tables also covered by _upgradeSchema migrations v25..v28 (idempotent).
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS family_events(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), member_id TEXT, child_id TEXT, device_id TEXT, type TEXT NOT NULL, privacy_class TEXT NOT NULL DEFAULT \'operational\', attributes_json TEXT NOT NULL DEFAULT \'{}\', occurred_at TEXT NOT NULL, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_family_events_family_occurred ON family_events(family_id, occurred_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS normalized_signals(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, signal_key TEXT NOT NULL, weight REAL NOT NULL DEFAULT 1.0, occurred_at TEXT NOT NULL, outcome TEXT NOT NULL DEFAULT \'allowed\', privacy_class TEXT NOT NULL DEFAULT \'operational\', source_event_id TEXT, reject_reason TEXT, consent_scope TEXT NOT NULL DEFAULT \'{}\', created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_normalized_signals_key ON normalized_signals(family_id, signal_key, occurred_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_consent_scopes(family_id TEXT PRIMARY KEY REFERENCES families(id), consent_scope TEXT NOT NULL DEFAULT \'{}\', updated_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS source_event_tracking(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), source_event_id TEXT NOT NULL, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_source_events_family ON source_event_tracking(family_id, source_event_id)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_risk_states(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, level TEXT NOT NULL DEFAULT \'safe\', deterministic_only INTEGER NOT NULL DEFAULT 1, contributors_json TEXT NOT NULL DEFAULT \'[]\', evaluated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ai_risk_states_family ON ai_risk_states(family_id, child_id, evaluated_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_behavior_profiles(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, weekday INTEGER NOT NULL, hour INTEGER NOT NULL, usage_seconds REAL NOT NULL DEFAULT 0.0, deviation_percent REAL NOT NULL DEFAULT 0.0, window_start TEXT NOT NULL, window_end TEXT NOT NULL, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ai_behavior_profile ON ai_behavior_profiles(family_id, child_id, weekday, hour)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_insights(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), category TEXT NOT NULL, severity TEXT NOT NULL DEFAULT \'info\', title TEXT NOT NULL, body TEXT NOT NULL, evidence_json TEXT NOT NULL DEFAULT \'[]\', created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ai_insights_family ON ai_insights(family_id, created_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_detections(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, category TEXT NOT NULL, severity_band TEXT NOT NULL, confidence_band TEXT NOT NULL, source TEXT NOT NULL, model_version TEXT NOT NULL, reference_id TEXT, detected_at TEXT NOT NULL, reviewed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ai_detections_family ON ai_detections(family_id, detected_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_copilot_suggestions(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), period TEXT NOT NULL, period_start TEXT NOT NULL, period_end TEXT NOT NULL, body_json TEXT NOT NULL DEFAULT \'\', evidence_json TEXT NOT NULL DEFAULT \'[]\', data_sufficiency TEXT NOT NULL DEFAULT \'insufficient\', status TEXT NOT NULL DEFAULT \'proposed\', applied_at TEXT, dismissed_at TEXT, outcome_note TEXT, effect_after_days TEXT, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ai_copilot_suggestions_family ON ai_copilot_suggestions(family_id, created_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS ai_policy_proposals(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, body TEXT, rationale TEXT, status TEXT NOT NULL DEFAULT \'pending\', reason_json TEXT NOT NULL DEFAULT \'[]\', applied_at TEXT, dismissed_at TEXT, outcome_note TEXT, effect_after_days TEXT, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_ai_policy_proposals_family ON ai_policy_proposals(family_id, status, created_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS couple_linking(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), partner_member_id TEXT NOT NULL, request_state TEXT NOT NULL DEFAULT \'requested\', requested_by TEXT, requested_at TEXT NOT NULL, responded_at TEXT, created_at TEXT NOT NULL DEFAULT \'\')');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_couple_linking_family ON couple_linking(family_id, request_state)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS couple_proposals(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT, proposed_by TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', reviewed_by TEXT, reviewed_at TEXT, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT \'\')');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_couple_proposals_family ON couple_proposals(family_id, status, expires_at)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS couple_routines(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, assigned_child_ids TEXT NOT NULL DEFAULT \'\', weekdays TEXT NOT NULL DEFAULT \'\', start_minute INTEGER NOT NULL, end_minute INTEGER NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, created_by TEXT, created_at TEXT NOT NULL DEFAULT \'\', updated_at TEXT NOT NULL DEFAULT \'\')');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_couple_routines_family ON couple_routines(family_id, enabled)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS couple_responsibilities(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), area TEXT NOT NULL, owner_member_id TEXT NOT NULL, delegate_member_id TEXT, effective_from TEXT NOT NULL, effective_until TEXT, created_at TEXT NOT NULL DEFAULT \'\')');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_couple_responsibilities_family ON couple_responsibilities(family_id, area)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS couple_handovers(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), from_member_id TEXT NOT NULL, to_member_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', requested_at TEXT NOT NULL, completed_at TEXT, created_at TEXT NOT NULL DEFAULT \'\')');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_couple_handovers_family_status ON couple_handovers(family_id, status, requested_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS subscription_entitlements(family_id TEXT NOT NULL REFERENCES families(id), feature TEXT NOT NULL, granted INTEGER NOT NULL DEFAULT 0, policy TEXT NOT NULL DEFAULT \'local\', granted_at TEXT, expires_at TEXT, PRIMARY KEY(family_id, feature))');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS subscription_usage_limits(family_id TEXT NOT NULL REFERENCES families(id), feature TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, limit_ INTEGER NOT NULL DEFAULT 0, period_start TEXT NOT NULL, period_end TEXT NOT NULL, PRIMARY KEY(family_id, feature))');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS billing_records(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), kind TEXT NOT NULL DEFAULT \'purchase\', amount_minor_units INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT \'USD\', status TEXT NOT NULL DEFAULT \'pending\', reference TEXT, created_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_billing_family_time ON billing_records(family_id, created_at DESC)');
   }
 
   Future<void> _upgradeSchema(
@@ -499,6 +571,109 @@ class GuardianDatabase {
         await db.execute(
             "ALTER TABLE family_rules ADD COLUMN linked_task_id TEXT NOT NULL DEFAULT ''");
       }
+    }
+
+    if (oldVersion < 25) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS family_events(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), member_id TEXT, child_id TEXT, device_id TEXT, type TEXT NOT NULL, privacy_class TEXT NOT NULL DEFAULT \'operational\', attributes_json TEXT NOT NULL DEFAULT \'{}\', occurred_at TEXT NOT NULL, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_family_events_family_occurred ON family_events(family_id, occurred_at DESC)');
+    }
+    if (oldVersion < 25) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS normalized_signals(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, signal_key TEXT NOT NULL, weight REAL NOT NULL DEFAULT 1.0, occurred_at TEXT NOT NULL, outcome TEXT NOT NULL DEFAULT \'allowed\', privacy_class TEXT NOT NULL DEFAULT \'operational\', source_event_id TEXT, reject_reason TEXT, consent_scope TEXT NOT NULL DEFAULT \'{}\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_normalized_signals_key ON normalized_signals(family_id, signal_key, occurred_at DESC)');
+    }
+    if (oldVersion < 25) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_consent_scopes(family_id TEXT PRIMARY KEY REFERENCES families(id), consent_scope TEXT NOT NULL DEFAULT \'{}\', updated_at TEXT NOT NULL)');
+    }
+    if (oldVersion < 25) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS source_event_tracking(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), source_event_id TEXT NOT NULL, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_source_events_family ON source_event_tracking(family_id, source_event_id)');
+    }
+    if (oldVersion < 26) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_risk_states(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, level TEXT NOT NULL DEFAULT \'safe\', deterministic_only INTEGER NOT NULL DEFAULT 1, contributors_json TEXT NOT NULL DEFAULT \'[]\', evaluated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_ai_risk_states_family ON ai_risk_states(family_id, child_id, evaluated_at DESC)');
+    }
+    if (oldVersion < 26) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_behavior_profiles(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, weekday INTEGER NOT NULL, hour INTEGER NOT NULL, usage_seconds REAL NOT NULL DEFAULT 0.0, deviation_percent REAL NOT NULL DEFAULT 0.0, window_start TEXT NOT NULL, window_end TEXT NOT NULL, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_ai_behavior_profile ON ai_behavior_profiles(family_id, child_id, weekday, hour)');
+    }
+    if (oldVersion < 26) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_insights(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), category TEXT NOT NULL, severity TEXT NOT NULL DEFAULT \'info\', title TEXT NOT NULL, body TEXT NOT NULL, evidence_json TEXT NOT NULL DEFAULT \'[]\', created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_ai_insights_family ON ai_insights(family_id, created_at DESC)');
+    }
+    if (oldVersion < 26) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_detections(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT, category TEXT NOT NULL, severity_band TEXT NOT NULL, confidence_band TEXT NOT NULL, source TEXT NOT NULL, model_version TEXT NOT NULL, reference_id TEXT, detected_at TEXT NOT NULL, reviewed INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_ai_detections_family ON ai_detections(family_id, detected_at DESC)');
+    }
+    if (oldVersion < 26) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_copilot_suggestions(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), period TEXT NOT NULL, period_start TEXT NOT NULL, period_end TEXT NOT NULL, body_json TEXT NOT NULL DEFAULT \'\', evidence_json TEXT NOT NULL DEFAULT \'[]\', data_sufficiency TEXT NOT NULL DEFAULT \'insufficient\', status TEXT NOT NULL DEFAULT \'proposed\', applied_at TEXT, dismissed_at TEXT, outcome_note TEXT, effect_after_days TEXT, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_ai_copilot_suggestions_family ON ai_copilot_suggestions(family_id, created_at DESC)');
+    }
+    if (oldVersion < 26) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS ai_policy_proposals(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, body TEXT, rationale TEXT, status TEXT NOT NULL DEFAULT \'pending\', reason_json TEXT NOT NULL DEFAULT \'[]\', applied_at TEXT, dismissed_at TEXT, outcome_note TEXT, effect_after_days TEXT, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_ai_policy_proposals_family ON ai_policy_proposals(family_id, status, created_at DESC)');
+    }
+    if (oldVersion < 27) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS couple_linking(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), partner_member_id TEXT NOT NULL, request_state TEXT NOT NULL DEFAULT \'requested\', requested_by TEXT, requested_at TEXT NOT NULL, responded_at TEXT, created_at TEXT NOT NULL DEFAULT \'\')');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_couple_linking_family ON couple_linking(family_id, request_state)');
+    }
+    if (oldVersion < 27) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS couple_proposals(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT, proposed_by TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', reviewed_by TEXT, reviewed_at TEXT, expires_at TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT \'\')');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_couple_proposals_family ON couple_proposals(family_id, status, expires_at)');
+    }
+    if (oldVersion < 27) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS couple_routines(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, assigned_child_ids TEXT NOT NULL DEFAULT \'\', weekdays TEXT NOT NULL DEFAULT \'\', start_minute INTEGER NOT NULL, end_minute INTEGER NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, created_by TEXT, created_at TEXT NOT NULL DEFAULT \'\', updated_at TEXT NOT NULL DEFAULT \'\')');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_couple_routines_family ON couple_routines(family_id, enabled)');
+    }
+    if (oldVersion < 27) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS couple_responsibilities(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), area TEXT NOT NULL, owner_member_id TEXT NOT NULL, delegate_member_id TEXT, effective_from TEXT NOT NULL, effective_until TEXT, created_at TEXT NOT NULL DEFAULT \'\')');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_couple_responsibilities_family ON couple_responsibilities(family_id, area)');
+    }
+    if (oldVersion < 27) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS couple_handovers(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), from_member_id TEXT NOT NULL, to_member_id TEXT NOT NULL, status TEXT NOT NULL DEFAULT \'pending\', requested_at TEXT NOT NULL, completed_at TEXT, created_at TEXT NOT NULL DEFAULT \'\')');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_couple_handovers_family_status ON couple_handovers(family_id, status, requested_at DESC)');
+    }
+    if (oldVersion < 28) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS subscription_entitlements(family_id TEXT NOT NULL REFERENCES families(id), feature TEXT NOT NULL, granted INTEGER NOT NULL DEFAULT 0, policy TEXT NOT NULL DEFAULT \'local\', granted_at TEXT, expires_at TEXT, PRIMARY KEY(family_id, feature))');
+    }
+    if (oldVersion < 28) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS subscription_usage_limits(family_id TEXT NOT NULL REFERENCES families(id), feature TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, limit_ INTEGER NOT NULL DEFAULT 0, period_start TEXT NOT NULL, period_end TEXT NOT NULL, PRIMARY KEY(family_id, feature))');
+    }
+    if (oldVersion < 28) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS billing_records(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), kind TEXT NOT NULL DEFAULT \'purchase\', amount_minor_units INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT \'USD\', status TEXT NOT NULL DEFAULT \'pending\', reference TEXT, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_billing_family_time ON billing_records(family_id, created_at DESC)');
     }
   }
 }

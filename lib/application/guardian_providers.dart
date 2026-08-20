@@ -1,5 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../data/family_event_registry_repository.dart';
+import '../data/ai_repository.dart';
+import '../data/couple_repository.dart';
+import '../data/subscription_repository.dart';
+import '../domain/family_events.dart';
+import '../domain/guardian_ai_models.dart';
+import '../domain/couple_harmony.dart';
+import '../domain/subscription_entitlements.dart';
+import '../application/guardian_ai_engine.dart';
 export 'family_membership_providers.dart';
 import 'family_context_provider.dart';
 import '../core/database/guardian_database.dart';
@@ -8,6 +17,8 @@ import '../core/platform/capability_gateway.dart';
 import '../core/platform/android_enforcement_adapter.dart';
 import '../core/platform/enforcement_platform_channel.dart';
 import '../core/platform/android_observation_gateway.dart';
+import '../core/platform/location_tracking_channel.dart';
+import 'background_location_service.dart';
 import 'child_screen_time_coordinator.dart';
 import 'child_usage_measurement_provider.dart';
 import 'child_enforcement_coordinator.dart';
@@ -383,6 +394,19 @@ final familyLocationPullProvider =
                 ref.watch(locationSyncApplierProvider))
             .pull(familyId: familyId));
 
+// M9 — Background location tracking. The transparent native foreground
+// service is armed through the platform channel; this coordinator polls
+// the honest native snapshot and records every OS-confirmed fix through
+// the existing `location_points` store, closing the geofence crossing
+// loop FS-001 left open. Nothing here claims tracking without native
+// confirmation — the snapshot is the single source of truth.
+final backgroundLocationTrackingChannelProvider =
+    Provider<LocationTrackingChannel>((ref) => LocationTrackingChannel());
+final backgroundLocationServiceProvider = Provider<BackgroundLocationService>(
+    (ref) => BackgroundLocationService(
+        platform: ref.watch(backgroundLocationTrackingChannelProvider),
+        repository: ref.watch(locationGeofenceRepositoryProvider)));
+
 class _UnavailableFamilyLocationRemoteReader
     implements FamilyLocationRemoteReader {
   const _UnavailableFamilyLocationRemoteReader();
@@ -738,3 +762,195 @@ final rewardLedgerProvider =
     FutureProvider.family<List<PointsLedgerEntry>, String>((ref,
             String familyId) =>
         ref.watch(familyRewardsRepositoryProvider).ledgerForFamily(familyId));
+
+// ── Phase 9 — Event Registry + Guardian AI layers ──────────────────────────
+// The AI stack is built on the local event registry. Every layer is
+// deterministic and traceable (modelVersion='none' until a configured
+// model exists), and every output carries its provenance so the UI never
+// presents inferred states as observed facts.
+
+final aiRegistryRepositoryProvider = Provider<FamilyEventRegistryRepository>(
+    (ref) => FamilyEventRegistryRepository(GuardianDatabase.instance));
+final aiInsightRepositoryProvider = Provider<AiInsightRepository>(
+    (ref) => AiInsightRepository(database: GuardianDatabase.instance));
+
+/// Local deterministic model availability — fail-closed by default.
+final aiModelAvailabilityProvider = Provider<AiModelAvailabilitySource>(
+    (ref) => const AiModelAvailabilitySource());
+
+/// The deterministic evaluation engine. `modelVersion='none'` until a
+/// configured on-device model is wired; the UI discloses this.
+final guardianAiEngineProvider = Provider<GuardianAiDeterministicEngine>(
+    (ref) => GuardianAiDeterministicEngine(
+        modelAvailability: ref.read(aiModelAvailabilityProvider)));
+
+/// Per-family consent scope for behavioral processing. Defaults to the
+/// documented policy: operational=true, behavioural=false until a parent
+/// opts in.
+final aiConsentScopeProvider = StateProvider.family<AiConsentScope, String>(
+    (ref, String familyId) => const AiConsentScope());
+
+/// Family-wide signal stream — the raw feed every AI layer consumes.
+final aiSignalsProvider = FutureProvider.family<List<NormalizedSignal>, String>(
+    (ref, String familyId) => ref
+        .watch(aiRegistryRepositoryProvider)
+        .listSignals(familyId, limit: 500));
+
+/// Family-wide feature events — surfaced in the transparency center.
+final aiEventsProvider =
+    FutureProvider.family<List<GuardianFeatureEvent>, String>(
+        (ref, String familyId) =>
+            ref.watch(aiRegistryRepositoryProvider).listEvents(familyId));
+
+/// L3 — Behavior Intelligence profiles for the whole family.
+final aiBehaviorProfilesProvider = FutureProvider.family<
+    List<BehaviorProfile>,
+    ({
+      String familyId,
+      List<String> childIds
+    })>((ref, ({String familyId, List<String> childIds}) key) async {
+  final signals = await ref.read(aiSignalsProvider(key.familyId).future);
+  return ref.read(guardianAiEngineProvider).computeBehaviorProfiles(
+      signals,
+      key.childIds,
+      DateTime.now().toUtc().subtract(const Duration(days: 14)),
+      DateTime.now().toUtc());
+});
+
+/// L4 — Risk engine output per child.
+final aiRiskStatesProvider = FutureProvider.family<List<AiRiskState>, String>(
+    (ref, String familyId) async {
+  final signals = await ref.read(aiSignalsProvider(familyId).future);
+  final childIds = signals
+      .map((s) => s.childId)
+      .where((id) => id.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
+  final profiles = childIds.isEmpty
+      ? <BehaviorProfile>[]
+      : await ref.read(
+          aiBehaviorProfilesProvider((familyId: familyId, childIds: childIds))
+              .future);
+  return ref
+      .read(guardianAiEngineProvider)
+      .evaluateChildRisk(profiles, signals);
+});
+
+/// L6 — Reasoning layer: one explanation per risk state, honest fallback.
+final aiExplanationsProvider = FutureProvider.family<
+    List<AiExplanation>,
+    ({
+      String familyId,
+      List<String> childIds
+    })>((ref, ({String familyId, List<String> childIds}) key) async {
+  final states = await ref.read(aiRiskStatesProvider(key.familyId).future);
+  return ref.read(guardianAiEngineProvider).explainRiskStates(states);
+});
+
+/// L7 — Family Intelligence weekly insights.
+final aiInsightsProvider = FutureProvider.family<List<FamilyInsight>, String>(
+    (ref, String familyId) async {
+  final signals = await ref.read(aiSignalsProvider(familyId).future);
+  final scorecard =
+      ref.read(guardianAiEngineProvider).healthScorecard(familyId, signals);
+  return ref
+      .read(guardianAiEngineProvider)
+      .weeklyInsights(familyId, signals, scorecard);
+});
+
+/// L8 — Parent Copilot suggestion cards with rationale.
+final aiSuggestionsProvider =
+    FutureProvider.family<List<CopilotSuggestion>, String>(
+        (ref, String familyId) async {
+  final states = await ref.read(aiRiskStatesProvider(familyId).future);
+  final profiles = await ref.read(
+      aiBehaviorProfilesProvider((familyId: familyId, childIds: const []))
+          .future);
+  final persisted = await ref
+      .read(aiInsightRepositoryProvider)
+      .listSuggestions(familyId: familyId);
+  return ref
+      .read(guardianAiEngineProvider)
+      .copilotSuggestions(profiles, states, persisted);
+});
+
+/// L9 — Policy Intelligence proposals (always requiring parent approval).
+final aiProposalsProvider = FutureProvider.family<List<PolicyProposal>, String>(
+    (ref, String familyId) async {
+  final states = await ref.read(aiRiskStatesProvider(familyId).future);
+  final persisted = await ref
+      .read(aiInsightRepositoryProvider)
+      .listProposals(familyId: familyId);
+  final keys = persisted.map((p) => p.titleKey).toList(growable: false);
+  return ref.read(guardianAiEngineProvider).policyProposals(states, keys);
+});
+
+/// L5 — Detections console evidence list.
+final aiDetectionsProvider =
+    FutureProvider.family<List<AiDetectionResult>, String>(
+        (ref, String familyId) => ref
+            .watch(aiInsightRepositoryProvider)
+            .listDetections(familyId: familyId));
+
+/// Family Health Scorecard (usage balance / safety / sleep / connection).
+final aiScorecardProvider =
+    FutureProvider.family<FamilyHealthScorecard, String>(
+        (ref, String familyId) async {
+  final signals = await ref.read(aiSignalsProvider(familyId).future);
+  return ref.read(guardianAiEngineProvider).healthScorecard(familyId, signals);
+});
+
+/// Transparency report — the evidence ledger behind every AI number.
+final aiTransparencyProvider =
+    FutureProvider.family<AiTransparencyReport, String>(
+        (ref, String familyId) async {
+  final signals = await ref.read(aiSignalsProvider(familyId).future);
+  return ref.read(guardianAiEngineProvider).buildTransparencyReport(
+      ref.read(aiModelAvailabilityProvider).modelVersion, signals);
+});
+
+// ── FS-013 — Couple Harmony ────────────────────────────────────────────────
+final coupleRepositoryProvider = Provider<CoupleRepository>(
+    (ref) => CoupleRepository(database: GuardianDatabase.instance));
+
+final coupleLinkingProvider =
+    FutureProvider.family<List<CoupleLinking>, String>((ref, String familyId) =>
+        ref.watch(coupleRepositoryProvider).listLinking(familyId));
+
+final coupleProposalsProvider =
+    FutureProvider.family<List<CoupleProposal>, String>(
+        (ref, String familyId) =>
+            ref.watch(coupleRepositoryProvider).listProposals(familyId));
+
+final coupleRoutinesProvider =
+    FutureProvider.family<List<SharedRoutine>, String>((ref, String familyId) =>
+        ref.watch(coupleRepositoryProvider).listRoutines(familyId));
+
+final coupleResponsibilitiesProvider =
+    FutureProvider.family<List<Responsibility>, String>(
+        (ref, String familyId) =>
+            ref.watch(coupleRepositoryProvider).listResponsibilities(familyId));
+
+final coupleHandoversProvider =
+    FutureProvider.family<List<HandoverRequest>, String>(
+        (ref, String familyId) =>
+            ref.watch(coupleRepositoryProvider).listHandovers(familyId));
+
+// ── ST-001 — Subscription & Entitlements ───────────────────────────────────
+// Local-first entitlements. Every grant decision was recorded locally
+// and is sync-staged for server verification; no payment gateway is
+// claimed until one is actually wired.
+final subscriptionRepositoryProvider = Provider<SubscriptionRepository>(
+    (ref) => SubscriptionRepository(database: GuardianDatabase.instance));
+
+final subscriptionEntitlementsProvider =
+    FutureProvider.family<List<Entitlement>, String>((ref, String familyId) =>
+        ref.watch(subscriptionRepositoryProvider).listEntitlements(familyId));
+
+final subscriptionUsageMetersProvider =
+    FutureProvider.family<List<UsageMeter>, String>((ref, String familyId) =>
+        ref.watch(subscriptionRepositoryProvider).listMeters(familyId));
+
+final subscriptionBillingProvider =
+    FutureProvider.family<List<BillingRecord>, String>((ref, String familyId) =>
+        ref.watch(subscriptionRepositoryProvider).listBilling(familyId));

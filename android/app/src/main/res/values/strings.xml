@@ -6,4 +6,8 @@
     <string name="m8_fg_channel_description">Keeps a verified record of screen-time activity so that agreed family limits can be tracked while the device is on.</string>
     <string name="m8_fg_notification_title">Guardian Eye Pro is monitoring screen time</string>
     <string name="m8_fg_notification_text">Family screen-time policy tracking is active.</string>
+    <string name="m9_tracking_channel_name">Location tracking</string>
+    <string name="m9_tracking_channel_description">Keeps the family map and location history fresh by capturing your position in the background.</string>
+    <string name="m9_tracking_notification_title">Guardian Eye Pro is tracking location</string>
+    <string name="m9_tracking_notification_text">Family location tracking is active so members stay visible on the map.</string>
 </resources>

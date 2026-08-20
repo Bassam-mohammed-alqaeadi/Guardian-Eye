@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
+import '../application/location_tracking_evaluation.dart';
 import '../core/database/guardian_database.dart';
 import '../domain/guardian_models.dart';
 
@@ -662,6 +663,83 @@ class LocationGeofenceRepository {
       'source': 'geofence',
       'sync_state': SyncState.localOnly.name,
       'created_at': now,
+    });
+  }
+
+  /// Closes the geofence crossing loop for one background-captured point.
+  ///
+  /// The decision logic lives in pure Dart
+  /// ([evaluateGeofenceCrossings]); this method is the single place that
+  /// turns crossing decisions into durable records: an alert per crossing
+  /// and the geofence status machine (`active`→`entered`→`exited`).
+  /// Nothing here fabricates a crossing — only real crossings recorded by
+  /// the background capture path reach this method.
+  Future<void> evaluateCrossingsForPoint({
+    required String familyId,
+    required double latitude,
+    required double longitude,
+    String? memberId,
+    String? memberDisplayName,
+    String? deviceId,
+  }) async {
+    final geofences = await geofencesForFamily(familyId);
+    final crossings = evaluateGeofenceCrossings(
+      geofences: geofences,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (crossings.isEmpty) return;
+    final db = await _database.database;
+    await db.transaction((tx) async {
+      for (final crossing in crossings) {
+        final g = crossing.geofence;
+        await tx.insert('location_alerts', {
+          'id': _uuid.v4(),
+          'family_id': familyId,
+          'geofence_id': g.id,
+          'member_id': memberId,
+          'member_display_name': memberDisplayName,
+          'device_id': deviceId,
+          'event_type': crossing.eventType,
+          'occurred_at': DateTime.now().toUtc().toIso8601String(),
+          'acknowledged': 0,
+          'source': 'geofence',
+          'sync_state': SyncState.localOnly.name,
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+        });
+        final newStatus = crossing.eventType == 'geofence_entry'
+            ? 'entered'
+            : 'exited';
+        await tx.update(
+            'geofences',
+            {
+              'status': newStatus,
+              'sync_state': SyncState.localOnly.name,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            },
+            where: 'id = ? AND family_id = ?',
+            whereArgs: [g.id, familyId]);
+        await tx.insert('outbox', {
+          'id': _uuid.v4(),
+          'aggregate_type': 'geofence',
+          'aggregate_id': g.id,
+          'operation': 'geofence.crossed',
+          'payload_json': jsonEncode({
+            'familyId': familyId,
+            'geofenceId': g.id,
+            'crossingEventType': crossing.eventType,
+            'distanceMeters': crossing.distanceMeters,
+            'latitude': latitude,
+            'longitude': longitude,
+            'version': 1,
+          }),
+          'idempotency_key':
+              'geofence.crossed:${familyId}:${g.id}:${crossing.eventType}:1',
+          'state': 'pending',
+          'next_attempt_at': DateTime.now().toUtc().toIso8601String(),
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
     });
   }
 

@@ -28,6 +28,9 @@ import '../screens/reports_screens.dart';
 import '../screens/rules_screens.dart';
 import '../screens/tasks_screens.dart';
 import '../screens/rewards_screens.dart';
+import '../screens/insights_screens.dart';
+import '../screens/couple_screens.dart';
+import '../screens/subscription_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -774,6 +777,134 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RewardLedgerScreen.route,
             name: 'familyRewardLedger',
             builder: (context, state) => const RewardLedgerScreen(),
+          ),
+
+          // -----------------------------------------------------------------
+          // Guardian AI — insights, risk, copilot, policy, detections,
+          // transparency and consent (A-001 … A-013). Authorization is
+          // delegated to FamilyPermission.viewAiInsights / manageAiConsent
+          // inside the screens; everything is deterministic and fail-closed.
+          // -----------------------------------------------------------------
+          GoRoute(
+            path: InsightsHubScreen.route,
+            name: 'familyAiInsights',
+            builder: (context, state) =>
+                InsightsHubScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: ChildRiskScreen.route,
+            name: 'familyAiRisk',
+            builder: (context, state) =>
+                ChildRiskScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CopilotSuggestionsScreen.route,
+            name: 'familyAiCopilot',
+            builder: (context, state) => CopilotSuggestionsScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: PolicyIntelligenceScreen.route,
+            name: 'familyAiPolicy',
+            builder: (context, state) => PolicyIntelligenceScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: DetectionsConsoleScreen.route,
+            name: 'familyAiDetections',
+            builder: (context, state) => DetectionsConsoleScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: TransparencyCenterScreen.route,
+            name: 'familyAiTransparency',
+            builder: (context, state) => TransparencyCenterScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: AiPrivacyCenterScreen.route,
+            name: 'familyAiConsent',
+            builder: (context, state) => AiPrivacyCenterScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          // FS-013 — Couple Harmony (C-001 … C-007). Proposals and handovers
+          // require explicit spouse replies; authorization is delegated to
+          // FamilyPermission.manageCoupleDecisions / viewCoupleInsights.
+          GoRoute(
+            path: CoupleHubScreen.route,
+            name: 'familyCoupleHub',
+            builder: (context, state) =>
+                CoupleHubScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CoupleLinkingScreen.route,
+            name: 'familyCoupleLinking',
+            builder: (context, state) =>
+                CoupleLinkingScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CoupleProposalsScreen.route,
+            name: 'familyCoupleProposals',
+            builder: (context, state) => CoupleProposalsScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CoupleNewProposalScreen.route,
+            name: 'familyCoupleNewProposal',
+            builder: (context, state) => CoupleNewProposalScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CoupleRoutinesScreen.route,
+            name: 'familyCoupleRoutines',
+            builder: (context, state) =>
+                CoupleRoutinesScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CoupleResponsibilitiesScreen.route,
+            name: 'familyCoupleResponsibilities',
+            builder: (context, state) => CoupleResponsibilitiesScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: CoupleHandoversScreen.route,
+            name: 'familyCoupleHandovers',
+            builder: (context, state) =>
+                CoupleHandoversScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          // Subscription & entitlements (ST-001 … ST-005). Local-only grant
+          // decisions with honest usage meters; no payment processor is
+          // integrated. Authorization delegated to
+          // FamilyPermission.manageSubscription.
+          GoRoute(
+            path: SubscriptionHomeScreen.route,
+            name: 'familySubscription',
+            builder: (context, state) => SubscriptionHomeScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: SubscriptionUpgradeScreen.route,
+            name: 'familySubscriptionUpgrade',
+            builder: (context, state) => SubscriptionUpgradeScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: SubscriptionEntitlementsScreen.route,
+            name: 'familySubscriptionEntitlements',
+            builder: (context, state) => SubscriptionEntitlementsScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: SubscriptionMetersScreen.route,
+            name: 'familySubscriptionMeters',
+            builder: (context, state) => SubscriptionMetersScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: SubscriptionBillingScreen.route,
+            name: 'familySubscriptionBilling',
+            builder: (context, state) => SubscriptionBillingScreen(
+                familyId: state.pathParameters['familyId']!),
           ),
         ],
       ),

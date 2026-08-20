@@ -47,6 +47,32 @@ class FamilyAuthorization {
             // FS-008 — a co-parent authors rewards and approves spends.
             FamilyPermission.viewRewards,
             FamilyPermission.manageRewards,
+            // Guardian AI — a co-parent observes the intelligence hub,
+            // views insights and proposals, and manages consent scopes.
+            FamilyPermission.viewAiInsights,
+            FamilyPermission.manageAiConsent,
+            // FS-013 — a co-parent authors decisions and manages routines.
+            FamilyPermission.viewCoupleHarmony,
+            FamilyPermission.manageCoupleDecisions,
+          },
+        FamilyRole.parent => {
+            // parent (member-added parent) mirrors coParent observation
+            // plus proposal authorship; plan changes stay with the owner.
+            FamilyPermission.viewFamily,
+            FamilyPermission.viewMembers,
+            FamilyPermission.viewChildren,
+            FamilyPermission.viewPolicies,
+            FamilyPermission.viewSafetyTimeline,
+            FamilyPermission.viewUsage,
+            FamilyPermission.viewChildStatus,
+            FamilyPermission.viewDeviceLinking,
+            FamilyPermission.viewReports,
+            FamilyPermission.viewFamilyRules,
+            FamilyPermission.viewTasks,
+            FamilyPermission.viewRewards,
+            FamilyPermission.viewAiInsights,
+            FamilyPermission.viewCoupleHarmony,
+            FamilyPermission.manageCoupleDecisions,
           },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
@@ -90,6 +116,11 @@ class FamilyAuthorization {
             // FS-008 — a spouse observes the ledger but never mutates
             // balances or the catalog.
             FamilyPermission.viewRewards,
+            // Guardian AI — a spouse observes insights read-only.
+            FamilyPermission.viewAiInsights,
+            // FS-013 — a spouse views harmony screens and their own
+            // linking state; decisions remain with parent roles.
+            FamilyPermission.viewCoupleHarmony,
           },
       };
   bool hasPermission(FamilyMember member, FamilyPermission permission) =>
@@ -109,4 +140,8 @@ class FamilyAuthorization {
           required String ownerMemberId}) =>
       actorMemberId == ownerMemberId || actorRole == FamilyRole.primaryParent;
   bool canAcknowledgeIncident(FamilyRole role) => role != FamilyRole.child;
+
+  /// ST-001 — only the owner may view or change the family plan.
+  bool canManageSubscription(FamilyRole role) =>
+      role == FamilyRole.primaryParent;
 }

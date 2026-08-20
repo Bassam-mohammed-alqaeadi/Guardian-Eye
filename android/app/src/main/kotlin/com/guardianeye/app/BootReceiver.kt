@@ -51,6 +51,27 @@ class BootReceiver : BroadcastReceiver() {
                 .putString(KEY_LAST_BOOT_REASON, "boot_restart_failed:${exception.javaClass.simpleName}")
                 .apply()
         }
+        // Background location tracking (foreground service of Android type
+        // `location`). Only restarted when the user explicitly enabled
+        // tracking previously; the enabled flag lives in the tracking
+        // prefs, so a user who disabled tracking stays disabled after boot.
+        try {
+            if (LocationTrackingService.isEnabled(context)) {
+                val trackingIntent = Intent(context, LocationTrackingService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(trackingIntent)
+                } else {
+                    context.startService(trackingIntent)
+                }
+            }
+        } catch (exception: Exception) {
+            // Location permission grant on boot is not guaranteed; the
+            // service records an honest failure and stops itself rather
+            // than crashing the app or pretending to track.
+            prefs.edit()
+                .putString(KEY_LAST_BOOT_REASON, "boot_location_restart_failed:${exception.javaClass.simpleName}")
+                .apply()
+        }
     }
 
     companion object {
