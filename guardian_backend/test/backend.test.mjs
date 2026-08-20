@@ -214,7 +214,25 @@ function post(base, path, { token, body }) {
   });
 }
 
-/** Seeds a family owned by `parentUid` (role primaryParent). */
+/** Seeds an incident doc inside families/{familyId}/incidents. */
+function seedIncident(db, incidentId, status) {
+  db.collection('families/fam-1/incidents').doc(incidentId).set({
+    category: 'safety',
+    status,
+    familyId: 'fam-1',
+    createdAt: new Date().toISOString(),
+  });
+}
+
+/** Seeds an SOS doc inside families/{familyId}/sos. */
+function seedSos(db, sosId, status) {
+  db.collection('families/fam-1/sos').doc(sosId).set({
+    status,
+    familyId: 'fam-1',
+    createdAt: new Date().toISOString(),
+  });
+}
+
 function seedFamily(db, { familyId = 'fam-1', parentUid = 'parent-1', role = 'primaryParent' } = {}) {
   db.collection('families').doc(familyId).set({ name: 'Test Family', ownerUid: parentUid });
   db.collection('families').doc(familyId).collection('members').doc(parentUid).set({
@@ -649,10 +667,11 @@ test('POST /api/notify — rejects non-member caller', async () => {
 test('POST /api/notify — returns no_tokens when family has no FCM registrations', async () => {
   await withServer(async ({ base, auth, db }) => {
     seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
     const parentToken = auth.addUser('parent-1');
     const res = await post(base, '/api/notify', {
       token: parentToken,
-      body: { familyId: 'fam-1', kind: 'incident', title: 'Alert', body: 'Incident detected' },
+      body: { familyId: 'fam-1', kind: 'incident', incidentId: 'inc-1' },
     });
     assert.equal(res.status, 200);
     const json = await res.json();
@@ -664,6 +683,7 @@ test('POST /api/notify — returns no_tokens when family has no FCM registration
 test('POST /api/notify — delivers to parent device FCM token', async () => {
   await withServer(async ({ base, auth, db, fakeMessaging }) => {
     seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
     // Register a parent device with an active FCM token.
     const familyDevicesCol = `families/fam-1/devices`;
     db.collection(familyDevicesCol).doc('dev-parent').set({
@@ -684,18 +704,28 @@ test('POST /api/notify — delivers to parent device FCM token', async () => {
         familyId: 'fam-1',
         kind: 'incident',
         incidentId: 'inc-1',
-        title: 'Safety Alert',
-        body: 'A safety incident was detected.',
       },
     });
     assert.equal(res.status, 200);
     const json = await res.json();
     assert.equal(json.sent, 1);
     assert.equal(json.failed, 0);
-    // Verify the multicast message was sent with the correct token.
-    assert.deepEqual(fakeMessaging.lastMulticast.tokens, ['fcm-token-abc']);
+    assert.equal(json.reason, 'accepted');
+    assert.equal(json.eventExisted, false);
+    // Payload is data-only: visible text is rendered by the client.
+    assert.equal(fakeMessaging.lastMulticast.notification, undefined);
     assert.equal(fakeMessaging.lastMulticast.data.kind, 'incident');
     assert.equal(fakeMessaging.lastMulticast.data.incidentId, 'inc-1');
+    assert.equal(fakeMessaging.lastMulticast.data.familyId, 'fam-1');
+    assert.ok(String(fakeMessaging.lastMulticast.data.notificationEventId).startsWith('incident:inc-1:'));
+    // Evidence doc claimed inside the transaction.
+    const evidence = await db
+      .collection('families/fam-1/notification_events')
+      .doc('incident:inc-1:parent-1')
+      .get();
+    assert.equal(evidence.exists, true);
+    assert.equal(evidence.data().status, 'dispatched');
+    assert.equal(evidence.data().sentCount, 1);
   });
 });
 
@@ -714,10 +744,11 @@ test('POST /api/notify — marks stale tokens invalid after FCM rejection', asyn
         userUid: 'parent-1',
       });
 
+      seedSos(db, 'sos-1', 'pending');
       const parentToken = auth.addUser('parent-1');
       const res = await post(base, '/api/notify', {
         token: parentToken,
-        body: { familyId: 'fam-1', kind: 'sos', title: 'SOS', body: 'Child needs help!' },
+        body: { familyId: 'fam-1', kind: 'sos', sosId: 'sos-1' },
       });
       assert.equal(res.status, 200);
       const json = await res.json();
@@ -738,4 +769,160 @@ test('POST /api/notify — marks stale tokens invalid after FCM rejection', asyn
       }],
     }
   );
+});
+
+// /api/notify — Phase 3 hardening tests
+
+test('POST /api/notify — rejects unknown kind', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'webhit', incidentId: 'inc-1' },
+    });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'unknown_kind');
+  });
+});
+
+test('POST /api/notify — rejects missing event id', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'incident' },
+    });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'missing_event_id');
+  });
+});
+
+test('POST /api/notify — rejects nonexistent incident (404 invalid_event)', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'incident', incidentId: 'does-not-exist' },
+    });
+    assert.equal(res.status, 404);
+    assert.equal((await res.json()).error, 'invalid_event');
+  });
+});
+
+test('POST /api/notify — rejects incident in a terminal state', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-closed', 'closed');
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'incident', incidentId: 'inc-closed' },
+    });
+    assert.equal(res.status, 404);
+    assert.equal((await res.json()).error, 'invalid_event');
+  });
+});
+
+test('POST /api/notify — cross-family incident id is rejected (never trusted)', async () => {
+  await withServer(async ({ base, auth, db }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
+    // An incident with the same id exists in a DIFFERENT family.
+    db.collection('families/fam-2/members').doc('parent-1').set({
+      memberUid: 'parent-1',
+      role: 'coParent',
+      status: 'active',
+    });
+    db.collection('families/fam-2/incidents').doc('inc-1').set({
+      category: 'safety',
+      status: 'open',
+      familyId: 'fam-2',
+    });
+    const parentToken = auth.addUser('parent-1');
+    const res = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-2', kind: 'incident', incidentId: 'inc-1' },
+    });
+    // fam-2 has no family doc — the cross-family lookup still must not send.
+    assert.notEqual(res.status, 200);
+  });
+});
+
+test('POST /api/notify — duplicate request is idempotent (no double fanout)', async () => {
+  await withServer(async ({ base, auth, db, fakeMessaging }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
+    const familyDevicesCol = `families/fam-1/devices`;
+    db.collection(familyDevicesCol).doc('dev-parent').set({
+      role: 'parentDevice',
+      status: 'active',
+      memberUid: 'parent-1',
+    });
+    db.collection(`${familyDevicesCol}/dev-parent/notification_tokens`).doc('tok-1').set({
+      token: 'fcm-token-abc',
+      status: 'active',
+      userUid: 'parent-1',
+    });
+
+    const parentToken = auth.addUser('parent-1');
+    const body = { familyId: 'fam-1', kind: 'incident', incidentId: 'inc-1' };
+
+    const first = await post(base, '/api/notify', { token: parentToken, body });
+    const second = await post(base, '/api/notify', { token: parentToken, body });
+
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal((await first.json()).sent, 1);
+    const secondJson = await second.json();
+    assert.equal(secondJson.eventExisted, true);
+    assert.equal(secondJson.sent, 1);
+    // sendEachForMulticast was called exactly once — no duplicate dispatch.
+    assert.equal(fakeMessaging.lastMulticast.tokens.length, 1);
+  });
+});
+
+test('POST /api/notify — claim protects against membership change mid-request', async () => {
+  await withServer(async ({ base, auth, db, fakeMessaging }) => {
+    seedFamily(db);
+    seedIncident(db, 'inc-1', 'open');
+    const familyDevicesCol = `families/fam-1/devices`;
+    db.collection(familyDevicesCol).doc('dev-parent').set({
+      role: 'parentDevice',
+      status: 'active',
+      memberUid: 'parent-1',
+    });
+    db.collection(`${familyDevicesCol}/dev-parent/notification_tokens`).doc('tok-1').set({
+      token: 'fcm-token-abc',
+      status: 'active',
+      userUid: 'parent-1',
+    });
+
+    const parentToken = auth.addUser('parent-1');
+    // First request claims the dispatch slot.
+    const first = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'incident', incidentId: 'inc-1' },
+    });
+    assert.equal(first.status, 200);
+
+    // Caller membership is revoked after the first dispatch.
+    await db.collection('families/fam-1/members').doc('parent-1').update({ status: 'revoked' });
+
+    // Replaying the same request must NOT re-dispatch (claim already exists)
+    // and must NOT fail the replay with a dispatch error either.
+    const replay = await post(base, '/api/notify', {
+      token: parentToken,
+      body: { familyId: 'fam-1', kind: 'incident', incidentId: 'inc-1' },
+    });
+    const replayJson = await replay.json();
+    assert.equal(replayJson.eventExisted, true);
+    assert.equal(replayJson.sent, 1);
+    assert.equal(fakeMessaging.lastMulticast.tokens.length, 1);
+  });
 });

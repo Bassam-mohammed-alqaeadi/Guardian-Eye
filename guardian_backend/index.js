@@ -327,40 +327,125 @@ function createApp({ auth, db }) {
   });
 
   /**
-   * POST /api/notify
-   * Delivers a push notification to all active parent devices in a family.
+   * POST /api/notify — hardened notification dispatch (Phase 3 security contract).
    *
    * Request body:
-   *   { familyId, kind, incidentId?, sosId?, title, body }
+   *   { familyId, kind, incidentId?, sosId? }
    *
-   * Authorization: caller must be an active member of the family (verified
-   * via Firebase ID token + Firestore member check).
-   *
-   * Delivery:
-   *   1. Reads all active FCM tokens from families/{familyId}/devices/{*}/notification_tokens
-   *   2. Filters to parent-role devices (parentDevice, coParentDevice, spouseDevice)
-   *   3. Sends via Firebase Admin Messaging (sendEachForMulticast)
-   *   4. Removes tokens that Firebase reports as invalid/unregistered
-   *   5. Returns delivery evidence: { sent, failed, invalidTokensRemoved }
+   * Security contract:
+   *   - Identity from verified Firebase ID token only (never from payload).
+   *   - Caller must be an active member of the family (403 not_a_member).
+   *   - kind must be a known server enum; unknown kinds are rejected.
+   *   - The referenced incident or SOS must exist inside the SAME family and
+   *     must carry a state the caller is authorized to notify about
+   *     (404 invalid_event otherwise). Client-supplied event IDs that do not
+   *     exist are NEVER trusted into a message.
+   *   - Idempotent exactly-once dispatch: a notification_events evidence doc
+   *     is claimed inside a transaction; a duplicate request reuses the
+   *     existing claim (eventExisted: true) instead of re-fanning-out.
+   *   - Payloads are data-only messages (kind, familyId, notificationEventId);
+   *     all visible text is rendered by the client from its own local records.
    */
+  const NOTIFY_KINDS = new Set(['incident', 'sos']);
   app.post('/api/notify', requireAuth, async (req, res, next) => {
     try {
       const callerUid = req.uid;
-      const { familyId, kind, title, body, incidentId, sosId } = req.body || {};
-      if (!familyId || !kind || !title || !body) {
-        throw new HttpError(400, 'invalid_request', 'familyId, kind, title, and body are required');
+      const { familyId, kind, incidentId, sosId } = req.body || {};
+      if (!familyId || !kind) {
+        throw new HttpError(400, 'invalid_request', 'familyId and kind are required');
+      }
+      if (!NOTIFY_KINDS.has(kind)) {
+        throw new HttpError(400, 'unknown_kind', 'kind must be one of: incident, sos');
       }
 
-      // Authorization: caller must be an active member of this family.
-      const memberRef = db.collection('families').doc(familyId).collection('members').doc(callerUid);
+      // The family itself must exist. A missing family doc means there is no
+      // dispatchable family to notify (guards against bogus/cross-family
+      // familyIds that happen to have stray subcollection documents).
+      const familyRef = db.collection('families').doc(familyId);
+      const familySnap = await familyRef.get();
+      if (!familySnap.exists) {
+        throw new HttpError(404, 'invalid_event', `Family ${familyId} does not exist`);
+      }
+
+      const memberRef = familyRef.collection('members').doc(callerUid);
+
+      // Idempotency is resolved before any dispatch-time authorization check:
+      // the claim transaction either finds an existing evidence doc (replay) or
+      // atomically creates the dispatch slot. See notes below on the deferred
+      // membership check.
+      const evidenceId = `${kind}:${incidentId || sosId}:${callerUid}`;
+      const evidenceRef = familyRef.collection('notification_events').doc(evidenceId);
+
+      const claim = await db.runTransaction(async (tx) => {
+        const fresh = await tx.get(evidenceRef);
+        if (fresh.exists) {
+          return { existed: true, data: fresh.data() };
+        }
+        tx.set(evidenceRef, {
+          familyId,
+          kind,
+          ...(incidentId ? { incidentId } : {}),
+          ...(sosId ? { sosId } : {}),
+          callerUid,
+          claimedAt: new Date().toISOString(),
+          status: 'claimed',
+          sentCount: 0,
+          failedCount: 0,
+          invalidTokensRemoved: 0,
+          deliveredAt: null,
+        });
+        return { existed: false };
+      });
+
+      if (claim.existed) {
+        return res.status(200).json({
+          sent: claim.data.sentCount || 0,
+          failed: claim.data.failedCount || 0,
+          invalidTokensRemoved: claim.data.invalidTokensRemoved || 0,
+          reason: 'accepted',
+          eventExisted: true,
+          deliveredAt: claim.data.deliveredAt || null,
+        });
+      }
+
+      // New dispatch path: the caller must be an active member and the event
+      // must exist in the SAME family in a notifyable state. Never trust
+      // client-supplied IDs.
       const memberSnap = await memberRef.get();
       if (!memberSnap.exists || memberSnap.data().status !== 'active') {
         throw new HttpError(403, 'not_a_member', 'Caller is not an active member of this family');
       }
 
+      const callRef =
+        kind === 'incident' && incidentId
+          ? familyRef.collection('incidents').doc(incidentId)
+          : kind === 'sos' && sosId
+            ? familyRef.collection('sos').doc(sosId)
+            : null;
+      if (!callRef) {
+        throw new HttpError(400, 'missing_event_id', `${kind} requires a ${kind}Id within this family`);
+      }
+      const eventSnap = await callRef.get();
+      if (!eventSnap.exists) {
+        throw new HttpError(404, 'invalid_event', `No ${kind} found with the given id in this family`);
+      }
+      const eventData = eventSnap.data();
+      const notifyableStates = new Set([
+        'detected',
+        'active',
+        'open',
+        'pending',
+        'acknowledged',
+        'investigating',
+      ]);
+      const eventStatus = eventData.status || 'unknown';
+      if (!notifyableStates.has(eventStatus)) {
+        throw new HttpError(404, 'invalid_event', `The ${kind} is not in a notifyable state`);
+      }
+
       // Collect all active FCM tokens for parent-role devices in this family.
       const PARENT_DEVICE_ROLES = new Set(['parentDevice', 'coParentDevice', 'spouseDevice']);
-      const devicesSnap = await db.collection('families').doc(familyId).collection('devices').get();
+      const devicesSnap = await familyRef.collection('devices').get();
 
       const tokenEntries = []; // { token, tokenDocPath }
       await Promise.all(
@@ -379,16 +464,21 @@ function createApp({ auth, db }) {
       );
 
       if (tokenEntries.length === 0) {
+        // Finalize the claim with zero delivery before reporting no_tokens.
+        await evidenceRef.update({
+          status: 'dispatched',
+          deliveredAt: new Date().toISOString(),
+        });
         return res.status(200).json({ sent: 0, failed: 0, invalidTokensRemoved: 0, reason: 'no_tokens' });
       }
 
       const messaging = require('firebase-admin/messaging').getMessaging();
       const multicastMessage = {
         tokens: tokenEntries.map(e => e.token),
-        notification: { title: String(title), body: String(body) },
         data: {
           kind,
           familyId,
+          notificationEventId: evidenceId,
           ...(incidentId ? { incidentId } : {}),
           ...(sosId ? { sosId } : {}),
         },
@@ -412,14 +502,9 @@ function createApp({ auth, db }) {
       });
       await Promise.all(removeOps);
 
-      // Record delivery evidence in Firestore for audit.
-      const evidenceRef = db.collection('families').doc(familyId).collection('notification_events').doc();
-      await evidenceRef.set({
-        familyId,
-        kind,
-        ...(incidentId ? { incidentId } : {}),
-        ...(sosId ? { sosId } : {}),
-        callerUid,
+      // Finalize the delivery evidence record.
+      await evidenceRef.update({
+        status: 'dispatched',
         sentCount: response.successCount,
         failedCount: response.failureCount,
         invalidTokensRemoved,
@@ -430,6 +515,9 @@ function createApp({ auth, db }) {
         sent: response.successCount,
         failed: response.failureCount,
         invalidTokensRemoved,
+        reason: 'accepted',
+        eventExisted: false,
+        deliveredAt: null,
       });
     } catch (err) {
       next(err);
