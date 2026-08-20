@@ -31,6 +31,7 @@ import '../screens/rewards_screens.dart';
 import '../screens/insights_screens.dart';
 import '../screens/couple_screens.dart';
 import '../screens/subscription_screens.dart';
+import '../screens/notification_open_screen.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -121,6 +122,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'timeline',
             builder: (context, state) => FamilySafetyTimelineScreen(
                 familyId: state.pathParameters['familyId']!),
+          ),
+          // Phase 3 — notification deep link. The path carries only the
+          // event reference (family, kind, event id); the screen validates
+          // the event exists and belongs to the active family before
+          // revealing any content. Kind is strictly one of `incident` or
+          // `sos` — any other value is rejected by the route builder.
+          GoRoute(
+            path: '/notification/:familyId/:kind/:eventId',
+            name: 'notificationOpen',
+            builder: (context, state) {
+              final kind = state.pathParameters['kind']!;
+              if (kind != 'incident' && kind != 'sos') {
+                return const DashboardScreen();
+              }
+              return NotificationOpenScreen(
+                  familyId: state.pathParameters['familyId']!,
+                  kind: kind,
+                  eventId: state.pathParameters['eventId']!);
+            },
           ),
           GoRoute(
             path: '/requests/:familyId',
@@ -839,8 +859,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: CoupleLinkingScreen.route,
             name: 'familyCoupleLinking',
-            builder: (context, state) =>
-                CoupleLinkingScreen(familyId: state.pathParameters['familyId']!),
+            builder: (context, state) => CoupleLinkingScreen(
+                familyId: state.pathParameters['familyId']!),
           ),
           GoRoute(
             path: CoupleProposalsScreen.route,
@@ -857,8 +877,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: CoupleRoutinesScreen.route,
             name: 'familyCoupleRoutines',
-            builder: (context, state) =>
-                CoupleRoutinesScreen(familyId: state.pathParameters['familyId']!),
+            builder: (context, state) => CoupleRoutinesScreen(
+                familyId: state.pathParameters['familyId']!),
           ),
           GoRoute(
             path: CoupleResponsibilitiesScreen.route,
@@ -869,8 +889,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: CoupleHandoversScreen.route,
             name: 'familyCoupleHandovers',
-            builder: (context, state) =>
-                CoupleHandoversScreen(familyId: state.pathParameters['familyId']!),
+            builder: (context, state) => CoupleHandoversScreen(
+                familyId: state.pathParameters['familyId']!),
           ),
           // Subscription & entitlements (ST-001 … ST-005). Local-only grant
           // decisions with honest usage meters; no payment processor is

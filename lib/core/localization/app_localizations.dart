@@ -1712,6 +1712,37 @@ class AppLocalizations {
       'timeout': 'انتهاء المهلة',
       'addedToAllowlist': 'أُضيف لقائمة السماح',
       'removedFromAllowlist': 'أُزيل من قائمة السماح',
+      // Phase 3 — notification foundation (AR).
+      'notifTitle': 'التنبيهات',
+      'notifPermissionDenied': 'تم رفض إذن التنبيهات',
+      'notifPermissionDeniedBody':
+          'لا يمكن عرض تنبيهات السلامة على هذا الجهاز. فعّل التنبيهات من إعدادات الجهاز ثم من إعدادات التطبيق.',
+      'notifUnavailable': 'التنبيهات غير متاحة',
+      'notifUnavailableBody':
+          'تعذّر تجهيز نظام التنبيهات على هذا الجهاز. لا يغيّر هذا من تنبيهات العائلة داخل التطبيق.',
+      'notifSettings': 'إعدادات التنبيهات',
+      'notifOptOutRender': 'إظهار التنبيهات على الشاشة',
+      'notifOptOutDispatch': 'إرسال طلبات التنبيه إلى الخادم',
+      'notifNoTokens': 'لا يوجد جهاز استقبال نشط',
+      'notifNoTokensBody':
+          'لا توجد أجهزة فعّالة لأفراد العائلة تستقبل التنبيهات حاليًا.',
+      'notifRequestFailed': 'تعذّر إرسال التنبيه',
+      'notifRequestFailedBody':
+          'لم يصل طلب التنبيه إلى الخادم. يظل الحدث محفوظًا في السجل وسيتزامن عند عودة الاتصال.',
+      'notifSettingsTitle': 'تفضيلات التنبيهات',
+      'notifSettingsSaved': 'حُفظت تفضيلات التنبيهات محليًا',
+      'notifOpenTitle': 'تنبيه سلامة',
+      'notifNotFound': 'لم يتم العثور على التنبيه',
+      'notifNotFoundHint':
+          'هذا التنبيه غير موجود في السجل المحلي. افتح خط الزمن للاطلاع على سجل السلامة الكامل.',
+      'notifSignedOut': 'تسجيل الدخول مطلوب',
+      'notifReadyHint': 'افتح السجل للاطلاع على تفاصيل الحدث.',
+      'notifConfirmOpened': 'تمت المعاينة',
+      'notifAcknowledged': 'تمت معاينة التنبيه',
+      'notifOpenError': 'تعذّر التحقق من التنبيه',
+      'notifSosKind': 'تنبيه طوارئ SOS',
+      'notifIncidentKind': 'حدث سلامة',
+      'notifRevoked': 'تم إبطال الرمز على هذا الجهاز',
     },
     'en': {
 'aiHubRiskTitle': 'Risk levels',
@@ -3474,7 +3505,38 @@ class AppLocalizations {
       'override': 'Override',
       'timeout': 'Time limit',
       'addedToAllowlist': 'Added to allowlist',
-      'removedFromAllowlist': 'Removed from allowlist'
+      'removedFromAllowlist': 'Removed from allowlist',
+      // Phase 3 — notification foundation (EN).
+      'notifTitle': 'Notifications',
+      'notifPermissionDenied': 'Notification permission denied',
+      'notifPermissionDeniedBody':
+          'Safety alerts cannot be shown on this device. Enable notifications from device settings and then from app settings.',
+      'notifUnavailable': 'Notifications unavailable',
+      'notifUnavailableBody':
+          'The notification system could not be prepared on this device. This does not change family alerts inside the app.',
+      'notifSettings': 'Notification settings',
+      'notifOptOutRender': 'Show notifications on screen',
+      'notifOptOutDispatch': 'Send notification requests to the server',
+      'notifNoTokens': 'No active receiving device',
+      'notifNoTokensBody':
+          'No active family devices can receive notifications right now.',
+      'notifRequestFailed': 'Notification request failed',
+      'notifRequestFailedBody':
+          'The request did not reach the server. The event stays in the log and will sync when the connection returns.',
+      'notifSettingsTitle': 'Notification preferences',
+      'notifSettingsSaved': 'Notification preferences saved locally',
+      'notifOpenTitle': 'Safety alert',
+      'notifNotFound': 'Notification not found',
+      'notifNotFoundHint':
+          'This notification does not exist in the local log. Open the timeline to view the full safety history.',
+      'notifSignedOut': 'Sign in required',
+      'notifReadyHint': 'Open the record to view the event details.',
+      'notifConfirmOpened': 'Viewed',
+      'notifAcknowledged': 'Alert viewed',
+      'notifOpenError': 'Could not verify the notification',
+      'notifSosKind': 'SOS emergency alert',
+      'notifIncidentKind': 'Safety incident',
+      'notifRevoked': 'Token revoked on this device'
     },
   };
   String t(String key) => _values[locale.languageCode]?[key] ?? key;

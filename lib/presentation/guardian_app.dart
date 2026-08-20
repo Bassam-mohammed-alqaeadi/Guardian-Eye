@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/guardian_providers.dart';
+import '../application/notification_providers.dart';
 import '../core/localization/app_localizations.dart';
 import '../core/theme/app_theme.dart';
 import 'router/app_router.dart';
@@ -58,6 +59,18 @@ class _GuardianAppState extends ConsumerState<GuardianApp> {
     // when logged out, unconfigured, or without an enrolled device.
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _triggerPolicyDelivery());
+    // Phase 3 — notification foundation at startup. Initializes the local
+    // notification plugin, wires the FCM handlers, and registers the device
+    // token for the active family. Safe when logged out, Firebase
+    // unavailable, or without an enrolled device: every failure degrades
+    // into an honest in-app state, never a false success.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _triggerNotificationStartup());
+    ref.listenManual(firebaseAuthSessionProvider, (previous, next) {
+      if (next.valueOrNull?.isAuthenticated ?? false) {
+        _triggerNotificationStartup();
+      }
+    });
   }
 
   Future<void> _triggerPolicyDelivery() async {
@@ -75,6 +88,29 @@ class _GuardianAppState extends ConsumerState<GuardianApp> {
     } catch (_) {
       // Delivery is best-effort; the child context re-triggers on open and
       // the service records offline/revoked states honestly.
+    }
+  }
+
+  Future<void> _triggerNotificationStartup() async {
+    try {
+      final initialized =
+          await ref.read(remoteNotificationServiceProvider).initialize();
+      if (!initialized) return;
+      ref.read(remoteNotificationServiceProvider).wireHandlers();
+      final dashboard =
+          await ref.read(familyRepositoryProvider).loadDashboard();
+      final familyId = dashboard.family?.id;
+      if (familyId == null || familyId.isEmpty) return;
+      final deviceId = await ref.read(appDeviceIdentityProvider).deviceId();
+      await ref.read(fcmTokenServiceProvider).register(
+          familyId: familyId, deviceId: deviceId, platform: 'android');
+      ref.read(fcmRefreshHandlerProvider)
+        ..bind(familyId: familyId, deviceId: deviceId)
+        ..start();
+    } catch (_) {
+      // Startup registration is best-effort: the session screen and the
+      // notification settings surface re-trigger registration, and a failed
+      // register leaves honest "unavailable" states in the UX.
     }
   }
 

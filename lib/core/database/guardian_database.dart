@@ -25,7 +25,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 28,
+        version: 29,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -319,6 +319,13 @@ class GuardianDatabase {
         'CREATE TABLE IF NOT EXISTS billing_records(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), kind TEXT NOT NULL DEFAULT \'purchase\', amount_minor_units INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT \'USD\', status TEXT NOT NULL DEFAULT \'pending\', reference TEXT, created_at TEXT NOT NULL)');
     await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_billing_family_time ON billing_records(family_id, created_at DESC)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS notification_settings(key TEXT PRIMARY KEY, render_enabled INTEGER NOT NULL DEFAULT 1, dispatch_enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL)');
+    // Phase 3 — stable device identity for FCM token registration. One row
+    // keyed by 'device_id'; generated once and reused until the app is
+    // reinstalled. Preferences stay decoupled from this identity.
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS app_identity(key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at TEXT NOT NULL)');
   }
 
   Future<void> _upgradeSchema(
@@ -674,6 +681,18 @@ class GuardianDatabase {
           'CREATE TABLE IF NOT EXISTS billing_records(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), kind TEXT NOT NULL DEFAULT \'purchase\', amount_minor_units INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT \'USD\', status TEXT NOT NULL DEFAULT \'pending\', reference TEXT, created_at TEXT NOT NULL)');
       await db.execute(
           'CREATE INDEX IF NOT EXISTS idx_billing_family_time ON billing_records(family_id, created_at DESC)');
+    }
+    // Phase 3 — notification preferences. One row keyed by 'notification';
+    // preferences are per-user-per-device, never shared between families.
+    // CREATE IF NOT EXISTS keeps this idempotent across any version path.
+    if (oldVersion < 29) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS notification_settings(key TEXT PRIMARY KEY, render_enabled INTEGER NOT NULL DEFAULT 1, dispatch_enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL)');
+    }
+    // Phase 3 — stable device identity for FCM token registration.
+    if (oldVersion < 29) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS app_identity(key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at TEXT NOT NULL)');
     }
   }
 }
