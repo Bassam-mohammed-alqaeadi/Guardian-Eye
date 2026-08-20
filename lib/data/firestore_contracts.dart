@@ -87,6 +87,20 @@ class FirestorePaths {
   // the same collection so the policy stays family-wide.
   static String familyRule(String familyId, String ruleId) =>
       '${family(familyId)}/family_rules/$ruleId';
+  // FS-007 — Family Tasks & Daily Schedules. Parent-authored tasks and
+  // their append-only completion logs travel through the outbox.
+  static String familyTask(String familyId, String taskId) =>
+      '${family(familyId)}/tasks/$taskId';
+  static String taskCompletion(String familyId, String logId) =>
+      '${family(familyId)}/task_completions/$logId';
+  // FS-008 — Points & Rewards. The catalog, pending claims and the
+  // append-only ledger are family-scoped collections.
+  static String familyReward(String familyId, String rewardId) =>
+      '${family(familyId)}/rewards/$rewardId';
+  static String rewardClaim(String familyId, String claimId) =>
+      '${family(familyId)}/reward_claims/$claimId';
+  static String rewardLedgerRow(String familyId, String ledgerId) =>
+      '${family(familyId)}/reward_ledger/$ledgerId';
 }
 
 class FirestoreMutation {
@@ -151,6 +165,12 @@ class FirestoreEventContract {
     if (familyId == null || familyId.isEmpty) {
       throw const FormatException('familyId is required for remote sync.');
     }
+    // FS-007/FS-008 — tasks and rewards write through the same outbox
+    // channel; the aggregate type travels inside the payload so the
+    // switch below can discriminate subsystems without widening the
+    // on-device contract signature.
+    final aggregateType = payload['aggregate_type'] as String?;
+    final aggregateId = payload['aggregate_id'] as String?;
     final common = <String, Object?>{
       'familyId': familyId,
       'idempotencyKey': idempotencyKey,
@@ -225,8 +245,7 @@ class FirestoreEventContract {
         final newDeviceId = payload['newDeviceId'] as String?;
         final memberId = payload['memberId'] as String?;
         if (newDeviceId == null || memberId == null) {
-          throw const FormatException(
-              'device.transferred payload incomplete.');
+          throw const FormatException('device.transferred payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.device(familyId, newDeviceId),
@@ -436,8 +455,8 @@ class FirestoreEventContract {
           throw const FormatException('child usage payload incomplete.');
         }
         return FirestoreMutation(
-            path: FirestorePaths.deviceUsageSummary(
-                familyId, deviceId, usageId),
+            path:
+                FirestorePaths.deviceUsageSummary(familyId, deviceId, usageId),
             idempotencyKey: idempotencyKey,
             data: {
               ...common,
@@ -452,9 +471,9 @@ class FirestoreEventContract {
               'capturedAtClient': capturedAt
             });
       case 'child.exception.requested' ||
-          'child.exception.approved' ||
-          'child.exception.denied' ||
-          'child.exception.cancelled':
+            'child.exception.approved' ||
+            'child.exception.denied' ||
+            'child.exception.cancelled':
         final requestId = payload['requestId'] as String?;
         final childDeviceId = payload['childDeviceId'] as String?;
         final childMemberId = payload['childMemberId'] as String?;
@@ -474,7 +493,8 @@ class FirestoreEventContract {
             status == null ||
             createdAt == null ||
             requestExpiresAt == null) {
-          throw const FormatException('child exception request payload incomplete.');
+          throw const FormatException(
+              'child exception request payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.exceptionRequest(familyId, requestId),
@@ -505,12 +525,17 @@ class FirestoreEventContract {
         final targetEmail = payload['targetEmail'] as String?;
         final role = payload['proposedRole'] as String?;
         final expiresAt = payload['expiresAt'] as String?;
-        if (invitationId == null || inviterMemberId == null || targetEmail == null ||
-            role == null || !['parent', 'coParent'].contains(role) || expiresAt == null) {
+        if (invitationId == null ||
+            inviterMemberId == null ||
+            targetEmail == null ||
+            role == null ||
+            !['parent', 'coParent'].contains(role) ||
+            expiresAt == null) {
           throw const FormatException('family invitation payload incomplete.');
         }
         return FirestoreMutation(
-            path: '${FirestorePaths.family(familyId)}/invitations/$invitationId',
+            path:
+                '${FirestorePaths.family(familyId)}/invitations/$invitationId',
             idempotencyKey: idempotencyKey,
             data: {
               ...common,
@@ -526,27 +551,45 @@ class FirestoreEventContract {
       case 'family.invitation.cancelled':
         final invitationId = payload['invitationId'] as String?;
         if (invitationId == null) {
-          throw const FormatException('family invitation cancellation incomplete.');
+          throw const FormatException(
+              'family invitation cancellation incomplete.');
         }
         return FirestoreMutation(
-            path: '${FirestorePaths.family(familyId)}/invitations/$invitationId',
+            path:
+                '${FirestorePaths.family(familyId)}/invitations/$invitationId',
             idempotencyKey: idempotencyKey,
-            data: {...common, 'status': 'cancelled', 'cancelledAtClient': payload['cancelledAt']});
+            data: {
+              ...common,
+              'status': 'cancelled',
+              'cancelledAtClient': payload['cancelledAt']
+            });
       case 'family.member.accepted':
         final invitationId = payload['invitationId'] as String?;
         final memberId = payload['memberId'] as String?;
         final accountUid = payload['accountUid'] as String?;
         final displayName = payload['displayName'] as String?;
         final role = payload['role'] as String?;
-        if (invitationId == null || memberId == null || accountUid == null ||
-            identity.uid != accountUid || displayName == null ||
-            role == null || !['parent', 'coParent'].contains(role)) {
-          throw const FormatException('family invitation acceptance incomplete.');
+        if (invitationId == null ||
+            memberId == null ||
+            accountUid == null ||
+            identity.uid != accountUid ||
+            displayName == null ||
+            role == null ||
+            !['parent', 'coParent'].contains(role)) {
+          throw const FormatException(
+              'family invitation acceptance incomplete.');
         }
         return FirestoreMutation(
-            path: '${FirestorePaths.family(familyId)}/invitations/$invitationId',
+            path:
+                '${FirestorePaths.family(familyId)}/invitations/$invitationId',
             idempotencyKey: idempotencyKey,
-            data: {...common, 'status': 'accepted', 'acceptedAtClient': payload['acceptedAt'], 'acceptedAccountUid': accountUid, 'acceptedMemberId': memberId},
+            data: {
+              ...common,
+              'status': 'accepted',
+              'acceptedAtClient': payload['acceptedAt'],
+              'acceptedAccountUid': accountUid,
+              'acceptedMemberId': memberId
+            },
             additionalWrites: [
               FirestoreAdditionalWrite(
                   path: FirestorePaths.member(familyId, accountUid),
@@ -566,7 +609,8 @@ class FirestoreEventContract {
         final accountUid = payload['accountUid'] as String?;
         final memberId = payload['memberId'] as String?;
         if (accountUid == null || memberId == null) {
-          throw const FormatException('family member remote payload incomplete.');
+          throw const FormatException(
+              'family member remote payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.member(familyId, accountUid),
@@ -576,9 +620,12 @@ class FirestoreEventContract {
               'familyId': familyId,
               'memberId': memberId,
               if (operation == 'family.member.revoked') 'status': 'revoked',
-              if (operation == 'family.member.revoked') 'revokedAtClient': payload['revokedAt'],
-              if (operation == 'family.member.role.updated') 'role': payload['role'],
-              if (operation == 'family.member.role.updated') 'roleUpdatedAtClient': payload['updatedAt'],
+              if (operation == 'family.member.revoked')
+                'revokedAtClient': payload['revokedAt'],
+              if (operation == 'family.member.role.updated')
+                'role': payload['role'],
+              if (operation == 'family.member.role.updated')
+                'roleUpdatedAtClient': payload['updatedAt'],
             });
       // FS-001-adjacent — Safety incidents. `incident.created` seeds the
       // document; `incident.acknowledged` merges the acknowledged status on
@@ -588,7 +635,8 @@ class FirestoreEventContract {
       case 'incident.acknowledged':
         final ackIncidentId = payload['incidentId'] as String?;
         if (ackIncidentId == null) {
-          throw const FormatException('incident.acknowledged payload incomplete.');
+          throw const FormatException(
+              'incident.acknowledged payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.incident(familyId, ackIncidentId),
@@ -662,8 +710,7 @@ class FirestoreEventContract {
       case 'web.domain.removal':
         final remDomainId = payload['domainId'] as String?;
         if (remDomainId == null) {
-          throw const FormatException(
-              'web.domain.removal payload incomplete.');
+          throw const FormatException('web.domain.removal payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.webDomain(familyId, remDomainId),
@@ -1016,7 +1063,8 @@ class FirestoreEventContract {
       case 'monitoring.schedule':
         final mScheduleId = payload['scheduleId'] as String?;
         if (mScheduleId == null) {
-          throw const FormatException('monitoring.schedule payload incomplete.');
+          throw const FormatException(
+              'monitoring.schedule payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.monitoringSchedule(familyId, mScheduleId),
@@ -1035,7 +1083,8 @@ class FirestoreEventContract {
       case 'monitoring.evidence':
         final mEvidenceId = payload['evidenceId'] as String?;
         if (mEvidenceId == null) {
-          throw const FormatException('monitoring.evidence payload incomplete.');
+          throw const FormatException(
+              'monitoring.evidence payload incomplete.');
         }
         return FirestoreMutation(
             path: FirestorePaths.monitoringEvidence(familyId, mEvidenceId),
@@ -1101,14 +1150,20 @@ class FirestoreEventContract {
             });
       // FS-011 — Family Rules & Policy Engine. Parent-authored rules
       // travel through the outbox to Firestore; sibling devices read the
-      // same collection so the policy stays family-wide.
-      case 'family.rule.created' ||
-          'family.rule.updated' ||
-          'family.rule.deleted' ||
-          'family.rule.toggled' ||
-          'create' ||
-          'update' ||
-          'delete':
+      // same collection so the policy stays family-wide. This must sit
+      // AFTER the FS-007/FS-008 aggregate-gated cases below: its loose
+      // 'create'|'update'|'delete' arm would otherwise swallow task and
+      // reward rows before they are dispatched.
+      case ('family.rule.created' ||
+              'family.rule.updated' ||
+              'family.rule.deleted' ||
+              'family.rule.toggled' ||
+              'create' ||
+              'update' ||
+              'delete')
+          when aggregateType != 'family_task' &&
+              aggregateType != 'family_reward' &&
+              aggregateType != 'family_claim':
         // FS-011 outbox rows dispatch with operation 'create'|'update'|
         // 'delete' (aggregate_type 'family_rule'); the writer tags the
         // aggregate through the idempotencyKey family_rule:op:family:rule.
@@ -1175,6 +1230,134 @@ class FirestoreEventContract {
               'recipientId': payload['recipientId'],
               'status': 'acknowledged',
               'acknowledgedAt': payload['acknowledgedAt']
+            });
+      // FS-007 — Family Tasks & Daily Schedules. Parent-authored tasks
+      // and honest completion actions travel through the outbox.
+      case ('create' || 'update' || 'cancel')
+          when aggregateType == 'family_task':
+        final tTaskId =
+            payload['taskId'] as String? ?? payload['task_id'] as String?;
+        if (tTaskId == null) {
+          throw const FormatException('family.task payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.familyTask(familyId, tTaskId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventType': 'family.task.$operation',
+              'taskId': tTaskId,
+              'title': payload['title'] ?? payload['title'],
+              'description': payload['description'],
+              'dueMinute': payload['due_minute'] ?? payload['dueMinute'] ?? 0,
+              'dueDate': payload['due_date'] ?? payload['dueDate'],
+              'recurrence': payload['recurrence'] ?? 'none',
+              'weekdays': payload['weekdays'] ?? '',
+              'assignedChildIds': payload['assigned_child_ids'] ?? '',
+              'linkedRuleId':
+                  payload['linked_rule_id'] ?? payload['linkedRuleId'],
+              'status': payload['status'] ?? 'scheduled',
+              'createdByMemberId': payload['created_by_member_id'] ??
+                  payload['createdByMemberId'],
+              'createdAt': payload['created_at'] ?? payload['createdAt'],
+              'updatedAt': payload['updated_at'] ?? payload['updatedAt'],
+              'syncState': payload['sync_state'] ?? payload['syncState']
+            });
+      case ('completion-requested' || 'completed' || 'completion-declined')
+          when aggregateType == 'family_task':
+        final tChildId =
+            payload['childId'] as String? ?? payload['child_id'] as String?;
+        if (tChildId == null) {
+          throw const FormatException(
+              'family.task completion payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.taskCompletion(
+                familyId, '$idempotencyKey-${payload['child_id'] ?? tChildId}'),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventType': 'family.task.completion',
+              'familyId': familyId,
+              'taskId': payload['taskId'] ?? payload['task_id'],
+              'childId': tChildId,
+              'action': payload['action'] ?? 'requested',
+              'actorMemberId':
+                  payload['actor_member_id'] ?? payload['actorMemberId'],
+              'requestedAt': payload['requested_at'] ?? payload['requestedAt'],
+              'completedAt': payload['completed_at'] ?? payload['completedAt'],
+              'declinedAt': payload['declined_at'] ?? payload['declinedAt'],
+              'note': payload['note']
+            });
+      // FS-008 — Points & Rewards. Catalog edits, pending claims and
+      // the append-only ledger travel through the outbox; no silent
+      // balance mutation ever leaves the device.
+      case ('create' || 'update') when aggregateType == 'family_reward':
+        final rRewardId =
+            payload['rewardId'] as String? ?? payload['reward_id'] as String?;
+        if (rRewardId == null) {
+          throw const FormatException('family.reward payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.familyReward(familyId, rRewardId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventType': 'family.reward.catalog.updated',
+              'rewardId': rRewardId,
+              'name': payload['name'],
+              'description': payload['description'],
+              'costPoints':
+                  payload['cost_points'] ?? payload['costPoints'] ?? 0,
+              'expiryDays': payload['expiry_days'] ?? payload['expiryDays'],
+              'enabled': payload['enabled'] ?? true,
+              'createdByMemberId': payload['created_by_member_id'] ??
+                  payload['createdByMemberId'],
+              'createdAt': payload['created_at'] ?? payload['createdAt'],
+              'updatedAt': payload['updated_at'] ?? payload['updatedAt'],
+              'syncState': payload['sync_state'] ?? payload['syncState']
+            });
+      case ('requested' || 'decided') when aggregateType == 'family_claim':
+        final cClaimId =
+            payload['aggregateId'] as String? ?? aggregateId ?? idempotencyKey;
+        return FirestoreMutation(
+            path: FirestorePaths.rewardClaim(familyId, cClaimId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventType': 'family.claim.$operation',
+              'claimId': cClaimId,
+              'rewardId': payload['reward_id'] ?? payload['rewardId'],
+              'childId': payload['child_id'] ?? payload['childId'],
+              'costPoints': payload['cost_points'] ?? payload['costPoints'],
+              'decision': payload['decision'],
+              'decidedBy': payload['decided_by'] ?? payload['decidedBy'],
+              'requestedAt': payload['requested_at'] ?? payload['requestedAt'],
+              'decidedAt': payload['decided_at'] ?? payload['decidedAt'],
+              'note': payload['note']
+            });
+      case ('earned' || 'spent') when aggregateType == 'family_reward':
+        final lChildId =
+            payload['childId'] as String? ?? payload['child_id'] as String?;
+        if (lChildId == null) {
+          throw const FormatException(
+              'family.reward ledger payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.rewardLedgerRow(
+                familyId, '$lChildId-${payload['balance_after']}'),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'eventType': 'family.reward.$operation',
+              'childId': lChildId,
+              'delta': payload['delta'] ?? 0,
+              'reason': payload['reason'] ?? 'manualGrant',
+              'referenceId': payload['reference_id'] ?? payload['referenceId'],
+              'balanceAfter':
+                  payload['balance_after'] ?? payload['balanceAfter'] ?? 0,
+              'actedBy': payload['acted_by'] ?? payload['actedBy'],
+              'actedAt': payload['acted_at'] ?? payload['actedAt']
             });
       default:
         return syncMetadata(

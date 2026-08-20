@@ -49,6 +49,10 @@ import '../data/reports_repository.dart';
 import '../domain/reports_domain.dart';
 import '../data/family_rules_repository.dart';
 import '../domain/family_rules.dart';
+import '../data/family_tasks_repository.dart';
+import '../domain/family_tasks.dart';
+import '../data/family_rewards_repository.dart';
+import '../domain/family_rewards.dart';
 
 final localeProvider = StateProvider<String>((ref) => 'ar');
 final familyRepositoryProvider =
@@ -61,20 +65,18 @@ final policyRepositoryProvider =
 /// M6 — Screen-Time Administration. The policy list a parent sees for a
 /// child's family. Local first; each policy carries its honest
 /// [SyncState] so the UI never claims server delivery without evidence.
-final childPoliciesProvider =
-    FutureProvider.family((ref, String familyId) =>
-        ref.watch(policyRepositoryProvider).forFamily(familyId));
+final childPoliciesProvider = FutureProvider.family((ref, String familyId) =>
+    ref.watch(policyRepositoryProvider).forFamily(familyId));
 
 /// M6 — Screen-Time Administration. Active temporary allowances for a
 /// family. The engine applies these on top of policies; every allowance
 /// is bounded by expiry and the UI displays that expiry plainly.
-final childOverridesProvider =
-    FutureProvider.family((ref, String familyId) => ref
-        .watch(policyRepositoryProvider)
-        .overridesForFamily(familyId));
+final childOverridesProvider = FutureProvider.family((ref, String familyId) =>
+    ref.watch(policyRepositoryProvider).overridesForFamily(familyId));
 
 final childDeviceRepositoryProvider =
     Provider((ref) => ChildDeviceRepository(GuardianDatabase.instance));
+
 /// M6 — child-device policy delivery. Pulls the family's policy snapshot
 /// from Firestore into the local child-device store so the effective policy
 /// and enforcement state reflect the family's current policies (members may
@@ -94,27 +96,32 @@ final childPolicyDeliveryServiceProvider =
 class _UnavailableChildPolicySource implements ChildPolicySource {
   const _UnavailableChildPolicySource();
   @override
-  Future<List<RemoteChildPolicyMutation>> fetchPolicies(String familyId) async =>
+  Future<List<RemoteChildPolicyMutation>> fetchPolicies(
+          String familyId) async =>
       const [];
 }
-final deviceLinkServiceProvider = Provider(
-    (ref) => DeviceLinkService(ref.watch(pairingRepositoryProvider)));
+
+final deviceLinkServiceProvider =
+    Provider((ref) => DeviceLinkService(ref.watch(pairingRepositoryProvider)));
+
 /// M5 Option D — canonical remote child provisioning (Functions callables).
 /// When Firebase is unconfigured the service is unavailable and the local
 /// SQLite pairing flow remains the offline-first fallback.
-final remoteProvisioningServiceProvider = Provider(
-    (ref) => const RemoteProvisioningService());
+final remoteProvisioningServiceProvider =
+    Provider((ref) => const RemoteProvisioningService());
 final childExceptionRequestRepositoryProvider = Provider((ref) =>
-    ChildExceptionRequestRepository(GuardianDatabase.instance,
-        ref.watch(policyRepositoryProvider)));
+    ChildExceptionRequestRepository(
+        GuardianDatabase.instance, ref.watch(policyRepositoryProvider)));
 final childDeviceStatesProvider = FutureProvider.family(
     (ref, String familyId) =>
         ref.watch(childDeviceRepositoryProvider).statesForFamily(familyId));
-final childUsageForTodayProvider = FutureProvider.family((ref, String deviceId) =>
-    ref.watch(childDeviceRepositoryProvider).usageForDeviceDay(
-        deviceId: deviceId, day: DateTime.now()));
-final deliveredChildPoliciesProvider = FutureProvider.family((ref, String deviceId) =>
-    ref.watch(childDeviceRepositoryProvider).deliveredPolicies(deviceId));
+final childUsageForTodayProvider = FutureProvider.family(
+    (ref, String deviceId) => ref
+        .watch(childDeviceRepositoryProvider)
+        .usageForDeviceDay(deviceId: deviceId, day: DateTime.now()));
+final deliveredChildPoliciesProvider = FutureProvider.family(
+    (ref, String deviceId) =>
+        ref.watch(childDeviceRepositoryProvider).deliveredPolicies(deviceId));
 final familyDailySafetyProvider = FutureProvider.family((ref, String familyId) {
   final repo = FamilySafetyExperienceRepository(
       GuardianDatabase.instance,
@@ -122,16 +129,22 @@ final familyDailySafetyProvider = FutureProvider.family((ref, String familyId) {
       ref.watch(childExceptionRequestRepositoryProvider));
   return repo.childrenForFamily(familyId);
 });
-final familySafetyTimelineProvider = FutureProvider.family((ref, String familyId) {
+final familySafetyTimelineProvider =
+    FutureProvider.family((ref, String familyId) {
   final repo = FamilySafetyExperienceRepository(
       GuardianDatabase.instance,
       ref.watch(policyRepositoryProvider),
       ref.watch(childExceptionRequestRepositoryProvider));
   return repo.timelineForFamily(familyId);
 });
-final familyExceptionRequestsProvider = FutureProvider.family((ref, String familyId) =>
-    ref.watch(childExceptionRequestRepositoryProvider).forFamily(familyId));
-typedef ChildRequestScope = ({String familyId, String deviceId, String childUid});
+final familyExceptionRequestsProvider = FutureProvider.family(
+    (ref, String familyId) =>
+        ref.watch(childExceptionRequestRepositoryProvider).forFamily(familyId));
+typedef ChildRequestScope = ({
+  String familyId,
+  String deviceId,
+  String childUid
+});
 final childExceptionRequestsProvider = FutureProvider.family(
     (ref, ChildRequestScope scope) => ref
         .watch(childExceptionRequestRepositoryProvider)
@@ -141,11 +154,14 @@ final childExceptionRequestsProvider = FutureProvider.family(
             childUid: scope.childUid));
 final sosRepositoryProvider =
     Provider((ref) => SosRepository(GuardianDatabase.instance));
+
 /// Unacknowledged incidents for the family — drives the dashboard safety
 /// signal. A pure local read; never called directly from a widget.
-final recentIncidentsProvider = FutureProvider.family<List<GuardianIncident>, String>(
-    (ref, String familyId) => IncidentRepository(GuardianDatabase.instance, const RiskEngine())
-        .unacknowledgedIncidentsForFamily(familyId));
+final recentIncidentsProvider =
+    FutureProvider.family<List<GuardianIncident>, String>(
+        (ref, String familyId) =>
+            IncidentRepository(GuardianDatabase.instance, const RiskEngine())
+                .unacknowledgedIncidentsForFamily(familyId));
 final firebaseAuthContextProvider =
     Provider<FirebaseAuthContext>((ref) => const FirebaseAuthContext());
 final firebaseAuthServiceProvider = Provider(
@@ -157,14 +173,14 @@ final familyActorBindingServiceProvider = Provider((ref) {
       GuardianFirebaseBootstrap.current.isReady
           ? FirestoreFamilyMembershipRemoteReader(FirebaseFirestore.instance)
           : _UnavailableFamilyMembershipRemoteReader();
-  return FamilyActorBindingService(
-      ref.watch(firebaseAuthContextProvider),
-      FamilyMembershipRepository(GuardianDatabase.instance),
-      reader);
+  return FamilyActorBindingService(ref.watch(firebaseAuthContextProvider),
+      FamilyMembershipRepository(GuardianDatabase.instance), reader);
 });
 final familyActorBindingProvider =
     FutureProvider.family<FamilyActorBindingResult, String>((ref, familyId) =>
-        ref.watch(familyActorBindingServiceProvider).resolveForFamily(familyId));
+        ref
+            .watch(familyActorBindingServiceProvider)
+            .resolveForFamily(familyId));
 final outboxRemoteWriterProvider = Provider<OutboxRemoteWriter>((ref) {
   if (!GuardianFirebaseBootstrap.current.isReady) {
     return const UnconfiguredOutboxRemoteWriter();
@@ -175,40 +191,46 @@ final outboxSyncExecutorProvider = Provider((ref) => OutboxSyncExecutor(
     GuardianDatabase.instance,
     ref.watch(firebaseAuthContextProvider),
     ref.watch(outboxRemoteWriterProvider)));
+
 /// M9 — canonical runtime sync coordinator. All triggers (startup,
 /// connectivity restoration, manual sync, WorkManager) funnel through this
 /// single-flight coordinator so only one execution may operate on the outbox
 /// at a time. UI watches [syncCoordinatorProvider] for the honest state.
 final syncCoordinatorCoreProvider = Provider(
     (ref) => SyncCoordinatorCore(ref.watch(outboxSyncExecutorProvider)));
-final syncCoordinatorProvider = StateNotifierProvider<SyncCoordinator, SyncRunState>(
-    (ref) => SyncCoordinator(ref.watch(syncCoordinatorCoreProvider)));
+final syncCoordinatorProvider =
+    StateNotifierProvider<SyncCoordinator, SyncRunState>(
+        (ref) => SyncCoordinator(ref.watch(syncCoordinatorCoreProvider)));
+
 /// M9 Trigger B — network restoration monitor (offline → online).
 final networkConnectivityServiceProvider =
     Provider((ref) => NetworkConnectivityService());
+
 /// M9 — honest outbox status queries for the UI (pending count, family-level
 /// pending state). Never claims synced without real outbox evidence.
 final outboxSyncStatusProvider =
     Provider((ref) => OutboxSyncStatus(GuardianDatabase.instance));
+
 /// M9 — honest pending-count read for the sync UI. `autoDispose` so the count
 /// is re-derived from the real SQLite outbox every time the surface opens
 /// (never a stale cached value from before a mutation was enqueued).
 final pendingOutboxCountProvider = FutureProvider.autoDispose<int>(
     (ref) => ref.watch(outboxSyncStatusProvider).pendingCount());
+
 /// M9 E3 — family-level pending sync derived from the REAL outbox state,
 /// including `family.created` (aggregate type `family`) so a queued family
 /// mutation is never presented as fully synchronized. `autoDispose` keeps the
 /// read fresh whenever the family screen opens.
-final familyPendingSyncProvider = FutureProvider.autoDispose.family<bool, String>(
-    (ref, String familyId) =>
+final familyPendingSyncProvider = FutureProvider.autoDispose
+    .family<bool, String>((ref, String familyId) =>
         ref.watch(outboxSyncStatusProvider).hasPendingForFamily(familyId));
 final deviceTokenRepositoryProvider =
     Provider((ref) => DeviceTokenRepository(GuardianDatabase.instance));
 final capabilityGatewayProvider = Provider((ref) => const CapabilityGateway());
 final androidObservationGatewayProvider =
     Provider((ref) => const AndroidObservationGateway());
-final androidEnforcementAdapterProvider =
-    Provider((ref) => AndroidEnforcementAdapter(platform: EnforcementPlatformChannel()));
+final androidEnforcementAdapterProvider = Provider(
+    (ref) => AndroidEnforcementAdapter(platform: EnforcementPlatformChannel()));
 final childScreenTimeCoordinatorProvider = Provider((ref) =>
     ChildScreenTimeCoordinator(
         ref.watch(childDeviceRepositoryProvider),
@@ -219,22 +241,21 @@ final childScreenTimeCoordinatorProvider = Provider((ref) =>
 /// snapshot for a child device's current local day: usage totals,
 /// per-target breakdown, honest observation state, freshness, and sync
 /// evidence derived only from the actual outbox row state.
-final childUsageMeasurementProvider =
-    FutureProvider.family((ref, String deviceId) =>
-        buildUsageMeasurementSnapshot(
-            coordinator: ref.watch(childScreenTimeCoordinatorProvider),
-            repository: ref.watch(childDeviceRepositoryProvider),
-            deviceId: deviceId,
-            now: DateTime.now()));
+final childUsageMeasurementProvider = FutureProvider.family(
+    (ref, String deviceId) => buildUsageMeasurementSnapshot(
+        coordinator: ref.watch(childScreenTimeCoordinatorProvider),
+        repository: ref.watch(childDeviceRepositoryProvider),
+        deviceId: deviceId,
+        now: DateTime.now()));
+
 /// M8 — Screen-Time Enforcement. On-demand, consent-gated enforcement
 /// evaluation for a child device: honest enforcement state, application
 /// evidence, policy freshness, and sync evidence derived only from the
 /// actual outbox row state. Offline-safe: all inputs are local.
-final enforcementStateProvider =
-    FutureProvider.family((ref, String deviceId) => ChildEnforcementCoordinator(
-        ref.watch(childDeviceRepositoryProvider),
-        ref.watch(androidEnforcementAdapterProvider))
-            .evaluate(deviceId, moment: DateTime.now().toUtc()));
+final enforcementStateProvider = FutureProvider.family((ref, String deviceId) =>
+    ChildEnforcementCoordinator(ref.watch(childDeviceRepositoryProvider),
+            ref.watch(androidEnforcementAdapterProvider))
+        .evaluate(deviceId, moment: DateTime.now().toUtc()));
 final dashboardProvider = FutureProvider<GuardianDashboard>(
     (ref) => ref.watch(familyRepositoryProvider).loadDashboard());
 final capabilityStatusProvider = FutureProvider<List<CapabilityStatus>>(
@@ -246,15 +267,12 @@ final capabilityStatusProvider = FutureProvider<List<CapabilityStatus>>(
 /// first; the honest outbox carries the same offline-first rhythm.
 final webFilterRepositoryProvider =
     Provider((ref) => WebFilterRepository(GuardianDatabase.instance));
-final webHitsProvider = FutureProvider.family(
-    (ref, String familyId) =>
-        ref.watch(webFilterRepositoryProvider).hitsForFamily(familyId));
-final webDomainsProvider = FutureProvider.family(
-    (ref, String familyId) =>
-        ref.watch(webFilterRepositoryProvider).domainsForFamily(familyId));
-final webSettingsProvider = FutureProvider.family(
-    (ref, String familyId) =>
-        ref.watch(webFilterRepositoryProvider).settingsForFamily(familyId));
+final webHitsProvider = FutureProvider.family((ref, String familyId) =>
+    ref.watch(webFilterRepositoryProvider).hitsForFamily(familyId));
+final webDomainsProvider = FutureProvider.family((ref, String familyId) =>
+    ref.watch(webFilterRepositoryProvider).domainsForFamily(familyId));
+final webSettingsProvider = FutureProvider.family((ref, String familyId) =>
+    ref.watch(webFilterRepositoryProvider).settingsForFamily(familyId));
 
 // FS-002 — Web Filtering remote bridge. Reads verified server facts from
 // Firestore (`/families/{id}/web_policy`) and applies them into the local
@@ -266,12 +284,12 @@ final webPolicyRemoteReaderProvider = Provider<WebPolicyRemoteReader>((ref) {
   }
   return FirestoreWebPolicyRemoteReader(FirebaseFirestore.instance);
 });
-final webPolicySyncApplierProvider = Provider((ref) =>
-    WebPolicySyncApplier(ref.watch(webFilterRepositoryProvider)));
+final webPolicySyncApplierProvider = Provider(
+    (ref) => WebPolicySyncApplier(ref.watch(webFilterRepositoryProvider)));
 final webFilterPullProvider = FutureProvider.family<WebPullResult, String>(
     (ref, String familyId) => WebFilterPullService(
-        ref.watch(webPolicyRemoteReaderProvider),
-        ref.watch(webPolicySyncApplierProvider))
+            ref.watch(webPolicyRemoteReaderProvider),
+            ref.watch(webPolicySyncApplierProvider))
         .pull(familyId));
 
 class _UnavailableWebPolicyRemoteReader implements WebPolicyRemoteReader {
@@ -298,27 +316,34 @@ class _UnavailableFamilyMembershipRemoteReader
 // SQLite first; the honest outbox carries the same offline-first rhythm.
 final locationGeofenceRepositoryProvider =
     Provider((ref) => LocationGeofenceRepository(GuardianDatabase.instance));
-final locationPointsProvider = FutureProvider.family<List<LocationPoint>, String>(
-    (ref, String familyId) =>
-        ref.watch(locationGeofenceRepositoryProvider).pointsForFamily(familyId));
-final locationPointsForMemberProvider =
-    FutureProvider.family<List<LocationPoint>, ({String familyId, String memberId})>(
-        (ref, ({String familyId, String memberId}) scope) =>
-            ref.watch(locationGeofenceRepositoryProvider).pointsForMember(
-                scope.familyId, scope.memberId));
+final locationPointsProvider =
+    FutureProvider.family<List<LocationPoint>, String>((ref, String familyId) =>
+        ref
+            .watch(locationGeofenceRepositoryProvider)
+            .pointsForFamily(familyId));
+final locationPointsForMemberProvider = FutureProvider.family<
+        List<LocationPoint>, ({String familyId, String memberId})>(
+    (ref, ({String familyId, String memberId}) scope) => ref
+        .watch(locationGeofenceRepositoryProvider)
+        .pointsForMember(scope.familyId, scope.memberId));
 final geofencesProvider = FutureProvider.family<List<GeofenceEntry>, String>(
-    (ref, String familyId) =>
-        ref.watch(locationGeofenceRepositoryProvider).geofencesForFamily(familyId));
-final locationAlertsProvider = FutureProvider.family<List<LocationAlert>, String>(
-    (ref, String familyId) =>
-        ref.watch(locationGeofenceRepositoryProvider).alertsForFamily(familyId));
+    (ref, String familyId) => ref
+        .watch(locationGeofenceRepositoryProvider)
+        .geofencesForFamily(familyId));
+final locationAlertsProvider =
+    FutureProvider.family<List<LocationAlert>, String>((ref, String familyId) =>
+        ref
+            .watch(locationGeofenceRepositoryProvider)
+            .alertsForFamily(familyId));
 // FS-001 — location settings view (battery saver + per-member sharing).
 final locationSettingsProvider =
-    FutureProvider.family<Map<String, String>, String>((ref, String familyId) async {
+    FutureProvider.family<Map<String, String>, String>(
+        (ref, String familyId) async {
   final repository = ref.watch(locationGeofenceRepositoryProvider);
   final batterySaver =
       await repository.setting(familyId, 'battery_saver', 'off');
-  final runtime = await ref.watch(familyRuntimeContextProvider(familyId).future);
+  final runtime =
+      await ref.watch(familyRuntimeContextProvider(familyId).future);
   final values = <String, String>{'battery_saver': batterySaver};
   for (final member in runtime.children) {
     final sharing = await repository.setting(
@@ -328,11 +353,14 @@ final locationSettingsProvider =
   return values;
 });
 final locationAlertCountProvider = FutureProvider.family<int, String>(
-    (ref, String familyId) =>
-        ref.watch(locationGeofenceRepositoryProvider).unacknowledgedAlertCount(familyId));
-final favoritePlacesProvider = FutureProvider.family<List<FavoritePlace>, String>(
-    (ref, String familyId) =>
-        ref.watch(locationGeofenceRepositoryProvider).placesForFamily(familyId));
+    (ref, String familyId) => ref
+        .watch(locationGeofenceRepositoryProvider)
+        .unacknowledgedAlertCount(familyId));
+final favoritePlacesProvider =
+    FutureProvider.family<List<FavoritePlace>, String>((ref, String familyId) =>
+        ref
+            .watch(locationGeofenceRepositoryProvider)
+            .placesForFamily(familyId));
 
 // FS-001 — Location & Geofencing remote bridge. Reads verified server
 // facts from Firestore (`/families/{id}/locations`, `geofences`,
@@ -351,8 +379,8 @@ final locationSyncApplierProvider = Provider((ref) =>
 final familyLocationPullProvider =
     FutureProvider.family<FamilyLocationPullResult, String>(
         (ref, String familyId) => FamilyLocationPullService(
-            ref.watch(locationRemoteReaderProvider),
-            ref.watch(locationSyncApplierProvider))
+                ref.watch(locationRemoteReaderProvider),
+                ref.watch(locationSyncApplierProvider))
             .pull(familyId: familyId));
 
 class _UnavailableFamilyLocationRemoteReader
@@ -372,50 +400,45 @@ class _UnavailableFamilyLocationRemoteReader
 /// offline-first rhythm as the rest of the platform.
 final appPolicyRepositoryProvider =
     Provider((ref) => ApplicationPolicyRepository(GuardianDatabase.instance));
-final appPoliciesProvider =
-    FutureProvider.family<List<AppPolicyEntry>, String>(
-        (ref, String familyId) =>
-            ref.watch(appPolicyRepositoryProvider).resolvePolicies(familyId));
+final appPoliciesProvider = FutureProvider.family<List<AppPolicyEntry>, String>(
+    (ref, String familyId) =>
+        ref.watch(appPolicyRepositoryProvider).resolvePolicies(familyId));
 final appAllowlistProvider =
     FutureProvider.family<List<AppAllowlistEntry>, String>(
         (ref, String familyId) =>
             ref.watch(appPolicyRepositoryProvider).allowlistEntries(familyId));
 final appBlockEventsProvider =
-    FutureProvider.family<List<AppBlockEvent>, String>(
-        (ref, String familyId) =>
-            ref.watch(appPolicyRepositoryProvider).blockEvents(familyId));
+    FutureProvider.family<List<AppBlockEvent>, String>((ref, String familyId) =>
+        ref.watch(appPolicyRepositoryProvider).blockEvents(familyId));
 final usageAlertSettingsProvider =
-    FutureProvider.family<List<UsageAlertSetting>, String>(
-        (ref, String familyId) => ref
-            .watch(appPolicyRepositoryProvider)
-            .resolveAlertSettings(familyId));
+    FutureProvider.family<List<UsageAlertSetting>, String>((ref,
+            String familyId) =>
+        ref.watch(appPolicyRepositoryProvider).resolveAlertSettings(familyId));
+
 /// FS-003 — per-child device usage totals for the day, joined against the
 /// policy repository for on-screen allowance math. Local-only: device agents
 /// sync their usage into SQLite, so the parent view is honest even offline.
 final appUsageForFamilyProvider =
-    FutureProvider.family<List<DailyUsageSummary>, String>(
-        (ref, String familyId) => ref
-            .watch(childDeviceRepositoryProvider)
-            .summariesForFamily(familyId));
+    FutureProvider.family<List<DailyUsageSummary>, String>((ref,
+            String familyId) =>
+        ref.watch(childDeviceRepositoryProvider).summariesForFamily(familyId));
 
 // FS-003 — Application Control remote bridge. Reads verified server facts
 // from Firestore (`/families/{id}/app_policy`) and applies them into the
 // local store. When Firebase is unconfigured the reader is a safe no-op so
 // the local offline-first store remains the single honest source of truth.
-final appPolicyRemoteReaderProvider =
-    Provider<AppPolicyRemoteReader>((ref) {
+final appPolicyRemoteReaderProvider = Provider<AppPolicyRemoteReader>((ref) {
   if (!GuardianFirebaseBootstrap.current.isReady) {
     return const _UnavailableAppPolicyRemoteReader();
   }
   return FirestoreAppPolicyRemoteReader(FirebaseFirestore.instance);
 });
-final appPolicySyncApplierProvider = Provider((ref) =>
-    AppPolicySyncApplier(ref.watch(appPolicyRepositoryProvider)));
+final appPolicySyncApplierProvider = Provider(
+    (ref) => AppPolicySyncApplier(ref.watch(appPolicyRepositoryProvider)));
 final appPolicyPullProvider =
-    FutureProvider.family<AppPolicyPullResult, String>(
-        (ref, String familyId) => AppPolicyPullService(
-            ref.watch(appPolicyRemoteReaderProvider),
-            ref.watch(appPolicySyncApplierProvider))
+    FutureProvider.family<AppPolicyPullResult, String>((ref, String familyId) =>
+        AppPolicyPullService(ref.watch(appPolicyRemoteReaderProvider),
+                ref.watch(appPolicySyncApplierProvider))
             .pull(familyId));
 
 class _UnavailableAppPolicyRemoteReader implements AppPolicyRemoteReader {
@@ -429,32 +452,28 @@ class _UnavailableAppPolicyRemoteReader implements AppPolicyRemoteReader {
 
 // FS-004 — Screenshot & Camera Control. Local-first store for monitoring
 // data delivered by child device agents; reads never fabricate shots.
-final monitoringRepositoryProvider = Provider((ref) =>
-    MonitoringRepository(GuardianDatabase.instance));
+final monitoringRepositoryProvider =
+    Provider((ref) => MonitoringRepository(GuardianDatabase.instance));
 final monitoringShotsProvider =
     FutureProvider.family<List<MonitoringShot>, String>(
         (ref, String familyId) =>
             ref.watch(monitoringRepositoryProvider).shotsForFamily(familyId));
 final monitoringRequestsProvider =
-    FutureProvider.family<List<MonitoringRequest>, String>(
-        (ref, String familyId) => ref
-            .watch(monitoringRepositoryProvider)
-            .requestsForFamily(familyId));
+    FutureProvider.family<List<MonitoringRequest>, String>((ref,
+            String familyId) =>
+        ref.watch(monitoringRepositoryProvider).requestsForFamily(familyId));
 final monitoringSchedulesProvider =
-    FutureProvider.family<List<MonitoringSchedule>, String>(
-        (ref, String familyId) => ref
-            .watch(monitoringRepositoryProvider)
-            .schedulesForFamily(familyId));
+    FutureProvider.family<List<MonitoringSchedule>, String>((ref,
+            String familyId) =>
+        ref.watch(monitoringRepositoryProvider).schedulesForFamily(familyId));
 final monitoringEvidenceProvider =
-    FutureProvider.family<List<MonitoringEvidence>, String>(
-        (ref, String familyId) => ref
-            .watch(monitoringRepositoryProvider)
-            .evidenceForFamily(familyId));
+    FutureProvider.family<List<MonitoringEvidence>, String>((ref,
+            String familyId) =>
+        ref.watch(monitoringRepositoryProvider).evidenceForFamily(familyId));
 final monitoringSessionsProvider =
-    FutureProvider.family<List<MonitoringSession>, String>(
-        (ref, String familyId) => ref
-            .watch(monitoringRepositoryProvider)
-            .sessionsForFamily(familyId));
+    FutureProvider.family<List<MonitoringSession>, String>((ref,
+            String familyId) =>
+        ref.watch(monitoringRepositoryProvider).sessionsForFamily(familyId));
 
 final monitoringRemoteReaderProvider =
     Provider<FlutterMonitoringRemoteReader>((ref) {
@@ -463,8 +482,8 @@ final monitoringRemoteReaderProvider =
   }
   return FlutterMonitoringRemoteReader(ref.watch(monitoringRepositoryProvider));
 });
-final monitoringPullProvider =
-    FutureProvider.family<int?, String>((ref, String familyId) =>
+final monitoringPullProvider = FutureProvider.family<int?, String>(
+    (ref, String familyId) =>
         ref.watch(monitoringRemoteReaderProvider).pullPending({}));
 
 // FS-005 — Special & Custom Modes. Local-first store for situational
@@ -472,68 +491,62 @@ final monitoringPullProvider =
 // reads never fabricate delivery state.
 final modeConfigRepositoryProvider =
     Provider((ref) => ModeConfigRepository(GuardianDatabase.instance));
-final modeConfigsProvider =
-    FutureProvider.family<List<ModeConfig>, String>(
-        (ref, String familyId) =>
-            ref.watch(modeConfigRepositoryProvider).modesForFamily(familyId));
-final modeChildConfigsProvider =
-    FutureProvider.family<List<ModeConfig>,
+final modeConfigsProvider = FutureProvider.family<List<ModeConfig>, String>(
+    (ref, String familyId) =>
+        ref.watch(modeConfigRepositoryProvider).modesForFamily(familyId));
+final modeChildConfigsProvider = FutureProvider.family<List<ModeConfig>,
         ({String familyId, String childId})>(
-        (ref, scope) => ref
-            .watch(modeConfigRepositoryProvider)
-            .childModesFor(scope.familyId, scope.childId));
+    (ref, scope) => ref
+        .watch(modeConfigRepositoryProvider)
+        .childModesFor(scope.familyId, scope.childId));
 final modeActivationsProvider =
-    FutureProvider.family<List<ModeActivation>, String>(
-        (ref, String familyId) => ref
-            .watch(modeConfigRepositoryProvider)
-            .activationsForFamily(familyId));
+    FutureProvider.family<List<ModeActivation>, String>((ref,
+            String familyId) =>
+        ref.watch(modeConfigRepositoryProvider).activationsForFamily(familyId));
 
-final modesRemoteReaderProvider =
-    Provider<FlutterModesRemoteReader>((ref) {
+final modesRemoteReaderProvider = Provider<FlutterModesRemoteReader>((ref) {
   if (!GuardianFirebaseBootstrap.current.isReady) {
     return FlutterModesRemoteReader.unavailable();
   }
   return FlutterModesRemoteReader(ref.watch(modeConfigRepositoryProvider));
 });
-final modesPullProvider =
-    FutureProvider.family<int?, String>((ref, String familyId) =>
+final modesPullProvider = FutureProvider.family<int?, String>(
+    (ref, String familyId) =>
         ref.watch(modesRemoteReaderProvider).pullPending({}));
 
 // FS-006 — SOS & Emergency. The readiness roster, the honest SOS
 // acknowledgement chain, and the guided drill state. A family only ever
 // sees alert states that the acknowledgement channel actually confirmed.
-final activeSosProvider =
-    FutureProvider.family<Map<String, Object?>?, String>(
-        (ref, String familyId) =>
-            ref.watch(sosRepositoryProvider).activeSosForFamily(familyId));
+final activeSosProvider = FutureProvider.family<Map<String, Object?>?, String>(
+    (ref, String familyId) =>
+        ref.watch(sosRepositoryProvider).activeSosForFamily(familyId));
+
 /// Resolves the parent SOS event id for a notification row id. Needed by
 /// SO-005 (EmergencyAlertScreen), which is addressed by the notification
 /// row id but scopes its data to the parent sos event.
-final futureSosIdProvider =
-    FutureProvider.family<String?, String>((ref, String notificationId) =>
+final futureSosIdProvider = FutureProvider.family<String?, String>(
+    (ref, String notificationId) =>
         ref.watch(sosRepositoryProvider).sosIdForNotification(notificationId));
 final sosNotificationsProvider =
     FutureProvider.family<List<Map<String, Object?>>, String>(
         (ref, String sosId) =>
             ref.watch(sosRepositoryProvider).notificationsForSos(sosId));
-final sosRecipientsProvider =
-    FutureProvider.family<List<SosRecipient>, String>(
-        (ref, String familyId) =>
-            ref.watch(sosRepositoryProvider).recipientsForFamily(familyId));
+final sosRecipientsProvider = FutureProvider.family<List<SosRecipient>, String>(
+    (ref, String familyId) =>
+        ref.watch(sosRepositoryProvider).recipientsForFamily(familyId));
 final sosHistoryProvider =
     FutureProvider.family<List<Map<String, Object?>>, String>(
         (ref, String familyId) =>
             ref.watch(sosRepositoryProvider).sosHistoryForFamily(familyId));
 
-final sosRemoteReaderProvider =
-    Provider<FlutterSosRemoteReader>((ref) {
+final sosRemoteReaderProvider = Provider<FlutterSosRemoteReader>((ref) {
   if (!GuardianFirebaseBootstrap.current.isReady) {
     return FlutterSosRemoteReader.unavailable();
   }
   return FlutterSosRemoteReader(ref.watch(sosRepositoryProvider));
 });
-final sosPullProvider =
-    FutureProvider.family<int?, String>((ref, String familyId) =>
+final sosPullProvider = FutureProvider.family<int?, String>(
+    (ref, String familyId) =>
         ref.watch(sosRemoteReaderProvider).pullPending({}));
 
 // FS-015 — Device Linking & Enrollment. Honest inventory of pairing
@@ -542,25 +555,26 @@ final sosPullProvider =
 // lifecycle rows (see `device_linking.dart`).
 final pendingPairingRequestsProvider =
     FutureProvider.family<List<Map<String, Object?>>, String>(
-        (ref, String familyId) =>
-            ref.watch(pairingRepositoryProvider).pendingRequestsForFamily(familyId));
+        (ref, String familyId) => ref
+            .watch(pairingRepositoryProvider)
+            .pendingRequestsForFamily(familyId));
 final latestPairingSessionProvider =
-    FutureProvider.family<Map<String, Object?>?, String>(
-        (ref, String familyId) =>
-            ref.watch(pairingRepositoryProvider).latestSessionForFamily(familyId));
+    FutureProvider.family<Map<String, Object?>?, String>((ref,
+            String familyId) =>
+        ref.watch(pairingRepositoryProvider).latestSessionForFamily(familyId));
 final familyDevicesProvider =
     FutureProvider.family<List<Map<String, Object?>>, String>(
         (ref, String familyId) =>
             ref.watch(pairingRepositoryProvider).devicesForFamily(familyId));
-final deviceByIdProvider =
-    FutureProvider.family<Map<String, Object?>?, String>(
-        (ref, String deviceId) =>
-            ref.watch(pairingRepositoryProvider).deviceById(deviceId));
+final deviceByIdProvider = FutureProvider.family<Map<String, Object?>?, String>(
+    (ref, String deviceId) =>
+        ref.watch(pairingRepositoryProvider).deviceById(deviceId));
+
 /// DL-010 — one honest [DeviceHealth] record per family device.
 final familyDeviceHealthProvider =
-    FutureProvider.family<List<DeviceHealth>, String>((ref, String familyId) async {
-  final devices =
-      await ref.watch(familyDevicesProvider(familyId).future);
+    FutureProvider.family<List<DeviceHealth>, String>(
+        (ref, String familyId) async {
+  final devices = await ref.watch(familyDevicesProvider(familyId).future);
   final results = <DeviceHealth>[];
   for (final row in devices) {
     final life = await ref
@@ -570,13 +584,18 @@ final familyDeviceHealthProvider =
   }
   return results;
 });
-typedef DeviceTransferScope = ({String familyId, String memberId, String ownerMemberId});
+typedef DeviceTransferScope = ({
+  String familyId,
+  String memberId,
+  String ownerMemberId
+});
+
 /// DL-011 — transfers a child's enrollment to a fresh device row. The old
 /// device is revoked (record kept, never deleted) and a queued outbox
 /// operation (`device.transferred`) carries the honest migration note.
-final deviceTransferProvider =
-    FutureProvider.family<({bool succeeded, String? newDeviceId, String? failure}), String>(
-        (ref, String oldDeviceId) {
+final deviceTransferProvider = FutureProvider.family<
+    ({bool succeeded, String? newDeviceId, String? failure}),
+    String>((ref, String oldDeviceId) {
   final scope = ref.watch(_deviceTransferScopeProvider);
   return ref.watch(pairingRepositoryProvider).transferDeviceEnrollment(
       oldDeviceId: oldDeviceId,
@@ -584,19 +603,15 @@ final deviceTransferProvider =
       memberId: scope.memberId,
       ownerMemberId: scope.ownerMemberId);
 });
-final _deviceTransferScopeProvider =
-    StateProvider<DeviceTransferScope>((ref) => throw StateError(
+final _deviceTransferScopeProvider = StateProvider<DeviceTransferScope>((ref) =>
+    throw StateError(
         'device_transfer_scope_required: set the scope before reading deviceTransferProvider'));
-void setDeviceTransferScope(
-    WidgetRef ref,
+void setDeviceTransferScope(WidgetRef ref,
     {required String familyId,
     required String memberId,
     required String ownerMemberId}) {
-  ref.read(_deviceTransferScopeProvider.notifier).state = (
-    familyId: familyId,
-    memberId: memberId,
-    ownerMemberId: ownerMemberId
-  );
+  ref.read(_deviceTransferScopeProvider.notifier).state =
+      (familyId: familyId, memberId: memberId, ownerMemberId: ownerMemberId);
 }
 
 // FS-009 — Reports & Export. Aggregates the real subsystem tables into
@@ -604,53 +619,122 @@ void setDeviceTransferScope(
 // same detail screens and the export screen read one shared selection.
 // Nothing here invents numbers — an empty window produces an honest
 // empty verdict on every section.
-final reportsRepositoryProvider =
-    Provider<ReportsRepository>((ref) => ReportsRepository(GuardianDatabase.instance));
+final reportsRepositoryProvider = Provider<ReportsRepository>(
+    (ref) => ReportsRepository(GuardianDatabase.instance));
 
 final reportsPeriodNotifierProvider =
     StateProvider.family<ReportPeriod, String>(
         (ref, String familyId) => ReportPeriod.week);
 
-final reportsSnapshotProvider =
-    FutureProvider.family<FamilyReportSnapshot,
+final reportsSnapshotProvider = FutureProvider.family<FamilyReportSnapshot,
         ({String familyId, ReportPeriod period})>(
-            (ref, ({String familyId, ReportPeriod period}) key) =>
-                ref
-                    .watch(reportsRepositoryProvider)
-                    .snapshotFor(familyId: key.familyId, period: key.period));
+    (ref, ({String familyId, ReportPeriod period}) key) => ref
+        .watch(reportsRepositoryProvider)
+        .snapshotFor(familyId: key.familyId, period: key.period));
 
 // FS-011 — Family Rules & Policy Engine. The unified rule book reads the
 // real family_rules table and computes conflicts deterministically
 // (priority desc, creation asc). The execution log records every verdict
 // honestly; nothing here invents enforcement states the device never
 // produced.
-final familyRulesRepositoryProvider =
-    Provider<FamilyRulesRepository>((ref) => FamilyRulesRepository(GuardianDatabase.instance));
-final rulesListProvider =
-    FutureProvider.family<List<FamilyRule>, String>(
-        (ref, String familyId) =>
-            ref.watch(familyRulesRepositoryProvider).listForFamily(familyId));
-final ruleDetailProvider = FutureProvider.family<FamilyRule?,
-    ({String familyId, String ruleId})>(
-        (ref, ({String familyId, String ruleId}) key) =>
-            ref
-                .watch(familyRulesRepositoryProvider)
-                .find(key.familyId, key.ruleId));
-final ruleConflictsProvider =
-    FutureProvider.family<List<RuleConflict>, String>(
-        (ref, String familyId) => ref
-            .watch(rulesListProvider(familyId))
-            .when(
-              data: (rules) =>
-                  ref.read(familyRulesRepositoryProvider).conflictsFor(rules),
-              loading: () async =>
-                  ref.read(familyRulesRepositoryProvider).conflictsFor(
-                      await ref.read(rulesListProvider(familyId).future)),
-              error: (_, __) =>
-                  ref.read(familyRulesRepositoryProvider).conflictsFor(const []),
-            ));
+final familyRulesRepositoryProvider = Provider<FamilyRulesRepository>(
+    (ref) => FamilyRulesRepository(GuardianDatabase.instance));
+final rulesListProvider = FutureProvider.family<List<FamilyRule>, String>(
+    (ref, String familyId) =>
+        ref.watch(familyRulesRepositoryProvider).listForFamily(familyId));
+final ruleDetailProvider =
+    FutureProvider.family<FamilyRule?, ({String familyId, String ruleId})>(
+        (ref, ({String familyId, String ruleId}) key) => ref
+            .watch(familyRulesRepositoryProvider)
+            .find(key.familyId, key.ruleId));
+final ruleConflictsProvider = FutureProvider.family<List<RuleConflict>, String>(
+    (ref, String familyId) => ref.watch(rulesListProvider(familyId)).when(
+          data: (rules) =>
+              ref.read(familyRulesRepositoryProvider).conflictsFor(rules),
+          loading: () async => ref
+              .read(familyRulesRepositoryProvider)
+              .conflictsFor(await ref.read(rulesListProvider(familyId).future)),
+          error: (_, __) =>
+              ref.read(familyRulesRepositoryProvider).conflictsFor(const []),
+        ));
 final ruleExecutionLogProvider =
     FutureProvider.family<List<RuleExecutionEntry>, String>(
         (ref, String familyId) => ref
             .watch(familyRulesRepositoryProvider)
             .logForFamily(familyId: familyId));
+
+// ── FS-007 — Family Tasks & Daily Schedules ──────────────────────────────
+final familyTasksRepositoryProvider = Provider<FamilyTasksRepository>(
+    (ref) => FamilyTasksRepository(GuardianDatabase.instance));
+final tasksListProvider = FutureProvider.family<List<TaskEntry>, String>(
+    (ref, String familyId) =>
+        ref.watch(familyTasksRepositoryProvider).listForFamily(familyId));
+final taskDetailProvider =
+    FutureProvider.family<TaskEntry?, ({String familyId, String taskId})>(
+        (ref, ({String familyId, String taskId}) key) => ref
+            .watch(familyTasksRepositoryProvider)
+            .find(key.familyId, key.taskId));
+final taskFamilyLogProvider =
+    FutureProvider.family<List<TaskCompletionEntry>, String>(
+        (ref, String familyId) =>
+            ref.watch(familyTasksRepositoryProvider).logForFamily(familyId));
+final taskCompletionLogProvider = FutureProvider.family<
+        List<TaskCompletionEntry>, ({String familyId, String taskId})>(
+    (ref, ({String familyId, String taskId}) key) => ref
+        .watch(familyTasksRepositoryProvider)
+        .logForTask(key.familyId, key.taskId));
+final taskChildViewProvider =
+    FutureProvider.family<List<TaskEntry>, ({String familyId, String childId})>(
+        (ref, ({String familyId, String childId}) key) => ref
+            .watch(familyTasksRepositoryProvider)
+            .applicableForChild(familyId: key.familyId, childId: key.childId));
+
+/// Per-child gate verdicts for `taskGated` FS-011 rules — the honest
+/// bridge between task completions and the policy engine.
+final taskGateVerdictsProvider = FutureProvider.family<
+    Map<String, List<RuleGateVerdict>>,
+    ({
+      String familyId,
+      String childId
+    })>((ref, ({String familyId, String childId}) key) async {
+  final repo = ref.read(familyTasksRepositoryProvider);
+  final rules = await ref.read(rulesListProvider(key.familyId).future);
+  final linked = rules
+      .where((r) => r.linkedTaskId.isNotEmpty)
+      .map((r) => <String, Object?>{
+            'rule_id': r.ruleId,
+            'linked_task_id': r.linkedTaskId,
+            'assigned_child_ids': r.assignedChildIds,
+          })
+      .toList(growable: false);
+  if (linked.isEmpty) return const {};
+  final completions = await repo.gateCompletions(key.familyId,
+      taskIds: linked
+          .map((m) => m['linked_task_id'] as String)
+          .toSet()
+          .toList(growable: false));
+  return const TaskGateResolver().resolveForRules(
+      familyId: key.familyId,
+      rulesWithLinks: linked,
+      taskCompletions: completions,
+      childId: key.childId);
+});
+
+// ── FS-008 — Points & Rewards ─────────────────────────────────────────────
+final familyRewardsRepositoryProvider = Provider<FamilyRewardsRepository>(
+    (ref) => FamilyRewardsRepository(GuardianDatabase.instance));
+final rewardsBalanceProvider =
+    FutureProvider.family<int, ({String familyId, String childId})>(
+        (ref, ({String familyId, String childId}) key) => ref
+            .watch(familyRewardsRepositoryProvider)
+            .balanceFor(key.familyId, key.childId));
+final rewardCatalogProvider = FutureProvider.family<List<FamilyReward>, String>(
+    (ref, String familyId) =>
+        ref.watch(familyRewardsRepositoryProvider).listForFamily(familyId));
+final pendingClaimsProvider = FutureProvider.family<List<RewardClaim>, String>(
+    (ref, String familyId) =>
+        ref.watch(familyRewardsRepositoryProvider).pendingClaims(familyId));
+final rewardLedgerProvider =
+    FutureProvider.family<List<PointsLedgerEntry>, String>((ref,
+            String familyId) =>
+        ref.watch(familyRewardsRepositoryProvider).ledgerForFamily(familyId));

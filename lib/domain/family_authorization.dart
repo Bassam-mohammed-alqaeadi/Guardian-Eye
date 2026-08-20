@@ -18,7 +18,8 @@ class ChildDraft {
 class FamilyAuthorization {
   const FamilyAuthorization();
   Set<FamilyPermission> permissionsFor(FamilyRole role) => switch (role) {
-        FamilyRole.primaryParent => Set<FamilyPermission>.from(FamilyPermission.values),
+        FamilyRole.primaryParent =>
+          Set<FamilyPermission>.from(FamilyPermission.values),
         FamilyRole.parent || FamilyRole.coParent => {
             FamilyPermission.viewFamily,
             FamilyPermission.viewMembers,
@@ -40,6 +41,12 @@ class FamilyAuthorization {
             // FS-011 — a co-parent observes and amends the rule book.
             FamilyPermission.viewFamilyRules,
             FamilyPermission.manageFamilyRules,
+            // FS-007 — a co-parent authors tasks and verifies completions.
+            FamilyPermission.viewTasks,
+            FamilyPermission.manageTasks,
+            // FS-008 — a co-parent authors rewards and approves spends.
+            FamilyPermission.viewRewards,
+            FamilyPermission.manageRewards,
           },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
@@ -56,6 +63,15 @@ class FamilyAuthorization {
             // FS-011 — a child sees only the rules applied to them
             // (honest, read-only view).
             FamilyPermission.viewOwnRules,
+            // FS-007 — a child self-reports completion of their own
+            // tasks and sees only their own assignments (honest view).
+            FamilyPermission.viewOwnTasks,
+            FamilyPermission.requestOwnTaskCompletion,
+            // FS-008 — a child sees only their own balance and ledger
+            // and may request redemptions (parent decides, no silent
+            // deduction).
+            FamilyPermission.viewOwnRewards,
+            FamilyPermission.requestOwnRedemption,
           },
         FamilyRole.spouse => {
             FamilyPermission.viewFamily,
@@ -67,6 +83,13 @@ class FamilyAuthorization {
             FamilyPermission.viewReports,
             // FS-011 — a spouse observes the rule book but never amends it.
             FamilyPermission.viewFamilyRules,
+            // FS-007 — a spouse observes tasks and may verify a
+            // self-report; the family author remains the primary parent.
+            FamilyPermission.viewTasks,
+            FamilyPermission.manageTasks,
+            // FS-008 — a spouse observes the ledger but never mutates
+            // balances or the catalog.
+            FamilyPermission.viewRewards,
           },
       };
   bool hasPermission(FamilyMember member, FamilyPermission permission) =>
@@ -76,6 +99,7 @@ class FamilyAuthorization {
       throw StateError('family_permission_denied:${permission.name}');
     }
   }
+
   bool canManageFamily(FamilyRole role) =>
       permissionsFor(role).contains(FamilyPermission.manageMembers);
   bool canViewSafetyEvents(FamilyRole role) => role != FamilyRole.child;

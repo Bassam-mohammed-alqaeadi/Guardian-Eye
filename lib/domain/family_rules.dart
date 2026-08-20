@@ -83,7 +83,8 @@ extension RuleKindDisplay on RuleKind {
 
   /// Kinds whose execution handler is already wired (FS-002/003/005/006
   /// data layers). Reserved kinds execute only after their phase binds.
-  bool get isExecutable => this != RuleKind.taskGated &&
+  bool get isExecutable =>
+      this != RuleKind.taskGated &&
       this != RuleKind.rewardUnlocked &&
       this != RuleKind.eventOverride;
 }
@@ -139,6 +140,7 @@ class FamilyRule {
     this.geofenceIds = const {},
     this.geofenceTrigger = GeofenceTrigger.entering,
     this.limitMinutes,
+    this.linkedTaskId = '',
     this.priority = 50,
     this.note,
     this.createdByMemberId,
@@ -181,6 +183,10 @@ class FamilyRule {
   /// Daily cap in minutes (`dailyScreenTime`). Null means unset.
   final int? limitMinutes;
 
+  /// FS-007 bridge: `taskGated` rules link to a task — the gate reads the
+  /// honest completion log; this id is the contract between subsystems.
+  final String linkedTaskId;
+
   /// Deterministic conflict ordering: higher wins; ties broken by creation.
   final int priority;
   final String? note;
@@ -205,6 +211,7 @@ class FamilyRule {
     Set<String>? geofenceIds,
     GeofenceTrigger? geofenceTrigger,
     int? limitMinutes,
+    String? linkedTaskId,
     int? priority,
     String? note,
     SyncState? syncState,
@@ -227,6 +234,7 @@ class FamilyRule {
         geofenceIds: geofenceIds ?? this.geofenceIds,
         geofenceTrigger: geofenceTrigger ?? this.geofenceTrigger,
         limitMinutes: limitMinutes ?? this.limitMinutes,
+        linkedTaskId: linkedTaskId ?? this.linkedTaskId,
         priority: priority ?? this.priority,
         note: note ?? this.note,
         createdByMemberId: createdByMemberId,
@@ -285,6 +293,7 @@ class FamilyRule {
         'geofence_ids': (geofenceIds.toList()..sort()).join(','),
         'geofence_trigger': geofenceTrigger.name,
         'limit_minutes': limitMinutes,
+        'linked_task_id': linkedTaskId,
         'priority': priority,
         'note': note,
         'created_by_member_id': createdByMemberId,
@@ -297,11 +306,9 @@ class FamilyRule {
         ruleId: row['rule_id'] as String,
         familyId: row['family_id'] as String,
         name: row['name'] as String,
-        kind: RuleKind.values.firstWhere(
-            (k) => k.name == row['kind'],
+        kind: RuleKind.values.firstWhere((k) => k.name == row['kind'],
             orElse: () => RuleKind.dailyScreenTime),
-        action: RuleAction.values.firstWhere(
-            (a) => a.name == row['action'],
+        action: RuleAction.values.firstWhere((a) => a.name == row['action'],
             orElse: () => RuleAction.restrict),
         enabled: (row['enabled'] as int) == 1,
         startMinute: row['start_minute'] as int,
@@ -319,6 +326,7 @@ class FamilyRule {
             (t) => t.name == row['geofence_trigger'],
             orElse: () => GeofenceTrigger.entering),
         limitMinutes: row['limit_minutes'] as int?,
+        linkedTaskId: (row['linked_task_id'] ?? '') as String,
         priority: row['priority'] as int,
         note: row['note'] as String?,
         createdByMemberId: row['created_by_member_id'] as String?,
@@ -340,7 +348,11 @@ class FamilyRule {
 
   static Set<String> _splitStringSet(String? raw) {
     if (raw == null || raw.isEmpty) return const {};
-    return raw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet();
+    return raw
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet();
   }
 
   static DateTime? _parseIso(String? raw) {

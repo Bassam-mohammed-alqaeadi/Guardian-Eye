@@ -38,6 +38,23 @@ enum FamilyPermission {
   viewFamilyRules,
   manageFamilyRules,
   viewOwnRules,
+
+  // FS-007 — Tasks & Daily Schedules. Parents author tasks and verify
+  // completions; a spouse observes and may verify; a child self-reports
+  // and sees only their own assignments (honest, read-only otherwise).
+  viewTasks,
+  manageTasks,
+  requestOwnTaskCompletion,
+  viewOwnTasks,
+
+  // FS-008 — Points & Rewards. Parents author the catalog and approve
+  // spends; a spouse observes the ledger; a child sees their own
+  // balance, requests redemptions and earns/loses points only through
+  // the append-only ledger (no silent deduction).
+  viewRewards,
+  manageRewards,
+  requestOwnRedemption,
+  viewOwnRewards,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }
@@ -160,20 +177,28 @@ class FamilyInvitation {
   final String? acceptedMemberId;
   final DateTime? cancelledAt;
   bool isExpiredAt(DateTime now) =>
-      status == FamilyInvitationStatus.pending && !expiresAt.isAfter(now.toUtc());
-  factory FamilyInvitation.fromMap(Map<String, Object?> map) => FamilyInvitation(
-      id: map['id']! as String,
-      familyId: map['family_id']! as String,
-      inviterMemberId: map['inviter_member_id']! as String,
-      targetEmail: map['target_email']! as String,
-      proposedRole: FamilyRole.values.byName(map['proposed_role']! as String),
-      status: FamilyInvitationStatus.values.byName(map['status']! as String),
-      createdAt: DateTime.parse(map['created_at']! as String),
-      expiresAt: DateTime.parse(map['expires_at']! as String),
-      acceptedAt: map['accepted_at'] == null ? null : DateTime.parse(map['accepted_at']! as String),
-      acceptedAccountUid: map['accepted_account_uid'] as String?,
-      acceptedMemberId: map['accepted_member_id'] as String?,
-      cancelledAt: map['cancelled_at'] == null ? null : DateTime.parse(map['cancelled_at']! as String));
+      status == FamilyInvitationStatus.pending &&
+      !expiresAt.isAfter(now.toUtc());
+  factory FamilyInvitation.fromMap(Map<String, Object?> map) =>
+      FamilyInvitation(
+          id: map['id']! as String,
+          familyId: map['family_id']! as String,
+          inviterMemberId: map['inviter_member_id']! as String,
+          targetEmail: map['target_email']! as String,
+          proposedRole:
+              FamilyRole.values.byName(map['proposed_role']! as String),
+          status:
+              FamilyInvitationStatus.values.byName(map['status']! as String),
+          createdAt: DateTime.parse(map['created_at']! as String),
+          expiresAt: DateTime.parse(map['expires_at']! as String),
+          acceptedAt: map['accepted_at'] == null
+              ? null
+              : DateTime.parse(map['accepted_at']! as String),
+          acceptedAccountUid: map['accepted_account_uid'] as String?,
+          acceptedMemberId: map['accepted_member_id'] as String?,
+          cancelledAt: map['cancelled_at'] == null
+              ? null
+              : DateTime.parse(map['cancelled_at']! as String));
 }
 
 class GuardianDevice {
@@ -212,9 +237,11 @@ class GuardianIncident {
   final IncidentState status;
   final DateTime observedAt;
   final String modelVersion;
+
   /// Local SQLite device UUID that produced this incident.
   /// Required by Firestore security rules for activeOwnedDevice authorization.
   final String? deviceId;
+
   /// Firebase Auth UID of the actor writing the incident to Firestore.
   final String? actorUid;
   factory GuardianIncident.fromMap(Map<String, Object?> map) =>
@@ -301,9 +328,11 @@ class SafetyObservation {
   final String source;
   final DateTime observedAt;
   final String modelVersion;
+
   /// SQLite device UUID of the child device producing this observation.
   /// Required for Firestore activeOwnedDevice authorization.
   final String? deviceId;
+
   /// Firebase Auth UID of the actor submitting this observation to Firestore.
   final String? actorUid;
 }

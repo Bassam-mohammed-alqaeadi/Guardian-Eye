@@ -21,7 +21,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 21,
+        version: 24,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -207,13 +207,41 @@ class GuardianDatabase {
     // FS-011 — Family Rules & Policy Engine. One coherent rule book per
     // family plus the honest execution log that records every verdict.
     batch.execute(
-        'CREATE TABLE family_rules(rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'dailyScreenTime\', action TEXT NOT NULL DEFAULT \'restrict\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', app_targets TEXT NOT NULL DEFAULT \'\', category_targets TEXT NOT NULL DEFAULT \'\', geofence_ids TEXT NOT NULL DEFAULT \'\', geofence_trigger TEXT NOT NULL DEFAULT \'entering\', limit_minutes INTEGER, priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, rule_id))');
+        'CREATE TABLE family_rules(rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'dailyScreenTime\', action TEXT NOT NULL DEFAULT \'restrict\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', app_targets TEXT NOT NULL DEFAULT \'\', category_targets TEXT NOT NULL DEFAULT \'\', geofence_ids TEXT NOT NULL DEFAULT \'\', geofence_trigger TEXT NOT NULL DEFAULT \'entering\', limit_minutes INTEGER, linked_task_id TEXT NOT NULL DEFAULT \'\', priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, rule_id))');
     batch.execute(
         'CREATE TABLE rule_execution_log(id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, outcome TEXT NOT NULL, reason TEXT NOT NULL, evaluated_at TEXT NOT NULL, FOREIGN KEY(family_id, rule_id) REFERENCES family_rules(family_id, rule_id))');
     batch.execute(
         'CREATE INDEX idx_family_rules_family ON family_rules(family_id)');
     batch.execute(
         'CREATE INDEX idx_rule_execution_family_time ON rule_execution_log(family_id, evaluated_at DESC)');
+    // FS-007 — Family Tasks & Daily Schedules. Concrete, scheduled asks
+    // (homework, prayers, chores...) with an honest status machine; a
+    // parent-linked `taskGated` rule stays locked until the task shows a
+    // `completed` action in the append-only log below. Nothing is ever
+    // marked done silently.
+    batch.execute(
+        'CREATE TABLE tasks(task_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, description TEXT, due_minute INTEGER NOT NULL DEFAULT 0, due_date TEXT NOT NULL, recurrence TEXT NOT NULL DEFAULT \'none\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', assigned_child_ids TEXT NOT NULL DEFAULT \'\', linked_rule_id TEXT, status TEXT NOT NULL DEFAULT \'scheduled\', created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, task_id))');
+    batch.execute(
+        'CREATE TABLE task_completion_log(id TEXT PRIMARY KEY, task_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, action TEXT NOT NULL, actor_member_id TEXT NOT NULL, acted_at TEXT NOT NULL, note TEXT, FOREIGN KEY(family_id, task_id) REFERENCES tasks(family_id, task_id))');
+    batch.execute('CREATE INDEX idx_tasks_family ON tasks(family_id)');
+    batch.execute(
+        'CREATE INDEX idx_task_completion_family_time ON task_completion_log(family_id, acted_at DESC)');
+    // FS-008 — Family Points & Rewards. An append-only ledger is the only
+    // source of a child's balance (sum of rows, never a separately
+    // writable field); redemptions are pending claims a parent decides,
+    // and a spend row is written only after an approval decision.
+    batch.execute(
+        'CREATE TABLE reward_points_ledger(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, delta INTEGER NOT NULL, reason TEXT NOT NULL, reference_id TEXT, balance_after INTEGER NOT NULL, acted_by TEXT NOT NULL, acted_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\')');
+    batch.execute(
+        'CREATE TABLE family_rewards(reward_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, description TEXT, cost_points INTEGER NOT NULL, expiry_days INTEGER, enabled INTEGER NOT NULL DEFAULT 1, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, reward_id))');
+    batch.execute(
+        'CREATE TABLE reward_pending_claims(claim_id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), reward_id TEXT NOT NULL, child_id TEXT NOT NULL, requested_at TEXT NOT NULL, decided_by TEXT, decision TEXT, decided_at TEXT, ledger_row_id TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', FOREIGN KEY(family_id, reward_id) REFERENCES family_rewards(family_id, reward_id))');
+    batch.execute(
+        'CREATE INDEX idx_reward_ledger_family_child ON reward_points_ledger(family_id, child_id)');
+    batch.execute(
+        'CREATE INDEX idx_reward_ledger_family_time ON reward_points_ledger(family_id, acted_at DESC)');
+    batch.execute(
+        'CREATE INDEX idx_reward_pending_claims_family_state ON reward_pending_claims(family_id, decision)');
     await batch.commit(noResult: true);
     // Per-recipient acknowledgement tracking on the existing notification
     // channel (NULL preserves legacy rows and outbox semantics).
@@ -296,22 +324,30 @@ class GuardianDatabase {
           'CREATE INDEX idx_exception_family_status_created ON child_exception_requests(family_id, status, created_at DESC)');
     }
     if (oldVersion < 11) {
-      await db.execute('ALTER TABLE policy_overrides ADD COLUMN child_device_id TEXT REFERENCES devices(id)');
+      await db.execute(
+          'ALTER TABLE policy_overrides ADD COLUMN child_device_id TEXT REFERENCES devices(id)');
     }
     if (oldVersion < 12) {
-      await db.execute('ALTER TABLE family_members ADD COLUMN status TEXT NOT NULL DEFAULT \'active\'');
-      await db.execute('ALTER TABLE family_members ADD COLUMN account_uid TEXT');
-      await db.execute('ALTER TABLE family_members ADD COLUMN invitation_id TEXT');
+      await db.execute(
+          'ALTER TABLE family_members ADD COLUMN status TEXT NOT NULL DEFAULT \'active\'');
+      await db
+          .execute('ALTER TABLE family_members ADD COLUMN account_uid TEXT');
+      await db
+          .execute('ALTER TABLE family_members ADD COLUMN invitation_id TEXT');
       await db.execute('ALTER TABLE family_members ADD COLUMN invited_at TEXT');
       await db.execute('ALTER TABLE family_members ADD COLUMN joined_at TEXT');
       await db.execute('ALTER TABLE family_members ADD COLUMN revoked_at TEXT');
       await db.execute('ALTER TABLE family_members ADD COLUMN updated_at TEXT');
       await db.execute(
           'CREATE TABLE family_invitations(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), inviter_member_id TEXT NOT NULL REFERENCES family_members(id), target_email TEXT NOT NULL, proposed_role TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, accepted_at TEXT, accepted_account_uid TEXT, accepted_member_id TEXT REFERENCES family_members(id), cancelled_at TEXT)');
-      await db.execute('CREATE INDEX idx_members_family_status ON family_members(family_id, status)');
-      await db.execute("CREATE UNIQUE INDEX idx_members_family_account_active ON family_members(family_id, account_uid) WHERE account_uid IS NOT NULL AND status = 'active'");
-      await db.execute('CREATE INDEX idx_invitations_family_status_expiry ON family_invitations(family_id, status, expires_at)');
-      await db.execute('CREATE INDEX idx_invitations_target_status ON family_invitations(target_email, status, expires_at)');
+      await db.execute(
+          'CREATE INDEX idx_members_family_status ON family_members(family_id, status)');
+      await db.execute(
+          "CREATE UNIQUE INDEX idx_members_family_account_active ON family_members(family_id, account_uid) WHERE account_uid IS NOT NULL AND status = 'active'");
+      await db.execute(
+          'CREATE INDEX idx_invitations_family_status_expiry ON family_invitations(family_id, status, expires_at)');
+      await db.execute(
+          'CREATE INDEX idx_invitations_target_status ON family_invitations(target_email, status, expires_at)');
     }
     if (oldVersion < 13) {
       await db.execute(
@@ -417,13 +453,52 @@ class GuardianDatabase {
       // scheduled rule book per family; the execution log records every
       // honest verdict so nothing is ever silently overridden.
       await db.execute(
-          'CREATE TABLE family_rules(rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'dailyScreenTime\', action TEXT NOT NULL DEFAULT \'restrict\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', app_targets TEXT NOT NULL DEFAULT \'\', category_targets TEXT NOT NULL DEFAULT \'\', geofence_ids TEXT NOT NULL DEFAULT \'\', geofence_trigger TEXT NOT NULL DEFAULT \'entering\', limit_minutes INTEGER, priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, rule_id))');
+          'CREATE TABLE family_rules(rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT \'dailyScreenTime\', action TEXT NOT NULL DEFAULT \'restrict\', enabled INTEGER NOT NULL DEFAULT 1, start_minute INTEGER NOT NULL DEFAULT 0, end_minute INTEGER NOT NULL DEFAULT 0, schedule_kind TEXT NOT NULL DEFAULT \'daily\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', oneshot_at TEXT, assigned_child_ids TEXT NOT NULL DEFAULT \'\', app_targets TEXT NOT NULL DEFAULT \'\', category_targets TEXT NOT NULL DEFAULT \'\', geofence_ids TEXT NOT NULL DEFAULT \'\', geofence_trigger TEXT NOT NULL DEFAULT \'entering\', limit_minutes INTEGER, linked_task_id TEXT NOT NULL DEFAULT \'\', priority INTEGER NOT NULL DEFAULT 50, note TEXT, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, rule_id))');
       await db.execute(
           'CREATE TABLE rule_execution_log(id TEXT PRIMARY KEY, rule_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, outcome TEXT NOT NULL, reason TEXT NOT NULL, evaluated_at TEXT NOT NULL, FOREIGN KEY(family_id, rule_id) REFERENCES family_rules(family_id, rule_id))');
       await db.execute(
           'CREATE INDEX idx_family_rules_family ON family_rules(family_id)');
       await db.execute(
           'CREATE INDEX idx_rule_execution_family_time ON rule_execution_log(family_id, evaluated_at DESC)');
+    }
+    if (oldVersion < 22) {
+      // FS-007 — Family Tasks & Daily Schedules. Honest task status
+      // machine plus an append-only completion log that `taskGated`
+      // FS-011 rules read to open their gates.
+      await db.execute(
+          'CREATE TABLE tasks(task_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, description TEXT, due_minute INTEGER NOT NULL DEFAULT 0, due_date TEXT NOT NULL, recurrence TEXT NOT NULL DEFAULT \'none\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', assigned_child_ids TEXT NOT NULL DEFAULT \'\', linked_rule_id TEXT, status TEXT NOT NULL DEFAULT \'scheduled\', created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, task_id))');
+      await db.execute(
+          'CREATE TABLE task_completion_log(id TEXT PRIMARY KEY, task_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, action TEXT NOT NULL, actor_member_id TEXT NOT NULL, acted_at TEXT NOT NULL, note TEXT, FOREIGN KEY(family_id, task_id) REFERENCES tasks(family_id, task_id))');
+      await db.execute('CREATE INDEX idx_tasks_family ON tasks(family_id)');
+      await db.execute(
+          'CREATE INDEX idx_task_completion_family_time ON task_completion_log(family_id, acted_at DESC)');
+    }
+    if (oldVersion < 23) {
+      // FS-008 — Family Points & Rewards. Append-only points ledger as
+      // the sole balance source, the parent-authored catalog, and pending
+      // redemption claims a parent decides before any deduction.
+      await db.execute(
+          'CREATE TABLE reward_points_ledger(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, delta INTEGER NOT NULL, reason TEXT NOT NULL, reference_id TEXT, balance_after INTEGER NOT NULL, acted_by TEXT NOT NULL, acted_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\')');
+      await db.execute(
+          'CREATE TABLE family_rewards(reward_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), name TEXT NOT NULL, description TEXT, cost_points INTEGER NOT NULL, expiry_days INTEGER, enabled INTEGER NOT NULL DEFAULT 1, created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, reward_id))');
+      await db.execute(
+          'CREATE TABLE reward_pending_claims(claim_id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), reward_id TEXT NOT NULL, child_id TEXT NOT NULL, requested_at TEXT NOT NULL, decided_by TEXT, decision TEXT, decided_at TEXT, ledger_row_id TEXT, sync_state TEXT NOT NULL DEFAULT \'queued\', FOREIGN KEY(family_id, reward_id) REFERENCES family_rewards(family_id, reward_id))');
+      await db.execute(
+          'CREATE INDEX idx_reward_ledger_family_child ON reward_points_ledger(family_id, child_id)');
+      await db.execute(
+          'CREATE INDEX idx_reward_ledger_family_time ON reward_points_ledger(family_id, acted_at DESC)');
+      await db.execute(
+          'CREATE INDEX idx_reward_pending_claims_family_state ON reward_pending_claims(family_id, decision)');
+    }
+    if (oldVersion < 24) {
+      // FS-007 bridge: `taskGated` FS-011 rules carry the id of the task
+      // whose honest completion log opens the gate. Idempotent: only adds
+      // the column when the schema does not already carry it.
+      final cols = await db.rawQuery('PRAGMA table_info(family_rules)');
+      if (!cols.any((Map r) => r['name'] == 'linked_task_id')) {
+        await db.execute(
+            "ALTER TABLE family_rules ADD COLUMN linked_task_id TEXT NOT NULL DEFAULT ''");
+      }
     }
   }
 }

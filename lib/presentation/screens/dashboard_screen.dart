@@ -266,8 +266,8 @@ class _Dashboard extends ConsumerWidget {
             label: l10n.t('familyMembers'),
             children: [
               FilledButton.icon(
-                onPressed: () => context.push('/family/$familyId',
-                    extra: actor?.id),
+                onPressed: () =>
+                    context.push('/family/$familyId', extra: actor?.id),
                 icon: const Icon(Icons.groups_outlined),
                 label: Text(l10n.t('familyMembers')),
               ),
@@ -533,6 +533,60 @@ class _Dashboard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _NavGroup(
+            label: l10n.t('tkTasksTitle'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewTasks)
+                    ? () => context.push('/tasks/$familyId')
+                    : null,
+                icon: const Icon(Icons.task_alt_outlined),
+                label: Text(l10n.t('tkTasksTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.manageTasks)
+                    ? () => context.push('/tasks/$familyId/new')
+                    : null,
+                icon: const Icon(Icons.add_task_outlined),
+                label: Text(l10n.t('tkNewTaskTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewTasks)
+                    ? () => context.push('/tasks/$familyId/log')
+                    : null,
+                icon: const Icon(Icons.history_outlined),
+                label: Text(l10n.t('tkFamilyLogTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
+            label: l10n.t('rwRewardsTitle'),
+            children: [
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.viewRewards)
+                    ? () => context.push('/rewards/$familyId')
+                    : null,
+                icon: const Icon(Icons.card_giftcard_outlined),
+                label: Text(l10n.t('rwRewardsTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.manageRewards)
+                    ? () => context.push('/rewards/$familyId/catalog/new')
+                    : null,
+                icon: const Icon(Icons.add_circle_outline),
+                label: Text(l10n.t('rwCatalogTitle')),
+              ),
+              OutlinedButton.icon(
+                onPressed: can(FamilyPermission.manageRewards)
+                    ? () => context.push('/rewards/$familyId/pending')
+                    : null,
+                icon: const Icon(Icons.pending_actions_outlined),
+                label: Text(l10n.t('rwPendingClaimsTitle')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _NavGroup(
             label: l10n.t('permissionsTitle'),
             children: [
               OutlinedButton.icon(
@@ -641,8 +695,7 @@ class _Metric extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label, style: Theme.of(context).textTheme.bodyMedium),
-                  Text(value,
-                      style: Theme.of(context).textTheme.headlineSmall)
+                  Text(value, style: Theme.of(context).textTheme.headlineSmall)
                 ],
               ),
             ),
@@ -687,33 +740,33 @@ class _FamilyIdentityCard extends StatelessWidget {
       child: Semantics(
         label: l10n.t('familyIdentity'),
         child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.t('familyIdentity'),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              Text(family.name, style: theme.textTheme.titleMedium),
-              Text(
-                  '${l10n.t('createdFamily')}: '
-                  '${_formatDate(family.createdAt)}',
-                  style: theme.textTheme.bodySmall,
-                  semanticsLabel:
-                      '${l10n.t('createdFamily')}: ${_formatDate(family.createdAt)}'),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.today_outlined, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(
-                      child: Text(queuedOperations == 0
-                          ? l10n.t('dataFresh')
-                          : l10n.t('syncQueue'))),
-                ],
-              ),
-            ],
-          ),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.t('familyIdentity'),
+                style: theme.textTheme.labelLarge
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            Text(family.name, style: theme.textTheme.titleMedium),
+            Text(
+                '${l10n.t('createdFamily')}: '
+                '${_formatDate(family.createdAt)}',
+                style: theme.textTheme.bodySmall,
+                semanticsLabel:
+                    '${l10n.t('createdFamily')}: ${_formatDate(family.createdAt)}'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.today_outlined, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                    child: Text(queuedOperations == 0
+                        ? l10n.t('dataFresh')
+                        : l10n.t('syncQueue'))),
+              ],
+            ),
+          ],
         ),
+      ),
     );
   }
 
@@ -741,28 +794,21 @@ class _SafetySignalCard extends StatelessWidget {
     final attention = active.isNotEmpty;
     return Card(
       child: Semantics(
-        label: attention
-            ? l10n.t('attentionRequired')
-            : l10n.t('safeToday'),
+        label: attention ? l10n.t('attentionRequired') : l10n.t('safeToday'),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: Icon(
-              attention
-                  ? Icons.warning_amber_rounded
-                  : Icons.shield_outlined,
+              attention ? Icons.warning_amber_rounded : Icons.shield_outlined,
               color: attention
                   ? theme.colorScheme.error
                   : theme.colorScheme.primary),
-          title: Text(attention
-              ? l10n.t('attentionRequired')
-              : l10n.t('safeToday')),
-          subtitle: Text(
-              '${l10n.t('safetySignal')} '
+          title: Text(
+              attention ? l10n.t('attentionRequired') : l10n.t('safeToday')),
+          subtitle: Text('${l10n.t('safetySignal')} '
               '${attention ? active.length.toString() : ''}'),
           trailing: OutlinedButton(
-            onPressed:
-                permission && !attention ? null : onOpenTimeline,
+            onPressed: permission && !attention ? null : onOpenTimeline,
             child: Text(l10n.t('childDetails')),
           ),
         ),
@@ -798,7 +844,8 @@ class _ChildOverview extends StatelessWidget {
   final String familyId;
   final List<FamilyMember> children;
   final AsyncValue<List<ChildDeviceState>> deviceStates;
-    /// Opens the child-context surface for the tapped child.
+
+  /// Opens the child-context surface for the tapped child.
   final void Function(FamilyMember child) onOpenChild;
 
   @override
@@ -810,8 +857,8 @@ class _ChildOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.t('childOverview'),
-            style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant)),
+            style: theme.textTheme.labelLarge
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 8),
         if (children.isEmpty)
           GuardianStateView(
@@ -835,8 +882,8 @@ class _ChildOverview extends StatelessWidget {
                 label: '${child.displayName} '
                     '${devicePresent ? lifecycleName : l10n.t('noDevicesLinked')}',
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   leading: CircleAvatar(
                       child: Text(child.displayName.characters.first)),
                   title: Text(child.displayName),

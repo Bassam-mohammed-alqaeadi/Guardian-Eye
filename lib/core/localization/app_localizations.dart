@@ -8,102 +8,260 @@ class AppLocalizations {
       Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   static const _values = <String, Map<String, String>>{
     'ar': {
+      'tkAction': 'الإجراء',
+      'tkScheduleSection': 'الجدولة',
+      'tkNoLogYet': 'لا سجل بعد',
+      'tkNoLogYetDescription': 'سيتوثق سجل الإنجاز هنا عند أول إنجاز للمهمة',
+      'tkTasksTitle': 'المهام',
+      'tkDashboardTitle': 'مهام العائلة',
+      'tkDashboardSubtitle': 'مهام مجدولة وواضحة لكل فرد في العائلة',
+      'tkMyTasks': 'مهامي',
+      'tkOpenTasks': 'مهام مفتوحة',
+      'tkDoneTasks': 'مهام منجزة',
+      'tkTodaySection': 'اليوم',
+      'tkNoTasks': 'لا توجد مهام بعد',
+      'tkNoTasksDescription': 'أنشئ أول مهمة لتبدأ العائلة بالتنظيم اليومي',
+      'tkNoDailyTasks': 'لا توجد مهام يومية لهذا اليوم',
+      'tkNoDailyTasksDescription': 'ستظهر المهام المجدولة هنا حسب يومها',
+      'tkNoWeeklyTasks': 'لا توجد مهام أسبوعية',
+      'tkNoWeeklyTasksDescription':
+          'المهام الأسبوعية ستظهر هنا في أيامها المحددة',
+      'tkNoPendingCompletions': 'لا توجد إنجازات قيد التحقق',
+      'tkNoPendingCompletionsDescription':
+          'تظهر هنا المهمة التي يبلغ الأطفال عن إنجازها',
+      'tkNoTimelineYet': 'لا يوجد سجل إنجاز بعد',
+      'tkNoTimelineYetDescription': 'سيتتبع سجل الإنجاز هنا كل مهمة بموثوقيتها',
+      'tkNewTask': 'مهمة جديدة',
+      'tkCreateTask': 'إنشاء مهمة',
+      'tkNewTaskTitle': 'مهمة جديدة',
+      'tkNewTaskHint': 'أضف مهمة يومية أو أسبوعية للطفل أو العائلة',
+      'tkTaskTitle': 'عنوان المهمة',
+      'tkTaskTitleHint': 'مثال: ترتيب الغرفة قبل العشاء',
+      'tkTitleRequired': 'عنوان المهمة مطلوب',
+      'tkDescription': 'الوصف',
+      'tkDescriptionHint': 'تفاصيل اختيارية توضح ما هو مطلوب',
+      'tkChild': 'الطفل',
+      'tkAssignedTo': 'مسندة إلى',
+      'tkAssignedSection': 'الإسناد',
+      'tkBy': 'بواسطة',
+      'tkRecurrenceLabel': 'التكرار',
+      'tkRecurrenceDaily': 'يومي',
+      'tkRecurrenceWeekly': 'أسبوعي',
+      'tkRecurringHint': 'تتكرر المهمة كل يوم أو في أيام أسبوع محددة',
+      'tkDailySchedule': 'الجدول اليومي',
+      'tkWeeklySchedule': 'الجدول الأسبوعي',
+      'tkPickDate': 'اختر التاريخ',
+      'tkSelectedDate': 'التاريخ المحدد',
+      'tkRecurringTasks': 'المهام المتكررة',
+      'tkDueTime': 'وقت الاستحقاق',
+      'tkTaskDetailTitle': 'تفاصيل المهمة',
+      'tkTaskDetails': 'التفاصيل',
+      'tkTaskMissing': 'المهمة غير موجودة',
+      'tkTaskMissingDescription': 'ربما حُذفت المهمة أو لم تُزامَن بعد',
+      'tkManageSection': 'الإدارة',
+      'tkMarkDone': 'إتمام المهمة',
+      'tkMarkedDone': 'سُجلت المهمة كمنجزة',
+      'tkPendingSection': 'بانتظار التحقق',
+      'tkPendingVerifications': 'تحققات معلقة',
+      'tkVerify': 'التحقق',
+      'tkVerified': 'تم التحقق والاعتماد',
+      'tkDecline': 'رفض',
+      'tkDeclined': 'رُفضت المهمة',
+      'tkStatusOpen': 'مفتوحة',
+      'tkStatusDone': 'منجزة',
+      'tkStatusLate': 'متأخرة',
+      'tkStatusScheduled': 'مجدولة',
+      'tkStatusCancelled': 'ملغاة',
+      'tkCancelTask': 'إلغاء المهمة',
+      'tkCancelConfirm':
+          'إلغاء المهمة يجعلها غير قابلة للإنجاز. هل تريد المتابعة؟',
+      'tkDeleteTask': 'حذف المهمة',
+      'tkDeleteConfirm':
+          'حذف المهمة نهائيًا ويحذف سجلها أيضًا. هل تريد المتابعة؟',
+      'tkTaskCreated': 'أُنشئت المهمة',
+      'tkTaskDeleted': 'حُذفت المهمة',
+      'tkTaskCancelled': 'أُلغيت المهمة',
+      'tkSaveFailed': 'فشل الحفظ',
+      'tkLogSection': 'سجل الإنجاز',
+      'tkCompletionsTitle': 'سجل الإنجاز',
+      'tkCompletionsSubtitle': 'كل إنجاز موثق بحالته ووقته',
+      'tkGateTitle': 'بوابات القواعد',
+      'tkGateSubtitle': 'إكمال هذه المهام يفتح قواعد مرتبطة بها',
+      'tkGateSection': 'القواعد المربوطة',
+      'tkLinkedRulesSection': 'المربوطة بالقواعد',
+      'tkNoLinkedRules': 'لا قواعد مربوطة بهذه المهمة',
+      'tkNoLinkedRulesDescription':
+          'يمكن ربط قواعد من شاشة قواعد العائلة (مثل: فتح ألعاب بعد تنظيف الغرفة)',
+      'tkGateRule': 'القاعدة المربوطة',
+      'tkGateOpen': 'البوابة مفتوحة — المهمة مكتملة',
+      'tkGateLocked': 'البوابة مغلقة — المهمة لم تكتمل',
+      'tkReportDone': 'أبلغت عن الإنجاز',
+      'tkReportedForVerification':
+          'أُبلغ عن إنجازها وهي بانتظار التحقق من الوالد',
+      'tkChildNoTasks': 'لا مهام موكلة إليك الآن',
+      'tkChildNoTasksDescription':
+          'ستظهر مهامك الموكلة هنا عندما يرسلها الوالدان',
+      'tkTimeline': 'خط الزمن',
+      'tkTimelineHint': 'توثيق صادق لكل خطوة من حالة المهمة',
+      'tkRule': 'القاعدة',
+      'rwRewardsTitle': 'المكافآت',
+      'rwBalanceLabel': 'الرصيد',
+      'rwPoints': 'نقطة',
+      'rwBalancesTitle': 'أرصدة الأطفال',
+      'rwLoadingBalance': 'جارٍ تحميل الرصيد…',
+      'rwBalanceUnavailable': 'الرصيد غير متاح',
+      'rwCatalogTitle': 'كتالوج المكافآت',
+      'rwCatalogLoadFailed': 'فشل تحميل الكتالوج',
+      'rwNewReward': 'مكافأة جديدة',
+      'rwEditReward': 'تعديل المكافأة',
+      'rwSaveReward': 'حفظ المكافأة',
+      'rwSaved': 'حُفظت المكافأة',
+      'rwSaveFailed': 'فشل الحفظ',
+      'rwRewardName': 'اسم المكافأة',
+      'rwRewardDescription': 'وصف المكافأة',
+      'rwRewardCost': 'التكلفة بالنقاط',
+      'rwCostLabel': 'التكلفة',
+      'rwInvalidCost': 'أدخل تكلفة صحيحة أكبر من صفر',
+      'rwRequiredFields': 'جميع الحقول مطلوبة',
+      'rwExpiryDays': 'أيام الصلاحية',
+      'rwExpiryHint': 'عدد الأيام التي تبقى فيها المكافأة صالحة (0 = لا تنتهي)',
+      'rwEmptyCatalog': 'الكتالوج فارغ',
+      'rwEmptyCatalogDescription': 'أضف أول مكافأة لتحفيز العائلة',
+      'rwAddFirstReward': 'أضف أول مكافأة',
+      'rwUnknownReward': 'مكافأة غير معروفة',
+      'rwRewardGone': 'المكافأة لم تعد موجودة',
+      'rwRewardGoneDescription': 'حُذفت المكافأة أو تغيّر سعرها',
+      'rwRequestRedeem': 'طلب استبدال',
+      'rwRedeemTitle': 'طلب استبدال المكافأة',
+      'rwRedeemNote':
+          'يطلب الطفل المكافأة ويقررها الوالدان: موافقة تنقص النقاط، ورفض لا ينقص شيئًا',
+      'rwRedeemRequested': 'أُرسل طلب الاستبدال',
+      'rwRedeemFailed': 'فشل طلب الاستبدال',
+      'rwInsufficientPoints': 'النقاط غير كافية لهذه المكافأة',
+      'rwPendingClaimsTitle': 'الطلبات المعلقة',
+      'rwNoPendingClaims': 'لا توجد طلبات معلقة',
+      'rwNoPendingClaimsDescription': 'طلبات الاستبدال من الأطفال ستظهر هنا',
+      'rwApproveClaim': 'موافقة',
+      'rwDeclineClaim': 'رفض',
+      'rwRequestedAt': 'طُلب في',
+      'rwAutomationTitle': 'أتمتة المكافآت',
+      'rwNoAutomation': 'لا توجد أتمتة مفعلة',
+      'rwNoAutomationDescription':
+          'فعّل قواعد الربح التلقائي أو اربط قواعد من عائلة القواعد',
+      'rwLinkedRule': 'القاعدة المربوطة',
+      'rwLedgerTitle': 'سجل النقاط',
+      'rwEmptyLedger': 'السجل فارغ',
+      'rwEmptyLedgerDescription': 'كل كسب وصرف يُوثق هنا بأمانة',
+      'rwReasonEarnedTask': 'مهمة مكتملة',
+      'rwReasonManual': 'منح يدوي',
+      'rwReasonAutomation': 'أتمتة',
+      'rwReasonSpend': 'استبدال مكافأة',
+      'rwReasonRefund': 'استرداد نقاط',
+      'rwBalanceAfter': 'الرصيد بعد',
+      'rwNoChildren': 'لا أطفال في العائلة',
+      'rwNoChildrenDescription': 'تُحسب الأرصدة للأطفال المنضمين للعائلة',
+      'rwNoChildSelected': 'اختر طفلًا لعرض سجله',
       'rpPeriodMonth': 'هذا الشهر',
       'rpPeriodWeek': 'هذا الأسبوع',
-    'frLogSection': 'قرارات المحرك',
-    'frRuleNotFound': 'القاعدة غير موجودة',
-    'frRuleNotFoundDescription': 'حُذفت هذه القاعدة أو لم يعد لها وجود في العائلة',
-    'frRulesSection': 'قائمة القواعد',
-    'frActionAllowlist': 'سماح بالتطبيقات المحددة فقط',
-    'frActionBlock': 'قفل جهاز الطفل',
-    'frActionNotify': 'إشعار الوالد فقط',
-    'frActionRestrict': 'تقييد المحتوى',
-    'frActiveRules': 'القواعد النشطة',
-    'frActiveRulesCount': 'قاعدة نشطة',
-    'frAffectedChildren': 'طفل متأثر',
-    'frAppTargetHint': 'اختر التطبيقات التي تسري عليها القاعدة',
-    'frAppTargets': 'التطبيقات المستهدفة',
-    'frAssignChildren': 'الأطفال المستهدفون',
-    'frAssignedAll': 'جميع الأطفال',
-    'frAssignedNone': 'لم يُعيَّن أحد',
-    'frAssignedTo': 'تنطبق على',
-    'frCategoryTargetHint': 'اختر فئات المحتوى المقيدة',
-    'frCategoryTargets': 'فئات المحتوى',
-    'frChildAffectedNow': 'متأثر الآن',
-    'frChildAffectedScheduled': 'مجدول',
-    'frChooseWeekdays': 'اختر الأيام',
-    'frConflicts': 'تعارضات',
-    'frConflictsFound': 'تعارضًا مكتشفًا',
-    'frConflictsOpenHint': 'افتح صفحة التعارضات لرؤية ما يسري فعلًا',
-    'frConflictsSection': 'التعارضات المكتشفة',
-    'frConflictsTitle': 'تعارضات القواعد',
-    'frCreateRule': 'إنشاء قاعدة جديدة',
-    'frCreateRuleHint': 'ابنِ قاعدة عائلية واحدة: نوع، إجراء، جدول، أطفال مستهدفون',
-    'frCreateRuleTitle': 'قاعدة جديدة',
-    'frDailyAll': 'كل يوم',
-    'frDashboardSubtitle': 'محرك السياسات الموحّد — كل قاعدة تُنفَّذ بصدق وحالة حقيقية',
-    'frDashboardTitle': 'قواعد العائلة',
-    'frDeleteRule': 'حذف القاعدة',
-    'frDeleteRuleConfirm': 'سيُحذف هذه القاعدة نهائيًا من العائلة',
-    'frDuration': 'المدة',
-    'frEditRuleTitle': 'تعديل القاعدة',
-    'frEnd': 'النهاية',
-    'frExecutionDescription': 'كل قرار حقيقي — لا أرقام مخترعة',
-    'frExecutionSection': 'سجل التنفيذ',
-    'frFireMoment': 'لحظة التنفيذ',
-    'frImpactChildrenSection': 'الأطفال المتأثرون',
-    'frImpactDoes': 'القرارات الفعلية للقاعدة',
-    'frImpactTitle': 'ماذا تفعل هذه القاعدة؟',
-    'frImpactWindowOnly': 'تنفَّذ ضمن نافذتها الزمنية فقط',
-    'frLimitMinutes': 'حد الدقائق اليومي',
-    'frLimitMinutesHint': 'حد استخدام الشاشة بالدقائق',
-    'frLogEntries': 'قرارًا مسجلًا',
-    'frLogHint': 'القرارات التي اتخذها المحرك بناءً على الأدلة الفعلية',
-    'frLogTitle': 'سجل قرارات القاعدة',
-    'frLoser': 'المستبعدة',
-    'frManageSection': 'الإدارة',
-    'frNewRuleTitle': 'إنشاء قاعدة',
-    'frNoAffectedChildren': 'لا يتأثر بها أحد الآن',
-    'frNoAffectedChildrenDescription': 'لم تُعيَّن القاعدة لأي طفل أو لا تنطبق على أي جهاز مفعّل',
-    'frNoConflicts': 'لا توجد تعارضات',
-    'frNoConflictsDescription': 'القواعد تتكامل معًا — لا قواعد متعارضة',
-    'frNoConflictsHint': 'أثناء عدم وجود قواعد لا توجد تعارضات',
-    'frNoLogEntries': 'لا توجد قرارات بعد',
-    'frNoLogEntriesDescription': 'سيظهر هنا سجل قرارات القاعدة فور بدئها',
-    'frNoRules': 'لا توجد قواعد بعد',
-    'frNoRulesDescription': 'أنشئ أول قاعدة عائلية — ستنعكس تلقائيًا على الأطفال',
-    'frNoVerdicts': 'لا توجد قرارات لهذه القاعدة',
-    'frNoVerdictsDescription': 'لم يتخذ المحرك أي قرار بهذه القاعدة بعد',
-    'frPauseRule': 'إيقاف مؤقت',
-    'frPick': 'اختر',
-    'frPriority': 'الأولوية',
-    'frReassignChildren': 'تغيير الأطفال',
-    'frRecurrence': 'التكرار',
-    'frResumeRule': 'استئناف',
-    'frRuleAction': 'الإجراء',
-    'frRuleActiveNow': 'تنفَّذ الآن',
-    'frRuleDeleted': 'حُذفت القاعدة',
-    'frRuleIdentitySection': 'هوية القاعدة',
-    'frRuleInactiveNow': 'لا تنفَّذ حاليًا',
-    'frRuleKind': 'نوع القاعدة',
-    'frRuleName': 'اسم القاعدة',
-    'frRuleNameHint': 'مثال: وقت النوم، ساعة الواجبات',
-    'frRuleOff': 'متوقفة',
-    'frRuleOn': 'مفعّلة',
-    'frRulesTitle': 'قواعد العائلة',
-    'frSaveRule': 'حفظ القاعدة',
-    'frScheduleDaily': 'يوميًا',
-    'frScheduleKind': 'التكرار',
-    'frScheduleNone': 'مستمرة (كل الأوقات)',
-    'frScheduleOneTime': 'مرة واحدة',
-    'frScheduleSection': 'الجدول الزمني',
-    'frScheduleTitle': 'مدة القاعدة',
-    'frScheduleWeekly': 'أسبوعيًا',
-    'frStart': 'البداية',
-    'frTargetsSection': 'المستهدفون',
-    'frWeekdays': 'أيام الأسبوع',
-    'frWindowSection': 'النافذة الزمنية',
-    'frWinner': 'الرابحة (أعلى أولوية)',
+      'frLogSection': 'قرارات المحرك',
+      'frRuleNotFound': 'القاعدة غير موجودة',
+      'frRuleNotFoundDescription':
+          'حُذفت هذه القاعدة أو لم يعد لها وجود في العائلة',
+      'frRulesSection': 'قائمة القواعد',
+      'frActionAllowlist': 'سماح بالتطبيقات المحددة فقط',
+      'frActionBlock': 'قفل جهاز الطفل',
+      'frActionNotify': 'إشعار الوالد فقط',
+      'frActionRestrict': 'تقييد المحتوى',
+      'frActiveRules': 'القواعد النشطة',
+      'frActiveRulesCount': 'قاعدة نشطة',
+      'frAffectedChildren': 'طفل متأثر',
+      'frAppTargetHint': 'اختر التطبيقات التي تسري عليها القاعدة',
+      'frAppTargets': 'التطبيقات المستهدفة',
+      'frAssignChildren': 'الأطفال المستهدفون',
+      'frAssignedAll': 'جميع الأطفال',
+      'frAssignedNone': 'لم يُعيَّن أحد',
+      'frAssignedTo': 'تنطبق على',
+      'frCategoryTargetHint': 'اختر فئات المحتوى المقيدة',
+      'frCategoryTargets': 'فئات المحتوى',
+      'frChildAffectedNow': 'متأثر الآن',
+      'frChildAffectedScheduled': 'مجدول',
+      'frChooseWeekdays': 'اختر الأيام',
+      'frConflicts': 'تعارضات',
+      'frConflictsFound': 'تعارضًا مكتشفًا',
+      'frConflictsOpenHint': 'افتح صفحة التعارضات لرؤية ما يسري فعلًا',
+      'frConflictsSection': 'التعارضات المكتشفة',
+      'frConflictsTitle': 'تعارضات القواعد',
+      'frCreateRule': 'إنشاء قاعدة جديدة',
+      'frCreateRuleHint':
+          'ابنِ قاعدة عائلية واحدة: نوع، إجراء، جدول، أطفال مستهدفون',
+      'frCreateRuleTitle': 'قاعدة جديدة',
+      'frDailyAll': 'كل يوم',
+      'frDashboardSubtitle':
+          'محرك السياسات الموحّد — كل قاعدة تُنفَّذ بصدق وحالة حقيقية',
+      'frDashboardTitle': 'قواعد العائلة',
+      'frDeleteRule': 'حذف القاعدة',
+      'frDeleteRuleConfirm': 'سيُحذف هذه القاعدة نهائيًا من العائلة',
+      'frDuration': 'المدة',
+      'frEditRuleTitle': 'تعديل القاعدة',
+      'frEnd': 'النهاية',
+      'frExecutionDescription': 'كل قرار حقيقي — لا أرقام مخترعة',
+      'frExecutionSection': 'سجل التنفيذ',
+      'frFireMoment': 'لحظة التنفيذ',
+      'frImpactChildrenSection': 'الأطفال المتأثرون',
+      'frImpactDoes': 'القرارات الفعلية للقاعدة',
+      'frImpactTitle': 'ماذا تفعل هذه القاعدة؟',
+      'frImpactWindowOnly': 'تنفَّذ ضمن نافذتها الزمنية فقط',
+      'frLimitMinutes': 'حد الدقائق اليومي',
+      'frLimitMinutesHint': 'حد استخدام الشاشة بالدقائق',
+      'frLogEntries': 'قرارًا مسجلًا',
+      'frLogHint': 'القرارات التي اتخذها المحرك بناءً على الأدلة الفعلية',
+      'frLogTitle': 'سجل قرارات القاعدة',
+      'frLoser': 'المستبعدة',
+      'frManageSection': 'الإدارة',
+      'frNewRuleTitle': 'إنشاء قاعدة',
+      'frNoAffectedChildren': 'لا يتأثر بها أحد الآن',
+      'frNoAffectedChildrenDescription':
+          'لم تُعيَّن القاعدة لأي طفل أو لا تنطبق على أي جهاز مفعّل',
+      'frNoConflicts': 'لا توجد تعارضات',
+      'frNoConflictsDescription': 'القواعد تتكامل معًا — لا قواعد متعارضة',
+      'frNoConflictsHint': 'أثناء عدم وجود قواعد لا توجد تعارضات',
+      'frNoLogEntries': 'لا توجد قرارات بعد',
+      'frNoLogEntriesDescription': 'سيظهر هنا سجل قرارات القاعدة فور بدئها',
+      'frNoRules': 'لا توجد قواعد بعد',
+      'frNoRulesDescription':
+          'أنشئ أول قاعدة عائلية — ستنعكس تلقائيًا على الأطفال',
+      'frNoVerdicts': 'لا توجد قرارات لهذه القاعدة',
+      'frNoVerdictsDescription': 'لم يتخذ المحرك أي قرار بهذه القاعدة بعد',
+      'frPauseRule': 'إيقاف مؤقت',
+      'frPick': 'اختر',
+      'frPriority': 'الأولوية',
+      'frReassignChildren': 'تغيير الأطفال',
+      'frRecurrence': 'التكرار',
+      'frResumeRule': 'استئناف',
+      'frRuleAction': 'الإجراء',
+      'frRuleActiveNow': 'تنفَّذ الآن',
+      'frRuleDeleted': 'حُذفت القاعدة',
+      'frRuleIdentitySection': 'هوية القاعدة',
+      'frRuleInactiveNow': 'لا تنفَّذ حاليًا',
+      'frRuleKind': 'نوع القاعدة',
+      'frRuleName': 'اسم القاعدة',
+      'frRuleNameHint': 'مثال: وقت النوم، ساعة الواجبات',
+      'frRuleOff': 'متوقفة',
+      'frRuleOn': 'مفعّلة',
+      'frRulesTitle': 'قواعد العائلة',
+      'frSaveRule': 'حفظ القاعدة',
+      'frScheduleDaily': 'يوميًا',
+      'frScheduleKind': 'التكرار',
+      'frScheduleNone': 'مستمرة (كل الأوقات)',
+      'frScheduleOneTime': 'مرة واحدة',
+      'frScheduleSection': 'الجدول الزمني',
+      'frScheduleTitle': 'مدة القاعدة',
+      'frScheduleWeekly': 'أسبوعيًا',
+      'frStart': 'البداية',
+      'frTargetsSection': 'المستهدفون',
+      'frWeekdays': 'أيام الأسبوع',
+      'frWindowSection': 'النافذة الزمنية',
+      'frWinner': 'الرابحة (أعلى أولوية)',
       'rpSosTotal': 'إجمالي تنبيهات الطوارئ',
       'rpModesActive': 'أنماط نشطة',
       'rpModesTotal': 'تفعيلات الأنماط',
@@ -115,11 +273,13 @@ class AppLocalizations {
       'rpActiveDays': 'أيام نشطة',
       'rpHitsBlocked': 'محاولات محظورة',
       'rpHitsTotal': 'إجمالي المحاولات',
-      'rpExportHint': 'التصدير يعمل دون اتصال؛ التقرير يُبنى من البيانات المحفوظة على الجهاز.',
+      'rpExportHint':
+          'التصدير يعمل دون اتصال؛ التقرير يُبنى من البيانات المحفوظة على الجهاز.',
       'rpShareButton': 'مشاركة التقرير',
       'rpExportSubject': 'تقرير Guardian Eye',
       'rpExportSaved': 'تم حفظ التقرير، ويمكنك مشاركته الآن.',
-      'rpExportRetryHint': 'أعد المحاولة، وإذا استمرت المشكلة فمساحة التخزين ممتلئة أو غير متاحة.',
+      'rpExportRetryHint':
+          'أعد المحاولة، وإذا استمرت المشكلة فمساحة التخزين ممتلئة أو غير متاحة.',
       'rpExportFailed': 'تعذّر إنشاء التقرير',
       'rpExporting': 'جارٍ إنشاء التقرير…',
       'rpFormatCsv': 'CSV (جدول بيانات)',
@@ -130,7 +290,8 @@ class AppLocalizations {
       'rpSosTitle': 'تقرير الطوارئ',
       'rpModesEmptyHint': 'لم يُفعَّل أي نمط مخصص خلال هذه الفترة.',
       'rpModesTitle': 'تقرير الأنماط',
-      'rpSafetyEmptyHint': 'لم تُسجَّل أي حوادث خلال هذه الفترة، والعائلة في وضع آمن.',
+      'rpSafetyEmptyHint':
+          'لم تُسجَّل أي حوادث خلال هذه الفترة، والعائلة في وضع آمن.',
       'rpSafetyTitle': 'تقرير السلامة',
       'rpLocationEmptyHint': 'لم يتم رصد أي نقاط موقع خلال هذه الفترة.',
       'rpLocationTitle': 'تقرير الموقع',
@@ -138,7 +299,8 @@ class AppLocalizations {
       'rpUsageEmptyHint': 'لم يتم رصد أي استخدام للتطبيقات خلال هذه الفترة.',
       'rpUsageTitle': 'تقرير الاستخدام',
       'rpTopBlockedDomains': 'أكثر النطاقات حظرًا',
-      'rpWebEmptyHint': 'لم يتم رصد أي محاولة وصول خلال هذه الفترة، وهذا مؤشر جيد على سلامة التصفح.',
+      'rpWebEmptyHint':
+          'لم يتم رصد أي محاولة وصول خلال هذه الفترة، وهذا مؤشر جيد على سلامة التصفح.',
       'rpWebTitle': 'تقرير الويب',
       'rpNoData': 'لا توجد بيانات في هذه الفترة',
       'rpLoadRetryHint': 'تحقّق من اتصال الجهاز ثم أعد المحاولة',
@@ -159,77 +321,80 @@ class AppLocalizations {
       'modeKindHomework': 'واجبات',
       'modeKindTravel': 'سفر',
       'modesCustomDescription': 'نمط مخصص بقواعد وإعدادات من اختيارك',
-    'dlActive': 'نشط',
-    'dlAlreadyHaveCode': 'أدخل رمز الربط الذي أعطاك إياه الوالد',
-    'dlAttempts': 'المحاولات',
-    'dlAttemptsLabel': 'محاولة',
-    'dlCodeCopied': 'نُسِخ الرمز إلى الحافظة',
-    'dlCodeExpired': 'الرمز منتهي الصلاحية — اطلب رمزًا جديدًا',
-    'dlCodeValid': 'الرمز صالح — جاري التوثيق',
-    'dlCompleteEnrollment': 'إكمال التوثيق',
-    'dlCompleteSpouseEnrollment': 'إكمال توثيق الزوج',
-    'dlConfirmSubtitle': 'سيُوثَّق الجهاز في العائلة ولن يحتاج الرمز مجددًا',
-    'dlConfirmTitle': 'تأكيد التوثيق',
-    'dlConfirmTransfer': 'نقل الجهاز',
-    'dlConfirmUnlink': 'إلغاء الربط',
-    'dlCopyCode': 'نسخ الرمز',
-    'dlDeviceMissing': 'الجهاز غير موجود',
-    'dlDevicesTitle': 'الأجهزة المربوطة',
-    'dlEnrollSubtitle': 'يربط هذا الجهاز حساب العائلة ويبدأ المزامنة بأمانة',
-    'dlEnrollTitle': 'توثيق جهازك',
-    'dlExpiryMinutes': 'تنتهي صلاحية الرمز خلال {minutes} دقيقة',
-    'dlGenerateSpouseCode': 'إنشاء رمز الزوج',
-    'dlHealthHealthy': 'سليم',
-    'dlHealthOffline': 'غير متصل',
-    'dlHealthRevoked': 'مُبطَل',
-    'dlHealthStale': 'متأخر',
-    'dlLockoutActive': 'الربط مقفل بعد 5 محاولات خاطئة',
-    'dlLockoutHint': 'لا تُقبل محاولات جديدة حتى يُعاد ضبط القفل',
-    'dlLockoutTitle': 'قفل محاولات الربط',
-    'dlMinutesAgo': 'قبل {n} دقيقة',
-    'dlNeverSynced': 'لم تتم المزامنة بعد',
-    'dlNoDevices': 'لا توجد أجهزة مربوطة بالعائلة',
-    'dlNoLockout': 'لا يوجد قفل نشط',
-    'dlNoLockoutMessage': 'يمكن تجربة رموز الربط بشكل طبيعي',
-    'dlNoPendingSessions': 'لا توجد جلسات ربط معلّقة',
-    'dlNoSpouseDevice': 'لا يوجد جهاز زوج مربوط',
-    'dlPendingSessions': 'جلسات الربط المعلّقة',
-    'dlPermBackground': 'التشغيل في الخلفية',
-    'dlPermDefer': 'تأجيل',
-    'dlPermDeferred': 'مؤجل — سيُطلب لاحقًا عند الحاجة',
-    'dlPermLocation': 'الموقع',
-    'dlPermNotification': 'الإشعارات',
-    'dlPermSettingsHint': 'افتح الإعدادات ثم امنح الإذن يدويًا',
-    'dlPermUsage': 'إحصاءات الاستخدام',
-    'dlPermissionDenied': 'رُفِض الإذن — لا يمكن تمكينه من التطبيق',
-    'dlPermissionOnboardingSubtitle': 'ما الذي يحتاجه هذا الجهاز ولماذا — بحالة حقيقية لا مزيّفة',
-    'dlPermissionOnboardingTitle': 'أذونات هذا الجهاز',
-    'dlResetLockout': 'إعادة ضبط القفل',
-    'dlReview': 'مراجعة',
-    'dlRevokeDevice': 'إبطال الجهاز',
-    'dlRevokeWarning': 'سيُبطَل الجهاز فورًا ولن يتمكن من المزامنة حتى يعيد التوثيق',
-    'dlRoleChild': 'جهاز الطفل',
-    'dlRoleCoParent': 'جهاز الوالد المشارك',
-    'dlRoleLabel': 'الدور',
-    'dlRoleParent': 'جهاز الوالد',
-    'dlRoleSpouse': 'جهاز الزوج',
-    'dlRoleUnknown': 'غير معروف',
-    'dlSpouseEnrollSubtitle': 'يربط جهاز الزوج بالعائلة ويبدأ المزامنة',
-    'dlSpouseEnrollTitle': 'توثيق جهاز الزوج',
-    'dlSpouseLinkSubtitle': 'أدخل رمز الربط الخاص بجهاز الزوج',
-    'dlSpouseLinkTitle': 'ربط جهاز الزوج',
-    'dlSpouseRoleSubtitle': 'توثيق جهاز الزوج ضمن العائلة',
-    'dlSpouseRoleTitle': 'دور جهاز الزوج',
-    'dlSyncNow': 'مزامنة الآن',
-    'dlThisDevice': 'هذا الجهاز',
-    'dlTransferDevice': 'نقل الاشتراك',
-    'dlTransferOldRevoked': 'الجهاز القديم مُبطَل (سجله محفوظ)',
-    'dlTransferSubtitle': 'يُنقَل الاشتراك إلى جهاز جديد ويُبطَل القديم مع حفظ السجل',
-    'dlTransferSuccess': 'نُقِل الاشتراك إلى الجهاز الجديد',
-    'dlTransferTitle': 'نقل الجهاز',
-    'dlUnlinkTitle': 'إلغاء ربط الجهاز',
-    'dlVerifyCode': 'تحقق من رمز الربط',
-    'dlYourCode': 'رمزك',
+      'dlActive': 'نشط',
+      'dlAlreadyHaveCode': 'أدخل رمز الربط الذي أعطاك إياه الوالد',
+      'dlAttempts': 'المحاولات',
+      'dlAttemptsLabel': 'محاولة',
+      'dlCodeCopied': 'نُسِخ الرمز إلى الحافظة',
+      'dlCodeExpired': 'الرمز منتهي الصلاحية — اطلب رمزًا جديدًا',
+      'dlCodeValid': 'الرمز صالح — جاري التوثيق',
+      'dlCompleteEnrollment': 'إكمال التوثيق',
+      'dlCompleteSpouseEnrollment': 'إكمال توثيق الزوج',
+      'dlConfirmSubtitle': 'سيُوثَّق الجهاز في العائلة ولن يحتاج الرمز مجددًا',
+      'dlConfirmTitle': 'تأكيد التوثيق',
+      'dlConfirmTransfer': 'نقل الجهاز',
+      'dlConfirmUnlink': 'إلغاء الربط',
+      'dlCopyCode': 'نسخ الرمز',
+      'dlDeviceMissing': 'الجهاز غير موجود',
+      'dlDevicesTitle': 'الأجهزة المربوطة',
+      'dlEnrollSubtitle': 'يربط هذا الجهاز حساب العائلة ويبدأ المزامنة بأمانة',
+      'dlEnrollTitle': 'توثيق جهازك',
+      'dlExpiryMinutes': 'تنتهي صلاحية الرمز خلال {minutes} دقيقة',
+      'dlGenerateSpouseCode': 'إنشاء رمز الزوج',
+      'dlHealthHealthy': 'سليم',
+      'dlHealthOffline': 'غير متصل',
+      'dlHealthRevoked': 'مُبطَل',
+      'dlHealthStale': 'متأخر',
+      'dlLockoutActive': 'الربط مقفل بعد 5 محاولات خاطئة',
+      'dlLockoutHint': 'لا تُقبل محاولات جديدة حتى يُعاد ضبط القفل',
+      'dlLockoutTitle': 'قفل محاولات الربط',
+      'dlMinutesAgo': 'قبل {n} دقيقة',
+      'dlNeverSynced': 'لم تتم المزامنة بعد',
+      'dlNoDevices': 'لا توجد أجهزة مربوطة بالعائلة',
+      'dlNoLockout': 'لا يوجد قفل نشط',
+      'dlNoLockoutMessage': 'يمكن تجربة رموز الربط بشكل طبيعي',
+      'dlNoPendingSessions': 'لا توجد جلسات ربط معلّقة',
+      'dlNoSpouseDevice': 'لا يوجد جهاز زوج مربوط',
+      'dlPendingSessions': 'جلسات الربط المعلّقة',
+      'dlPermBackground': 'التشغيل في الخلفية',
+      'dlPermDefer': 'تأجيل',
+      'dlPermDeferred': 'مؤجل — سيُطلب لاحقًا عند الحاجة',
+      'dlPermLocation': 'الموقع',
+      'dlPermNotification': 'الإشعارات',
+      'dlPermSettingsHint': 'افتح الإعدادات ثم امنح الإذن يدويًا',
+      'dlPermUsage': 'إحصاءات الاستخدام',
+      'dlPermissionDenied': 'رُفِض الإذن — لا يمكن تمكينه من التطبيق',
+      'dlPermissionOnboardingSubtitle':
+          'ما الذي يحتاجه هذا الجهاز ولماذا — بحالة حقيقية لا مزيّفة',
+      'dlPermissionOnboardingTitle': 'أذونات هذا الجهاز',
+      'dlResetLockout': 'إعادة ضبط القفل',
+      'dlReview': 'مراجعة',
+      'dlRevokeDevice': 'إبطال الجهاز',
+      'dlRevokeWarning':
+          'سيُبطَل الجهاز فورًا ولن يتمكن من المزامنة حتى يعيد التوثيق',
+      'dlRoleChild': 'جهاز الطفل',
+      'dlRoleCoParent': 'جهاز الوالد المشارك',
+      'dlRoleLabel': 'الدور',
+      'dlRoleParent': 'جهاز الوالد',
+      'dlRoleSpouse': 'جهاز الزوج',
+      'dlRoleUnknown': 'غير معروف',
+      'dlSpouseEnrollSubtitle': 'يربط جهاز الزوج بالعائلة ويبدأ المزامنة',
+      'dlSpouseEnrollTitle': 'توثيق جهاز الزوج',
+      'dlSpouseLinkSubtitle': 'أدخل رمز الربط الخاص بجهاز الزوج',
+      'dlSpouseLinkTitle': 'ربط جهاز الزوج',
+      'dlSpouseRoleSubtitle': 'توثيق جهاز الزوج ضمن العائلة',
+      'dlSpouseRoleTitle': 'دور جهاز الزوج',
+      'dlSyncNow': 'مزامنة الآن',
+      'dlThisDevice': 'هذا الجهاز',
+      'dlTransferDevice': 'نقل الاشتراك',
+      'dlTransferOldRevoked': 'الجهاز القديم مُبطَل (سجله محفوظ)',
+      'dlTransferSubtitle':
+          'يُنقَل الاشتراك إلى جهاز جديد ويُبطَل القديم مع حفظ السجل',
+      'dlTransferSuccess': 'نُقِل الاشتراك إلى الجهاز الجديد',
+      'dlTransferTitle': 'نقل الجهاز',
+      'dlUnlinkTitle': 'إلغاء ربط الجهاز',
+      'dlVerifyCode': 'تحقق من رمز الربط',
+      'dlYourCode': 'رمزك',
       'create': 'إنشاء',
       'loadingFailed': 'فشل التحميل',
       'modesAction': 'الإجراء',
@@ -239,7 +404,8 @@ class AppLocalizations {
       'modesActions': 'الإجراءات',
       'modesActivateMode': 'تفعيل النمط',
       'modesActivationHistory': 'تاريخ التفعيلات',
-      'modesActivationHistoryDescription': 'كل تفعيل أو إيقاف للنمط موثّق بشفافية',
+      'modesActivationHistoryDescription':
+          'كل تفعيل أو إيقاف للنمط موثّق بشفافية',
       'modesActivations': 'سجل التفعيلات',
       'modesActivationsEmptyDescription': 'لا توجد تفعيلات لهذا النمط بعد',
       'modesActive': 'نشط',
@@ -257,22 +423,26 @@ class AppLocalizations {
       'modesChildrenSection': 'الأطفال المستهدفون',
       'modesChildrenUpdated': 'حُدّثت قائمة الأطفال محليًا',
       'modesConfiguration': 'الإعدادات',
-      'modesConflictDescription': 'عند تعارض نمطين، يربح الأعلى أولوية أو الأسبق إنشاءً',
+      'modesConflictDescription':
+          'عند تعارض نمطين، يربح الأعلى أولوية أو الأسبق إنشاءً',
       'modesConflictLoser': 'المغبون',
       'modesConflictOrder': 'ترتيب الأولوية',
       'modesConflictResolver': 'حل التعارضات',
       'modesConflictWinner': 'الرابح',
       'modesCreateCustom': 'إنشاء نمط مخصص',
-      'modesCreateDescription': 'أنشئ نمطًا مخصصًا يطبق قواعد فورية على أجهزة الأطفال',
+      'modesCreateDescription':
+          'أنشئ نمطًا مخصصًا يطبق قواعد فورية على أجهزة الأطفال',
       'modesCreateFirst': 'أنشئ نمطك الأول',
       'modesCreateMode': 'إنشاء نمط',
       'modesCustomMode': 'نمط مخصص',
       'modesDashboardTitle': 'الأنماط المخصصة',
       'modesDeactivateMode': 'إيقاف النمط',
-      'modesDeleteConfirmation': 'سيُحذف النمط ويتوقف تطبيق قواعده عند الاتصال. هل أنت متأكد؟',
+      'modesDeleteConfirmation':
+          'سيُحذف النمط ويتوقف تطبيق قواعده عند الاتصال. هل أنت متأكد؟',
       'modesDeleteMode': 'حذف النمط',
       'modesEditMode': 'تعديل النمط',
-      'modesEmptyDescription': 'لا توجد أنماط بعد. أنشئ نمط واجبات أو نوم أو سفر',
+      'modesEmptyDescription':
+          'لا توجد أنماط بعد. أنشئ نمط واجبات أو نوم أو سفر',
       'modesEndTime': 'وقت الانتهاء',
       'modesGroup': 'الأنماط',
       'modesHomeworkMode': 'نمط الواجبات',
@@ -294,9 +464,11 @@ class AppLocalizations {
       'modesNameAction': 'الاسم والإجراء',
       'modesNoActivationsYet': 'لا تفعيلات بعد',
       'modesNoActiveModes': 'لا توجد أنماط نشطة الآن',
-      'modesNoActiveModesDescription': 'فعّل نمطًا لتطبيق قواعده على أطفال محددين',
+      'modesNoActiveModesDescription':
+          'فعّل نمطًا لتطبيق قواعده على أطفال محددين',
       'modesNoChildren': 'لا أطفال مستهدفون',
-      'modesNoChildrenDescription': 'حدد طفلًا واحدًا على الأقل ليُطبَّق النمط عليه',
+      'modesNoChildrenDescription':
+          'حدد طفلًا واحدًا على الأقل ليُطبَّق النمط عليه',
       'modesNoModesYet': 'لا توجد أنماط بعد',
       'modesNoOverlap': 'لا تعارض بين أنماطك النشطة',
       'modesNotFound': 'النمط غير موجود',
@@ -340,97 +512,106 @@ class AppLocalizations {
       'sosStored': 'حُفظت حالة الطوارئ محليًا حتى استعادة الشبكة',
       'syncResult': 'نتيجة المزامنة',
       'webProtectionFor': 'حماية الويب لـ {name}',
-    'sosGroup': 'الطوارئ SOS',
-    'sosDashboardTitle': 'لوحة الطوارئ',
-    'sosActivateNow': 'تفعيل SOS الآن',
-    'sosReadinessTitle': 'جاهزية الاستجابة',
-    'sosReadyCount': 'جاهز — {n} مستجيبون في القائمة',
-    'sosNotReady': 'غير جاهز — أضف مستجيبين أولاً',
-    'sosResponders': 'مستجيبون',
-    'sosTotalRecipients': 'إجمالي المتلقين',
-    'sosRecipientsSection': 'قائمة المتلقين',
-    'sosManage': 'إدارة',
-    'sosNoRecipientsYet': 'لا يوجد متلقون بعد',
-    'sosAddRecipient': 'إضافة متلقٍ',
-    'sosRoleResponder': 'مستجيب (طبيب/منقذ)',
-    'sosRoleNotifyOnly': 'إشعار فقط',
-    'sosDrillSection': 'اختبار الجاهزية',
-    'sosDrillTitle': 'تمرين الطوارئ',
-    'sosDrillSubtitle': 'اختبر جهوزيتك خطوة بخطوة',
-    'sosHistorySection': 'سجل التنبيهات',
-    'sosNoHistoryYet': 'لا يوجد سجل تنبيهات بعد',
-    'loadFailed': 'فشل تحميل البيانات — تحقق من الاتصال ثم أعد المحاولة',
-    'sosConfirmTitle': 'تأكيد إرسال الطوارئ',
-    'sosConfirmMessage': 'سيتم إرسال تنبيه الطوارئ إلى جميع المتلقين في القائمة مع موقعك الحالي. هل أنت متأكد؟',
-    'sosSendNow': 'إرسال SOS الآن',
-    'sosUrgentTitle': 'طوارئ — تفعيل فوري',
-    'sosUrgentSubtitle': 'يُرسَل التنبيه إلى جميع المتلقين المسجلين مع موقعك الحالي',
-    'sosWhatHappensTitle': 'ماذا يحدث عند الإرسال؟',
-    'sosWhatHappensBody': 'يُخزَّن تنبيه الطوارئ محلياً أولاً، ثم تُرسل طلبات الإخطار لكل متلقٍ عبر المزامنة. يظل كل طلب في انتظاره بصراحة حتى يُسلَّم ويُقرَّ به.',
-    'sosQueuedHonest': 'تنبيه الطوارئ في قائمة الإرسال — سيصل للمتلقين بعد المزامنة',
-    'sosWatchLive': 'متابعة التنبيه المباشر',
-    'sosActiveTitle': 'تنبيه SOS نشط',
-    'sosEmergencyLocation': 'موقع الطوارئ',
-    'sosStandDownTitle': 'إيقاف التنبيه',
-    'sosStandDownMessage': 'سيُوقَف التنبيه النشط ويُحفظ في السجل بصراحة. لا يمكن التراجع.',
-    'sosStandDown': 'إيقاف SOS',
-    'sosStandDownDone': 'تم إيقاف التنبيه',
-    'sosNoActiveAlert': 'لا يوجد تنبيه نشط حالياً',
-    'sosNoActiveSubtitle': 'اللوحات هادئة — فعّل التنبيه عند الحاجة',
-    'sosPerRecipientTitle': 'حالة كل متلقٍ',
-    'sosNoRecipientRows': 'لا توجد صفوف متلقين لهذا التنبيه',
-    'sosFamilyLevel': 'عائلي',
-    'sosLastUpdate': 'آخر تحديث',
-    'sosNoLocationYet': 'لا يوجد موقع بعد',
-    'sosNoLocationSubtitle': 'اسحب للتحديث — الموقع يُجلب فقط عند طلبه',
-    'sosLocationNoteTitle': 'ملاحظة الموقع',
-    'sosLocationNoteBody': 'هذا الموقع يُلتقط عند الطلب فقط — لا يُنشر تلقائياً',
-    'sosEmergencyAlert': 'تنبيه الطوارئ',
-    'sosAlertNotFound': 'التنبيه غير موجود',
-    'sosAlertReceivedTitle': 'تنبيه طوارئ وارد',
-    'sosAlertReceivedBody': 'يرجى الإقرار بالتنبيه حتى يعلم فريقك أنك رأيته',
-    'sosRequestedAt': 'طُلب في',
-    'sosAcknowledgeAlert': 'الإقرار بالتنبيه',
-    'sosAckedHonest': 'تم الإقرار — شاهده المتصلون',
-    'sosAckNotNeeded': 'لا حاجة للإقرار — التنبيه منتهٍ',
-    'sosAckHistoryTitle': 'سجل الإقرارات',
-    'sosNoAckEventsYet': 'لا توجد أحداث إقرار بعد',
-    'sosNoAckEventsSubtitle': 'يظهر هنا كل تنبيه طوارئ تم إرساله وحالته بصراحة',
-    'sosUnknownDevice': 'جهاز غير معروف',
-    'sosDeliveredAt': 'سُلِّم في',
-    'sosRemoveRecipientTitle': 'حذف المتلقي',
-    'sosRemoveRecipientMessage': 'لن يتلقَّ هذا المتلقي تنبيهات الطوارئ بعد الآن. هل أنت متأكد؟',
-    'sosRemoveRecipient': 'حذف',
-    'sosRecipientAdded': 'أُضيف المتلقي إلى القائمة',
-    'sosRecipientRemoved': 'حُذف المتلقي من القائمة',
-    'sosRecipientNotFound': 'المتلقي غير موجود',
-    'sosRecipientHint': 'رقم الهاتف أو معرف المتلقي',
-    'sosRoleNoteTitle': 'الأدوار',
-    'sosRoleNoteBody': 'المستجيب يتلقى الاتصال أولاً؛ «إشعار فقط» يتلقى تنبيهاً دون اتصال',
-    'sosRecipientsTitle': 'إدارة المتلقين',
-    'sosDrillStepSent': 'الخطوة 1: إرسال تنبيه تجريبي',
-    'sosDrillStepReceived': 'الخطوة 2: استلام صف الإخطار',
-    'sosDrillStepAcknowledged': 'الخطوة 3: الإقرار بتنبيه',
-    'sosDrillStepLocation': 'الخطوة 4: التحقق من الموقع',
-    'sosDrillStepDone': 'تم',
-    'sosDrillTest': 'اختبر',
-    'sosDrillStepWaiting': 'في الانتظار',
-    'sosDrillPassedTitle': 'اجتاز النظام الاختبار',
-    'sosDrillInTitle': 'التمرين قيد التشغيل',
-    'sosDrillProgress': 'التقدم',
-    'sosDrillVerdictBody': 'كل خطوة أُكِّدت بواقع فعلي — لا تفاؤل مزيف',
-    'sosDrillRestart': 'إعادة التمرين',
-    'sosDrillAckFailed': 'تعذر الإقرار بالتجربة — لا يوجد تنبيه مفتوح',
-    'sosDrillLocationDenied': 'لا يمكن التحقق من الموقع — الإذن مرفوض',
-    'sosDrillPassed': 'اجتاز التمرين',
-    'sosStatusAcknowledged': 'مُقر به',
-    'sosStatusNotified': 'أُخبر',
-    'sosStatusDelivered': 'سُلِّم',
-    'sosStatusPending': 'قيد الانتظار',
-    'sosStatusLocal': 'محلي',
-    'sosStatusQueued': 'في القائمة',
-    'sosStatusFailed': 'فشل',
-    'sosStatusCancelled': 'مُلغى',
+      'sosGroup': 'الطوارئ SOS',
+      'sosDashboardTitle': 'لوحة الطوارئ',
+      'sosActivateNow': 'تفعيل SOS الآن',
+      'sosReadinessTitle': 'جاهزية الاستجابة',
+      'sosReadyCount': 'جاهز — {n} مستجيبون في القائمة',
+      'sosNotReady': 'غير جاهز — أضف مستجيبين أولاً',
+      'sosResponders': 'مستجيبون',
+      'sosTotalRecipients': 'إجمالي المتلقين',
+      'sosRecipientsSection': 'قائمة المتلقين',
+      'sosManage': 'إدارة',
+      'sosNoRecipientsYet': 'لا يوجد متلقون بعد',
+      'sosAddRecipient': 'إضافة متلقٍ',
+      'sosRoleResponder': 'مستجيب (طبيب/منقذ)',
+      'sosRoleNotifyOnly': 'إشعار فقط',
+      'sosDrillSection': 'اختبار الجاهزية',
+      'sosDrillTitle': 'تمرين الطوارئ',
+      'sosDrillSubtitle': 'اختبر جهوزيتك خطوة بخطوة',
+      'sosHistorySection': 'سجل التنبيهات',
+      'sosNoHistoryYet': 'لا يوجد سجل تنبيهات بعد',
+      'loadFailed': 'فشل تحميل البيانات — تحقق من الاتصال ثم أعد المحاولة',
+      'sosConfirmTitle': 'تأكيد إرسال الطوارئ',
+      'sosConfirmMessage':
+          'سيتم إرسال تنبيه الطوارئ إلى جميع المتلقين في القائمة مع موقعك الحالي. هل أنت متأكد؟',
+      'sosSendNow': 'إرسال SOS الآن',
+      'sosUrgentTitle': 'طوارئ — تفعيل فوري',
+      'sosUrgentSubtitle':
+          'يُرسَل التنبيه إلى جميع المتلقين المسجلين مع موقعك الحالي',
+      'sosWhatHappensTitle': 'ماذا يحدث عند الإرسال؟',
+      'sosWhatHappensBody':
+          'يُخزَّن تنبيه الطوارئ محلياً أولاً، ثم تُرسل طلبات الإخطار لكل متلقٍ عبر المزامنة. يظل كل طلب في انتظاره بصراحة حتى يُسلَّم ويُقرَّ به.',
+      'sosQueuedHonest':
+          'تنبيه الطوارئ في قائمة الإرسال — سيصل للمتلقين بعد المزامنة',
+      'sosWatchLive': 'متابعة التنبيه المباشر',
+      'sosActiveTitle': 'تنبيه SOS نشط',
+      'sosEmergencyLocation': 'موقع الطوارئ',
+      'sosStandDownTitle': 'إيقاف التنبيه',
+      'sosStandDownMessage':
+          'سيُوقَف التنبيه النشط ويُحفظ في السجل بصراحة. لا يمكن التراجع.',
+      'sosStandDown': 'إيقاف SOS',
+      'sosStandDownDone': 'تم إيقاف التنبيه',
+      'sosNoActiveAlert': 'لا يوجد تنبيه نشط حالياً',
+      'sosNoActiveSubtitle': 'اللوحات هادئة — فعّل التنبيه عند الحاجة',
+      'sosPerRecipientTitle': 'حالة كل متلقٍ',
+      'sosNoRecipientRows': 'لا توجد صفوف متلقين لهذا التنبيه',
+      'sosFamilyLevel': 'عائلي',
+      'sosLastUpdate': 'آخر تحديث',
+      'sosNoLocationYet': 'لا يوجد موقع بعد',
+      'sosNoLocationSubtitle': 'اسحب للتحديث — الموقع يُجلب فقط عند طلبه',
+      'sosLocationNoteTitle': 'ملاحظة الموقع',
+      'sosLocationNoteBody':
+          'هذا الموقع يُلتقط عند الطلب فقط — لا يُنشر تلقائياً',
+      'sosEmergencyAlert': 'تنبيه الطوارئ',
+      'sosAlertNotFound': 'التنبيه غير موجود',
+      'sosAlertReceivedTitle': 'تنبيه طوارئ وارد',
+      'sosAlertReceivedBody': 'يرجى الإقرار بالتنبيه حتى يعلم فريقك أنك رأيته',
+      'sosRequestedAt': 'طُلب في',
+      'sosAcknowledgeAlert': 'الإقرار بالتنبيه',
+      'sosAckedHonest': 'تم الإقرار — شاهده المتصلون',
+      'sosAckNotNeeded': 'لا حاجة للإقرار — التنبيه منتهٍ',
+      'sosAckHistoryTitle': 'سجل الإقرارات',
+      'sosNoAckEventsYet': 'لا توجد أحداث إقرار بعد',
+      'sosNoAckEventsSubtitle':
+          'يظهر هنا كل تنبيه طوارئ تم إرساله وحالته بصراحة',
+      'sosUnknownDevice': 'جهاز غير معروف',
+      'sosDeliveredAt': 'سُلِّم في',
+      'sosRemoveRecipientTitle': 'حذف المتلقي',
+      'sosRemoveRecipientMessage':
+          'لن يتلقَّ هذا المتلقي تنبيهات الطوارئ بعد الآن. هل أنت متأكد؟',
+      'sosRemoveRecipient': 'حذف',
+      'sosRecipientAdded': 'أُضيف المتلقي إلى القائمة',
+      'sosRecipientRemoved': 'حُذف المتلقي من القائمة',
+      'sosRecipientNotFound': 'المتلقي غير موجود',
+      'sosRecipientHint': 'رقم الهاتف أو معرف المتلقي',
+      'sosRoleNoteTitle': 'الأدوار',
+      'sosRoleNoteBody':
+          'المستجيب يتلقى الاتصال أولاً؛ «إشعار فقط» يتلقى تنبيهاً دون اتصال',
+      'sosRecipientsTitle': 'إدارة المتلقين',
+      'sosDrillStepSent': 'الخطوة 1: إرسال تنبيه تجريبي',
+      'sosDrillStepReceived': 'الخطوة 2: استلام صف الإخطار',
+      'sosDrillStepAcknowledged': 'الخطوة 3: الإقرار بتنبيه',
+      'sosDrillStepLocation': 'الخطوة 4: التحقق من الموقع',
+      'sosDrillStepDone': 'تم',
+      'sosDrillTest': 'اختبر',
+      'sosDrillStepWaiting': 'في الانتظار',
+      'sosDrillPassedTitle': 'اجتاز النظام الاختبار',
+      'sosDrillInTitle': 'التمرين قيد التشغيل',
+      'sosDrillProgress': 'التقدم',
+      'sosDrillVerdictBody': 'كل خطوة أُكِّدت بواقع فعلي — لا تفاؤل مزيف',
+      'sosDrillRestart': 'إعادة التمرين',
+      'sosDrillAckFailed': 'تعذر الإقرار بالتجربة — لا يوجد تنبيه مفتوح',
+      'sosDrillLocationDenied': 'لا يمكن التحقق من الموقع — الإذن مرفوض',
+      'sosDrillPassed': 'اجتاز التمرين',
+      'sosStatusAcknowledged': 'مُقر به',
+      'sosStatusNotified': 'أُخبر',
+      'sosStatusDelivered': 'سُلِّم',
+      'sosStatusPending': 'قيد الانتظار',
+      'sosStatusLocal': 'محلي',
+      'sosStatusQueued': 'في القائمة',
+      'sosStatusFailed': 'فشل',
+      'sosStatusCancelled': 'مُلغى',
       'activeLiveSessions': 'الجلسات المباشرة النشطة',
       'activeSchedules': 'الجداول النشطة',
       'addCaptureSchedule': 'إضافة جدول التقاط',
@@ -596,7 +777,8 @@ class AppLocalizations {
       'settingsLanguageEn': 'English',
       'goHome': 'العودة إلى الشاشة الرئيسة',
       'pageNotFound': 'الصفحة غير موجودة',
-      'pageNotFoundBody': 'تعذّر العثور على هذه الصفحة. يمكنك العودة إلى الشاشة الرئيسة بأمان.',
+      'pageNotFoundBody':
+          'تعذّر العثور على هذه الصفحة. يمكنك العودة إلى الشاشة الرئيسة بأمان.',
       'setupRequired': 'يتطلب إعداد Firebase',
       'error': 'تعذر إتمام العملية',
       'safetyPolicies': 'سياسات الأمان',
@@ -661,90 +843,100 @@ class AppLocalizations {
       'statusReason': 'سبب الحالة',
       'noData': 'لا توجد بيانات',
       'createdFamily': 'تاريخ الإنشاء',
-      'noEvaluation': 'لم يكتمل تقييم بعد'
-      ,'dailyLimitMinutes': 'الحد اليومي بالدقائق (اختياري)'
-      ,'policyPackageId': 'معرّف حزمة Android للقياس (مثال: com.google.android.youtube)'
-      ,'addPolicyTarget': 'إضافة هدف'
-      ,'dailyLimitRequiresPackage': 'يتطلب الحد اليومي معرّف حزمة Android واحدًا على الأقل.'
-      ,'screenTimeToday': 'استخدام اليوم'
-      ,'screenTimeEvaluate': 'قياس الاستخدام وتقييم السياسة'
-      ,'screenTimeNoUsage': 'لا توجد ملاحظات استخدام محلية لهذا اليوم.'
-      ,'screenTimeMeasured': 'تم القياس محليًا؛ لا يعني ذلك أن Android حظر تطبيقًا.'
-      ,'enforcementStatus': 'حالة الإنفاذ'
-      ,'permissionRequired': 'يلزم منح الوصول'
-      ,'enforcementUnsupported': 'الإنفاذ غير مدعوم على هذا الجهاز'
-      ,'familyMembers': 'أعضاء الأسرة'
-      ,'inviteMember': 'دعوة عضو'
-      ,'memberRole': 'الدور'
-      ,'memberStatus': 'الحالة'
-      ,'memberDevices': 'أجهزة مرتبطة'
-      ,'noMembers': 'لا يوجد أعضاء ظاهرون في هذه العائلة بعد.'
-      ,'pendingInvitations': 'دعوات معلقة'
-      ,'invitationPending': 'بانتظار القبول'
-      ,'invitationAccepted': 'مقبولة'
-      ,'invitationExpired': 'منتهية الصلاحية'
-      ,'invitationCancelled': 'ملغاة'
-      ,'cancelInvitation': 'إلغاء الدعوة'
-      ,'revokeAccess': 'إلغاء الوصول'
-      ,'changeRole': 'تغيير الدور'
-      ,'notConnected': 'غير متصل'
-      ,'inviteAdult': 'دعوة بالغ'
-      ,'targetEmail': 'البريد الإلكتروني للمستلم'
-      ,'proposedRole': 'الدور المقترح'
-      ,'sendInvitation': 'حفظ الدعوة'
-      ,'invitationCreated': 'حُفظت الدعوة محليًا وتنتظر المزامنة. لا يوجد إرسال بريد في هذه المرحلة.'
-      ,'acceptInvitation': 'قبول الدعوة'
-      ,'rejectInvitation': 'رفض الدعوة'
-      ,'invitationExpiry': 'تنتهي في'
-      ,'roleParent': 'والد/والدة'
-      ,'roleCoParent': 'والد/والدة مشارك'
-      ,'roleOwner': 'مالك العائلة'
-      ,'roleChild': 'طفل'
-      ,'roleSpouse': 'شريك'
-      ,'statusActive': 'نشط'
-      ,'statusInvited': 'تمت الدعوة'
-      ,'statusRevoked': 'أُلغي الوصول'
-      ,'confirmRevoke': 'هل تريد إلغاء وصول هذا العضو؟ سيُلغى وصول أجهزته المرتبطة محليًا.'
-      ,'confirm': 'تأكيد'
-      ,'cancel': 'إلغاء'
-      ,'invitationActionUnavailable': 'يلزم أن يفتح المستلم الدعوة من حسابه الموثق بعد مزامنتها.'
-      ,'actorVerificationRequired': 'تُعرض البيانات المحلية للقراءة فقط حتى يتم التحقق من حساب Firebase وعضوية الأسرة المطابقة على الخادم.'
-      ,'dailySafety': 'السلامة اليومية'
-      ,'safetyTimeline': 'الخط الزمني للسلامة'
-      ,'exceptionUnsupportedNotice': 'طلبات الاستثناء تُحفظ وتُراجع محليًا فقط. لا يوجد تسليم فعلي للتطبيق على الجهاز قبل تكامل Android.'
-      ,'reviewRequests': 'مراجعة الطلبات'
-      ,'noRequests': 'لا توجد طلبات استثناء.'
-      ,'requestDuration': 'المدة المطلوبة'
-      ,'requestReason': 'سبب الطلب'
-      ,'reasonDetail': 'تفاصيل السبب'
-      ,'reasonHomework': 'واجب مدرسي'
-      ,'reasonSchoolAssignment': 'مهمة دراسية'
-      ,'reasonFamilyActivity': 'نشاط عائلي'
-      ,'reasonImportantCommunication': 'تواصل مهم'
-      ,'reasonOther': 'أخرى'
-      ,'requestPending': 'بانتظار مراجعة الوالد'
-      ,'requestApproved': 'تمت الموافقة على الطلب'
-      ,'requestDenied': 'تم رفض الطلب'
-      ,'requestExpired': 'انتهت صلاحية الطلب'
-      ,'requestCancelled': 'أُلغي الطلب'
-      ,'approveRequest': 'موافقة'
-      ,'denyRequest': 'رفض'
-      ,'requestDecisionSaved': 'تم حفظ القرار محليًا وينتظر المزامنة.'
-      ,'requestSavedLocal': 'حُفظ الطلب محليًا وينتظر مراجعة الوالد والمزامنة.'
-      ,'requestAdditionalTime': 'طلب وقت إضافي'
-      ,'submitRequest': 'إرسال الطلب'
-      ,'temporaryExceptionUntil': 'ينتهي السماح في'
-      ,'currentPolicy': 'السياسة الحالية'
-      ,'pendingRequests': 'طلبات معلقة'
-      ,'activeException': 'استثناء نشط'
-      ,'noActiveException': 'لا يوجد استثناء نشط'
-      ,'notMeasuredYet': 'لم يُقاس بعد'
-      ,'childPolicy': 'سياسة الطفل'
-      ,'childPolicyExplanation': 'هذه القاعدة تساعد عائلتك على إدارة الوقت بوضوح. لا تعني تلقائيًا أن Android حظر تطبيقًا.'
-      ,'remainingTime': 'الوقت المتبقي'
-      ,'policyConfigured': 'السياسة مُعدّة'
-      ,'policyDelivered': 'تم إعداد السياسة'
-      ,'approvalNature': 'تُقدَّم الموافقة كإعفاء مؤقت من السياسة فقط، ولا تعني أن التطبيق حُظر أو أُلغي حظره على الجهاز.',
+      'noEvaluation': 'لم يكتمل تقييم بعد',
+      'dailyLimitMinutes': 'الحد اليومي بالدقائق (اختياري)',
+      'policyPackageId':
+          'معرّف حزمة Android للقياس (مثال: com.google.android.youtube)',
+      'addPolicyTarget': 'إضافة هدف',
+      'dailyLimitRequiresPackage':
+          'يتطلب الحد اليومي معرّف حزمة Android واحدًا على الأقل.',
+      'screenTimeToday': 'استخدام اليوم',
+      'screenTimeEvaluate': 'قياس الاستخدام وتقييم السياسة',
+      'screenTimeNoUsage': 'لا توجد ملاحظات استخدام محلية لهذا اليوم.',
+      'screenTimeMeasured':
+          'تم القياس محليًا؛ لا يعني ذلك أن Android حظر تطبيقًا.',
+      'enforcementStatus': 'حالة الإنفاذ',
+      'permissionRequired': 'يلزم منح الوصول',
+      'enforcementUnsupported': 'الإنفاذ غير مدعوم على هذا الجهاز',
+      'familyMembers': 'أعضاء الأسرة',
+      'inviteMember': 'دعوة عضو',
+      'memberRole': 'الدور',
+      'memberStatus': 'الحالة',
+      'memberDevices': 'أجهزة مرتبطة',
+      'noMembers': 'لا يوجد أعضاء ظاهرون في هذه العائلة بعد.',
+      'pendingInvitations': 'دعوات معلقة',
+      'invitationPending': 'بانتظار القبول',
+      'invitationAccepted': 'مقبولة',
+      'invitationExpired': 'منتهية الصلاحية',
+      'invitationCancelled': 'ملغاة',
+      'cancelInvitation': 'إلغاء الدعوة',
+      'revokeAccess': 'إلغاء الوصول',
+      'changeRole': 'تغيير الدور',
+      'notConnected': 'غير متصل',
+      'inviteAdult': 'دعوة بالغ',
+      'targetEmail': 'البريد الإلكتروني للمستلم',
+      'proposedRole': 'الدور المقترح',
+      'sendInvitation': 'حفظ الدعوة',
+      'invitationCreated':
+          'حُفظت الدعوة محليًا وتنتظر المزامنة. لا يوجد إرسال بريد في هذه المرحلة.',
+      'acceptInvitation': 'قبول الدعوة',
+      'rejectInvitation': 'رفض الدعوة',
+      'invitationExpiry': 'تنتهي في',
+      'roleParent': 'والد/والدة',
+      'roleCoParent': 'والد/والدة مشارك',
+      'roleOwner': 'مالك العائلة',
+      'roleChild': 'طفل',
+      'roleSpouse': 'شريك',
+      'statusActive': 'نشط',
+      'statusInvited': 'تمت الدعوة',
+      'statusRevoked': 'أُلغي الوصول',
+      'confirmRevoke':
+          'هل تريد إلغاء وصول هذا العضو؟ سيُلغى وصول أجهزته المرتبطة محليًا.',
+      'confirm': 'تأكيد',
+      'cancel': 'إلغاء',
+      'invitationActionUnavailable':
+          'يلزم أن يفتح المستلم الدعوة من حسابه الموثق بعد مزامنتها.',
+      'actorVerificationRequired':
+          'تُعرض البيانات المحلية للقراءة فقط حتى يتم التحقق من حساب Firebase وعضوية الأسرة المطابقة على الخادم.',
+      'dailySafety': 'السلامة اليومية',
+      'safetyTimeline': 'الخط الزمني للسلامة',
+      'exceptionUnsupportedNotice':
+          'طلبات الاستثناء تُحفظ وتُراجع محليًا فقط. لا يوجد تسليم فعلي للتطبيق على الجهاز قبل تكامل Android.',
+      'reviewRequests': 'مراجعة الطلبات',
+      'noRequests': 'لا توجد طلبات استثناء.',
+      'requestDuration': 'المدة المطلوبة',
+      'requestReason': 'سبب الطلب',
+      'reasonDetail': 'تفاصيل السبب',
+      'reasonHomework': 'واجب مدرسي',
+      'reasonSchoolAssignment': 'مهمة دراسية',
+      'reasonFamilyActivity': 'نشاط عائلي',
+      'reasonImportantCommunication': 'تواصل مهم',
+      'reasonOther': 'أخرى',
+      'requestPending': 'بانتظار مراجعة الوالد',
+      'requestApproved': 'تمت الموافقة على الطلب',
+      'requestDenied': 'تم رفض الطلب',
+      'requestExpired': 'انتهت صلاحية الطلب',
+      'requestCancelled': 'أُلغي الطلب',
+      'approveRequest': 'موافقة',
+      'denyRequest': 'رفض',
+      'requestDecisionSaved': 'تم حفظ القرار محليًا وينتظر المزامنة.',
+      'requestSavedLocal': 'حُفظ الطلب محليًا وينتظر مراجعة الوالد والمزامنة.',
+      'requestAdditionalTime': 'طلب وقت إضافي',
+      'submitRequest': 'إرسال الطلب',
+      'temporaryExceptionUntil': 'ينتهي السماح في',
+      'currentPolicy': 'السياسة الحالية',
+      'pendingRequests': 'طلبات معلقة',
+      'activeException': 'استثناء نشط',
+      'noActiveException': 'لا يوجد استثناء نشط',
+      'notMeasuredYet': 'لم يُقاس بعد',
+      'childPolicy': 'سياسة الطفل',
+      'childPolicyExplanation':
+          'هذه القاعدة تساعد عائلتك على إدارة الوقت بوضوح. لا تعني تلقائيًا أن Android حظر تطبيقًا.',
+      'remainingTime': 'الوقت المتبقي',
+      'policyConfigured': 'السياسة مُعدّة',
+      'policyDelivered': 'تم إعداد السياسة',
+      'approvalNature':
+          'تُقدَّم الموافقة كإعفاء مؤقت من السياسة فقط، ولا تعني أن التطبيق حُظر أو أُلغي حظره على الجهاز.',
       'familyIdentity': 'هوية العائلة',
       'childOverview': 'نظرة على الأطفال',
       'safetySignal': 'إشارة السلامة',
@@ -800,26 +992,36 @@ class AppLocalizations {
       'redeemConfirm': 'ربط الجهاز',
       'redeemValidating': 'جارٍ التحقق من الرمز…',
       'redeemSuccess': 'تم ربط الجهاز بنجاح',
-      'redeemSuccessBody': 'الجهاز مرتبط الآن بالطفل المختار. قد تستغرق المزامنة مع الخادم بعض الوقت إذا لم يكن اتصال الشبكة متاحًا.',
+      'redeemSuccessBody':
+          'الجهاز مرتبط الآن بالطفل المختار. قد تستغرق المزامنة مع الخادم بعض الوقت إذا لم يكن اتصال الشبكة متاحًا.',
       'codeInvalid': 'الرمز غير صالح',
-      'codeInvalidBody': 'تأكد من إدخال الرمز المكوّن من 6 أرقام بشكل صحيح، أو اطلب رمزًا جديدًا من جهاز الوالد.',
+      'codeInvalidBody':
+          'تأكد من إدخال الرمز المكوّن من 6 أرقام بشكل صحيح، أو اطلب رمزًا جديدًا من جهاز الوالد.',
       'codeExpired': 'انتهت صلاحية الرمز',
-      'codeExpiredBody': 'رموز الربط صالحة لمدة 10 دقائق فقط. اطلب رمزًا جديدًا من جهاز الوالد.',
+      'codeExpiredBody':
+          'رموز الربط صالحة لمدة 10 دقائق فقط. اطلب رمزًا جديدًا من جهاز الوالد.',
       'codeLocked': 'تم إيقاف هذا الرمز',
-      'codeLockedBody': 'تجاوزت المحاولات الفاشلة الحد المسموح به. اطلب رمزًا جديدًا من جهاز الوالد.',
+      'codeLockedBody':
+          'تجاوزت المحاولات الفاشلة الحد المسموح به. اطلب رمزًا جديدًا من جهاز الوالد.',
       'codeAlreadyUsed': 'تم استخدام هذا الرمز مسبقًا',
-      'codeAlreadyUsedBody': 'كل رمز ربط صالح لاستخدام واحد فقط. اطلب رمزًا جديدًا من جهاز الوالد.',
+      'codeAlreadyUsedBody':
+          'كل رمز ربط صالح لاستخدام واحد فقط. اطلب رمزًا جديدًا من جهاز الوالد.',
       'alreadyEnrolled': 'هذا الجهاز مرتبط بالفعل',
-      'alreadyEnrolledBody': 'لجهاز الطفل رابط نشط مع هذه العائلة. يمكن للوالد إلغاء الربط القديم أولًا ثم إصدار رمز جديد.',
+      'alreadyEnrolledBody':
+          'لجهاز الطفل رابط نشط مع هذه العائلة. يمكن للوالد إلغاء الربط القديم أولًا ثم إصدار رمز جديد.',
       'unauthorizedRedeem': 'غير مصرح بالربط',
-      'unauthorizedRedeemBody': 'لا يمكن ربط هذا الجهاز في الوقت الحالي. تحقّق من الحساب وطلب الربط من جهاز الوالد.',
+      'unauthorizedRedeemBody':
+          'لا يمكن ربط هذا الجهاز في الوقت الحالي. تحقّق من الحساب وطلب الربط من جهاز الوالد.',
       'networkUnavailable': 'الشبكة غير متاحة',
-      'networkUnavailableBody': 'تم حفظ الربط محليًا وسيكتمل عند عودة الاتصال بالخادم. حالة المزامنة: بانتظار المزامنة.',
+      'networkUnavailableBody':
+          'تم حفظ الربط محليًا وسيكتمل عند عودة الاتصال بالخادم. حالة المزامنة: بانتظار المزامنة.',
       'pendingSync': 'بانتظار المزامنة',
       'retryRedeemLater': 'إعادة المحاولة لاحقًا',
       'unknownRedeemError': 'تعذّر إكمال الربط',
-      'unknownRedeemErrorBody': 'حدث خطأ غير متوقع. تحقّق من الشبكة ثم أعد المحاولة، أو اطلب رمزًا جديدًا.',
-      'provisioningServerError': 'تعذّر إنشاء رمز الربط على الخادم. تحقّق من الاتصال وأعد المحاولة.',
+      'unknownRedeemErrorBody':
+          'حدث خطأ غير متوقع. تحقّق من الشبكة ثم أعد المحاولة، أو اطلب رمزًا جديدًا.',
+      'provisioningServerError':
+          'تعذّر إنشاء رمز الربط على الخادم. تحقّق من الاتصال وأعد المحاولة.',
       'redeemPairingCode': 'إدخال رمز الربط',
       'pairForChild': 'جهاز الطفل',
       'noChildToPair': 'لم يتم إنشاء ملف طفل بعد.',
@@ -831,13 +1033,16 @@ class AppLocalizations {
       'deviceLifecycle': 'حالة الجهاز',
       'unlinkDevice': 'إلغاء ربط الجهاز',
       'unlinkConfirmTitle': 'إلغاء ربط هذا الجهاز؟',
-      'unlinkConfirmBody': 'يُفقد الجهاز الثقة ويُسجّل كملغٍ. يُحفظ التغيير محليًا ويُرسل عند عودة الاتصال.',
+      'unlinkConfirmBody':
+          'يُفقد الجهاز الثقة ويُسجّل كملغٍ. يُحفظ التغيير محليًا ويُرسل عند عودة الاتصال.',
       'unlinkCancel': 'إبقاء الربط',
       'unlinkConfirmed': 'أُلغي ربط الجهاز — بانتظار المزامنة',
       'unauthorizedActor': 'غير مصرح',
-      'unauthorizedActorBody': 'هذا الإجراء متاح للوالد فقط. سجّل الدخول بحساب والِد من هذه العائلة.',
+      'unauthorizedActorBody':
+          'هذا الإجراء متاح للوالد فقط. سجّل الدخول بحساب والِد من هذه العائلة.',
       'linkedStatus': 'مرتبط',
-      'redemptionPendingHint': 'الربط في انتظار اكتمال المزامنة مع الخادم قبل منح الثقة الكاملة.',
+      'redemptionPendingHint':
+          'الربط في انتظار اكتمال المزامنة مع الخادم قبل منح الثقة الكاملة.',
       // — M5 Family Management (append-only) —
       'familyOverview': 'نظرة عامة على العائلة',
       'familyStatus': 'حالة العائلة',
@@ -852,9 +1057,11 @@ class AppLocalizations {
       'invitationAll': 'الكل',
       'invitationHistoryEmpty': 'لا يوجد سجل دعوات بعد.',
       'invitationCancelledConfirm': 'إلغاء هذه الدعوة نهائيًا؟',
-      'revokeConfirmBody': 'سيُفقد العضو إمكانية الوصول وتُحجب أجهزته المرتبطة. يُحفظ التغيير محليًا ويُرسل عند عودة الاتصال.',
+      'revokeConfirmBody':
+          'سيُفقد العضو إمكانية الوصول وتُحجب أجهزته المرتبطة. يُحفظ التغيير محليًا ويُرسل عند عودة الاتصال.',
       'memberRevoked': 'أُلغي وصول العضو محليًا — بانتظار المزامنة',
-      'offlineHint': 'أنت بلا اتصال. التغييرات محفوظة محليًا وتُرسل تلقائيًا عند عودة الاتصال.',
+      'offlineHint':
+          'أنت بلا اتصال. التغييرات محفوظة محليًا وتُرسل تلقائيًا عند عودة الاتصال.',
       'onlineAgain': 'عاد الاتصال — جاري إرسال التغييرات المحفوظة.',
       'inviteMemberHint': 'تُدعى الأدوار البالغة فقط: والد أو والد مشارك.',
       'invitedPending': 'دعوة معلقة — تنتظر قبول المستلم بعد المزامنة',
@@ -865,125 +1072,146 @@ class AppLocalizations {
       'familyNotFound': 'لا توجد عائلة مسجلة بعد',
       'familyNotFoundHint': 'أنشئ عائلتك أولًا من لوحة التحكم الرئيسة.'
       // — M6 Screen-Time Administration (append-only) —
-      ,'screenTimeAdmin': 'وقت الشاشة'
-      ,'screenTimeManage': 'إدارة وقت الشاشة'
-      ,'policiesSummary': 'السياسات'
-      ,'policiesActiveCount': 'سياسة نشطة'
-      ,'policiesActiveCountPlural': 'سياسات نشطة'
-      ,'effectiveDecisionNow': 'القرار الفعّال الآن'
-      ,'decisionSampleNote': 'معاينة حسب السياسة الحالية — ليست فرضًا فعليًا على الجهاز'
-      ,'noPoliciesForChild': 'لا توجد سياسات لهذا الطفل بعد'
-      ,'addFirstPolicy': 'أضف أول سياسة'
-      ,'policySchedule': 'الجدول'
-      ,'policyActiveStatus': 'نشطة'
-      ,'policyInactiveStatus': 'غير مفعّلة'
-      ,'enablePolicy': 'تفعيل'
-      ,'disablePolicy': 'إيقاف السياسة'
-      ,'deletePolicyUnavailable': 'التعطيل هو الطريقة المعتمدة لإيقاف السياسة — لا يوجد حذف دائم في هذه المرحلة'
-      ,'policySavedSuccessfully': 'حُفظت السياسة محليًا وبانتظار المزامنة'
-      ,'policyEditedSuccessfully': 'عُدّلت السياسة محليًا وبانتظار المزامنة'
-      ,'policyDisabledNotice': 'أوقفت السياسة — ستتوقف عن كونها نشطة من الآن'
-      ,'policyEnabledNotice': 'فُعّلت السياسة — ستعود للتحكم في الأوقات المحددة'
-      ,'policyValidationFailed': 'أكمل الحقول المطلوبة وتحقق من الجدول الزمني'
-      ,'policyNameEmpty': 'اسم السياسة مطلوب'
-      ,'policyScheduleInvalid': 'التوقيت غير صالح'
-      ,'noLimit': 'بدون حد يومي'
-      ,'minutesShort': 'دقيقة'
-      ,'hoursMinutesFormat': '{hours}س {minutes}د'
-      ,'hoursMinutesZero': '0س 0د'
-      ,'overrideGrant': 'سماح مؤقت'
-      ,'overrideGrantFor': 'سماح مؤقت لـ {target}'
-      ,'overrideDuration': 'مدة السماح'
-      ,'overrideExpiresAt': 'ينتهي السماح في {time}'
-      ,'activeOverride': 'استثناء مؤقت نشط حتى {time}'
-      ,'noActiveOverrides': 'لا توجد استثناءات مؤقتة نشطة'
-      ,'exceptionRequestsTitle': 'طلبات الاستثناء'
-      ,'pendingExceptionBadge': 'طلب معلق'
-      ,'pendingExceptionBadgePlural': 'طلبات معلقة'
-      ,'noPendingExceptions': 'لا توجد طلبات استثناء معلقة'
-      ,'exceptionRequestDetails': 'تفاصيل الطلب'
-      ,'exceptionApprove': 'موافقة'
-      ,'exceptionDeny': 'رفض'
-      ,'exceptionApproved': 'تمت الموافقة محليًا — استثناء مؤقت أُنشئ وبانتظار المزامنة'
-      ,'exceptionDenied': 'تم الرفض محليًا وبانتظار المزامنة'
-      ,'exceptionReviewFailed': 'تعذر مراجعة الطلب — حاول مجددًا'
-      ,'exceptionReviewTitle': 'طلب وقت إضافي'
-      ,'exceptionChildWantsTime': 'يطلب وقتًا إضافيًا لـ {target}'
-      ,'overrideMinutes15': '15 دقيقة'
-      ,'overrideMinutes30': '30 دقيقة'
-      ,'overrideMinutes60': 'ساعة واحدة'
-      ,'overrideMinutes120': 'ساعتان'
-      ,'overrideMinutes240': '4 ساعات'
-      ,'overrideSavedLocally': 'حُفظ الاستثناء المؤقت محليًا وبانتظار المزامنة'
-      ,'overrideGrantUnavailable': 'يحتاج إنشاء استثناء مؤقت حساب والِد موثقًا لهذه العائلة'
-      ,'effectiveDecisionRestricted': 'مقيد'
-      ,'effectiveDecisionAllowed': 'مسموح'
-      ,'effectiveDecisionNoPolicy': 'لا توجد سياسة نشطة'
-      ,'effectiveDecisionOverride': 'سماح مؤقت نشط'
-      ,'childUnlinkedPolicyNotice': 'لا يوجد جهاز مرتبط لهذا الطفل — تُدار السياسات لكنها لا تُسلَّم قبل ربط الجهاز'
-      ,'screenTimeAdminUnavailable': 'إدارة وقت الشاشة غير متاحة لك'
-      ,'screenTimeAdminUnavailableBody': 'يحتاج هذا القسم صلاحية إدارة السياسات. سجّل الدخول بحساب والِد من هذه العائلة أو اطلب من الوالد مراجعته'
-      ,'m7UsageToday': 'استخدام اليوم'
-      ,'m7NoObservation': 'لا توجد بيانات قياس لهذا اليوم'
-      ,'m7StaleData': 'بيانات قديمة'
-      ,'m7OfflineCached': 'محفوظة بدون اتصال'
-      ,'m7SyncPending': 'بانتظار المزامنة'
-      ,'m7SyncFailed': 'فشل تسليم المزامنة'
-      ,'m7PermissionRequired': 'يلزم إذن إحصاءات الاستخدام'
-      ,'m7PermissionRequiredBody': 'السماح بإحصاءات الاستخدام لقياس وقت الشاشة اليومي لهذا الجهاز فقط'
-      ,'m7PermissionDenied': 'الإذن مرفوض'
-      ,'m7PermissionDeniedBody': 'رُفض إذن إحصاءات الاستخدام، ولا يمكن قياس وقت الشاشة قبل الموافقة عليه من إعدادات النظام'
-      ,'m7Unsupported': 'القياس غير مدعوم على هذا الجهاز'
-      ,'m7UnsupportedBody': 'لا يوفّر هذا الجهاز إحصاءات استخدام التطبيقات. يمكن قياس وقت الشاشة عبر تطبيق مخصص بدلًا منها'
-      ,'m7GrantUsageAccess': 'منح الوصول'
-      ,'m7UsageAccessPurpose': 'لقياس وقت الشاشة اليومي لهذا الجهاز فقط'
-      ,'m7WithinLimit': 'ضمن الحد المسموح'
-      ,'m7NearLimit': 'قريب من الحد'
-      ,'m7OverLimit': 'تجاوز الحد'
-      ,'m7NoActivePolicy': 'لا توجد سياسة نشطة'
-      ,'m7UnableToEvaluate': 'تعذّر التقييم'
-      ,'m7BreakdownTitle': 'التفاصيل حسب الفئة'
-      ,'m7TotalScreenTime': 'إجمالي وقت الشاشة'
-      ,'m7UsageUnavailable': 'القياس غير متاح حاليًا'
-      ,'m7UsageUnavailableBody': 'تعذّر جلب بيانات الاستخدام لهذا الجهاز الآن. أعد المحاولة أو تحقق من ربط الجهاز'
-      ,'m7LastObserved': 'آخر قياس'
-      ,'m7MeasuredZero': 'صفر دقائق مقاسة'
-      ,'m7Observing': 'جارٍ القياس'
-      ,'m7ConditionDetected': 'حالة سياسة مكتشفة'
-      ,'m7RefreshMeasurement': 'تحديث القياس'
-      ,'m7UsageMinutes': '{count} دقيقة'
-      ,'m8EnforcementTitle': 'حالة الحماية'
-      ,'m8EnforcementSubtitle': 'التزام الجهاز بقواعد وقت الشاشة'
-      ,'m8StateNotRequested': 'لم يُطلب تفعيل الحماية'
-      ,'m8StateNotRequestedDetail': 'لم يُتَّخذ بعدُ قرار بتطبيق حدٍّ على هذا الجهاز اليوم.'
-      ,'m8StatePermissionRequired': 'الحماية بانتظار الإذن'
-      ,'m8StatePermissionRequiredDetail': 'يتطلب تفعيل الحماية صلاحيات نظام لم تُمنح بعد.'
-      ,'m8StateEvaluationReady': 'جاهز للتقييم'
-      ,'m8StateEvaluationReadyDetail': 'لا يوجد قيد ساري الآن؛ السياسة جاهزة للتطبيق إذا تغيَّر الاستخدام.'
-      ,'m8StateEnforcementApplied': 'تم التطبيق والتحقق'
-      ,'m8StateEnforcementAppliedDetail': 'أكَّد النظام على الجهاز أن الحدّ قيد التفعيل، ولا يلغيه فقدان الاتصال.'
-      ,'m8StateEnforcementFailed': 'تعذَّر التطبيق'
-      ,'m8StateEnforcementFailedDetail': 'حاول النظام تطبيق الحدّ على الجهاز ولم يتمكَّن من تأكيد ذلك.'
-      ,'m8StatePolicyStale': 'السياسة بحاجة إلى تحديث'
-      ,'m8StatePolicyStaleDetail': 'السياسة المحلّية قديمة جدًّا ولا يُتَّخذ بموجبها أي إجراء؛ اطلب إعادة المزامنة.'
-      ,'m8StateDeviceOffline': 'الجهاز غير متاح'
-      ,'m8StateDeviceOfflineDetail': 'لا يمكن التواصل مع الجهاز حاليًّا؛ تُحفظ آخر حالة معروفة.'
-      ,'m8StateUnsupported': 'غير مدعوم على هذا الجهاز'
-      ,'m8StateUnsupportedDetail': 'إصدار النظام لا يتيح هذه الإمكانية.'
-      ,'m8StatePermissionDenied': 'الإذن غير ممنوح'
-      ,'m8StatePermissionDeniedDetail': 'سُحبت صلاحية النظام المطلوبة؛ الحماية معلَّقة حتى تمنحها مجددًّا.'
-      ,'m8RefreshEnforcement': 'تحديث الحالة'
-      ,'m8EnforcementUnavailable': 'حالة الحماية غير متاحة حاليًّا.'
-      ,'m8NotVerified': 'بانتظار التأكيد'
-      ,'m8VerificationNote': 'طُلب الإجراء ولا يزال بانتظار تأكيد النظام على الجهاز.'
-      ,'m8SyncedNow': 'آخر مزامنة: الآن'
-      ,'m8SyncPending': 'بانتظار المزامنة'
-      ,'m8SyncFailed': 'فشلت المزامنة'
-      ,'loading': 'جارٍ التحميل...'
-      ,'nothingHereYet': 'لا يوجد شيء هنا بعد.'
-      ,'offlineMode': 'أنت غير متصل بالإنترنت حاليًا.'
-      ,'offlineChangesSaved': 'تُسجَّل التغييرات محليًا وتُزامن تلقائيًا عند العودة.'
-      ,'somethingWentWrong': 'حدث خطأ غير متوقع. جرّب مرة أخرى.',
+      ,
+      'screenTimeAdmin': 'وقت الشاشة',
+      'screenTimeManage': 'إدارة وقت الشاشة',
+      'policiesSummary': 'السياسات',
+      'policiesActiveCount': 'سياسة نشطة',
+      'policiesActiveCountPlural': 'سياسات نشطة',
+      'effectiveDecisionNow': 'القرار الفعّال الآن',
+      'decisionSampleNote':
+          'معاينة حسب السياسة الحالية — ليست فرضًا فعليًا على الجهاز',
+      'noPoliciesForChild': 'لا توجد سياسات لهذا الطفل بعد',
+      'addFirstPolicy': 'أضف أول سياسة',
+      'policySchedule': 'الجدول',
+      'policyActiveStatus': 'نشطة',
+      'policyInactiveStatus': 'غير مفعّلة',
+      'enablePolicy': 'تفعيل',
+      'disablePolicy': 'إيقاف السياسة',
+      'deletePolicyUnavailable':
+          'التعطيل هو الطريقة المعتمدة لإيقاف السياسة — لا يوجد حذف دائم في هذه المرحلة',
+      'policySavedSuccessfully': 'حُفظت السياسة محليًا وبانتظار المزامنة',
+      'policyEditedSuccessfully': 'عُدّلت السياسة محليًا وبانتظار المزامنة',
+      'policyDisabledNotice': 'أوقفت السياسة — ستتوقف عن كونها نشطة من الآن',
+      'policyEnabledNotice': 'فُعّلت السياسة — ستعود للتحكم في الأوقات المحددة',
+      'policyValidationFailed': 'أكمل الحقول المطلوبة وتحقق من الجدول الزمني',
+      'policyNameEmpty': 'اسم السياسة مطلوب',
+      'policyScheduleInvalid': 'التوقيت غير صالح',
+      'noLimit': 'بدون حد يومي',
+      'minutesShort': 'دقيقة',
+      'hoursMinutesFormat': '{hours}س {minutes}د',
+      'hoursMinutesZero': '0س 0د',
+      'overrideGrant': 'سماح مؤقت',
+      'overrideGrantFor': 'سماح مؤقت لـ {target}',
+      'overrideDuration': 'مدة السماح',
+      'overrideExpiresAt': 'ينتهي السماح في {time}',
+      'activeOverride': 'استثناء مؤقت نشط حتى {time}',
+      'noActiveOverrides': 'لا توجد استثناءات مؤقتة نشطة',
+      'exceptionRequestsTitle': 'طلبات الاستثناء',
+      'pendingExceptionBadge': 'طلب معلق',
+      'pendingExceptionBadgePlural': 'طلبات معلقة',
+      'noPendingExceptions': 'لا توجد طلبات استثناء معلقة',
+      'exceptionRequestDetails': 'تفاصيل الطلب',
+      'exceptionApprove': 'موافقة',
+      'exceptionDeny': 'رفض',
+      'exceptionApproved':
+          'تمت الموافقة محليًا — استثناء مؤقت أُنشئ وبانتظار المزامنة',
+      'exceptionDenied': 'تم الرفض محليًا وبانتظار المزامنة',
+      'exceptionReviewFailed': 'تعذر مراجعة الطلب — حاول مجددًا',
+      'exceptionReviewTitle': 'طلب وقت إضافي',
+      'exceptionChildWantsTime': 'يطلب وقتًا إضافيًا لـ {target}',
+      'overrideMinutes15': '15 دقيقة',
+      'overrideMinutes30': '30 دقيقة',
+      'overrideMinutes60': 'ساعة واحدة',
+      'overrideMinutes120': 'ساعتان',
+      'overrideMinutes240': '4 ساعات',
+      'overrideSavedLocally': 'حُفظ الاستثناء المؤقت محليًا وبانتظار المزامنة',
+      'overrideGrantUnavailable':
+          'يحتاج إنشاء استثناء مؤقت حساب والِد موثقًا لهذه العائلة',
+      'effectiveDecisionRestricted': 'مقيد',
+      'effectiveDecisionAllowed': 'مسموح',
+      'effectiveDecisionNoPolicy': 'لا توجد سياسة نشطة',
+      'effectiveDecisionOverride': 'سماح مؤقت نشط',
+      'childUnlinkedPolicyNotice':
+          'لا يوجد جهاز مرتبط لهذا الطفل — تُدار السياسات لكنها لا تُسلَّم قبل ربط الجهاز',
+      'screenTimeAdminUnavailable': 'إدارة وقت الشاشة غير متاحة لك',
+      'screenTimeAdminUnavailableBody':
+          'يحتاج هذا القسم صلاحية إدارة السياسات. سجّل الدخول بحساب والِد من هذه العائلة أو اطلب من الوالد مراجعته',
+      'm7UsageToday': 'استخدام اليوم',
+      'm7NoObservation': 'لا توجد بيانات قياس لهذا اليوم',
+      'm7StaleData': 'بيانات قديمة',
+      'm7OfflineCached': 'محفوظة بدون اتصال',
+      'm7SyncPending': 'بانتظار المزامنة',
+      'm7SyncFailed': 'فشل تسليم المزامنة',
+      'm7PermissionRequired': 'يلزم إذن إحصاءات الاستخدام',
+      'm7PermissionRequiredBody':
+          'السماح بإحصاءات الاستخدام لقياس وقت الشاشة اليومي لهذا الجهاز فقط',
+      'm7PermissionDenied': 'الإذن مرفوض',
+      'm7PermissionDeniedBody':
+          'رُفض إذن إحصاءات الاستخدام، ولا يمكن قياس وقت الشاشة قبل الموافقة عليه من إعدادات النظام',
+      'm7Unsupported': 'القياس غير مدعوم على هذا الجهاز',
+      'm7UnsupportedBody':
+          'لا يوفّر هذا الجهاز إحصاءات استخدام التطبيقات. يمكن قياس وقت الشاشة عبر تطبيق مخصص بدلًا منها',
+      'm7GrantUsageAccess': 'منح الوصول',
+      'm7UsageAccessPurpose': 'لقياس وقت الشاشة اليومي لهذا الجهاز فقط',
+      'm7WithinLimit': 'ضمن الحد المسموح',
+      'm7NearLimit': 'قريب من الحد',
+      'm7OverLimit': 'تجاوز الحد',
+      'm7NoActivePolicy': 'لا توجد سياسة نشطة',
+      'm7UnableToEvaluate': 'تعذّر التقييم',
+      'm7BreakdownTitle': 'التفاصيل حسب الفئة',
+      'm7TotalScreenTime': 'إجمالي وقت الشاشة',
+      'm7UsageUnavailable': 'القياس غير متاح حاليًا',
+      'm7UsageUnavailableBody':
+          'تعذّر جلب بيانات الاستخدام لهذا الجهاز الآن. أعد المحاولة أو تحقق من ربط الجهاز',
+      'm7LastObserved': 'آخر قياس',
+      'm7MeasuredZero': 'صفر دقائق مقاسة',
+      'm7Observing': 'جارٍ القياس',
+      'm7ConditionDetected': 'حالة سياسة مكتشفة',
+      'm7RefreshMeasurement': 'تحديث القياس',
+      'm7UsageMinutes': '{count} دقيقة',
+      'm8EnforcementTitle': 'حالة الحماية',
+      'm8EnforcementSubtitle': 'التزام الجهاز بقواعد وقت الشاشة',
+      'm8StateNotRequested': 'لم يُطلب تفعيل الحماية',
+      'm8StateNotRequestedDetail':
+          'لم يُتَّخذ بعدُ قرار بتطبيق حدٍّ على هذا الجهاز اليوم.',
+      'm8StatePermissionRequired': 'الحماية بانتظار الإذن',
+      'm8StatePermissionRequiredDetail':
+          'يتطلب تفعيل الحماية صلاحيات نظام لم تُمنح بعد.',
+      'm8StateEvaluationReady': 'جاهز للتقييم',
+      'm8StateEvaluationReadyDetail':
+          'لا يوجد قيد ساري الآن؛ السياسة جاهزة للتطبيق إذا تغيَّر الاستخدام.',
+      'm8StateEnforcementApplied': 'تم التطبيق والتحقق',
+      'm8StateEnforcementAppliedDetail':
+          'أكَّد النظام على الجهاز أن الحدّ قيد التفعيل، ولا يلغيه فقدان الاتصال.',
+      'm8StateEnforcementFailed': 'تعذَّر التطبيق',
+      'm8StateEnforcementFailedDetail':
+          'حاول النظام تطبيق الحدّ على الجهاز ولم يتمكَّن من تأكيد ذلك.',
+      'm8StatePolicyStale': 'السياسة بحاجة إلى تحديث',
+      'm8StatePolicyStaleDetail':
+          'السياسة المحلّية قديمة جدًّا ولا يُتَّخذ بموجبها أي إجراء؛ اطلب إعادة المزامنة.',
+      'm8StateDeviceOffline': 'الجهاز غير متاح',
+      'm8StateDeviceOfflineDetail':
+          'لا يمكن التواصل مع الجهاز حاليًّا؛ تُحفظ آخر حالة معروفة.',
+      'm8StateUnsupported': 'غير مدعوم على هذا الجهاز',
+      'm8StateUnsupportedDetail': 'إصدار النظام لا يتيح هذه الإمكانية.',
+      'm8StatePermissionDenied': 'الإذن غير ممنوح',
+      'm8StatePermissionDeniedDetail':
+          'سُحبت صلاحية النظام المطلوبة؛ الحماية معلَّقة حتى تمنحها مجددًّا.',
+      'm8RefreshEnforcement': 'تحديث الحالة',
+      'm8EnforcementUnavailable': 'حالة الحماية غير متاحة حاليًّا.',
+      'm8NotVerified': 'بانتظار التأكيد',
+      'm8VerificationNote':
+          'طُلب الإجراء ولا يزال بانتظار تأكيد النظام على الجهاز.',
+      'm8SyncedNow': 'آخر مزامنة: الآن',
+      'm8SyncPending': 'بانتظار المزامنة',
+      'm8SyncFailed': 'فشلت المزامنة',
+      'loading': 'جارٍ التحميل...',
+      'nothingHereYet': 'لا يوجد شيء هنا بعد.',
+      'offlineMode': 'أنت غير متصل بالإنترنت حاليًا.',
+      'offlineChangesSaved':
+          'تُسجَّل التغييرات محليًا وتُزامن تلقائيًا عند العودة.',
+      'somethingWentWrong': 'حدث خطأ غير متوقع. جرّب مرة أخرى.',
       'webProtection': 'حماية الويب',
       'webFilteringDashboard': 'لوحة حماية الويب',
       'protectionLevel': 'مستوى الحماية',
@@ -1003,7 +1231,8 @@ class AppLocalizations {
       'hitBlockedFor': 'حُجب لـ %s',
       'roleNotAllowed': 'دورك لا يسمح بهذه العملية.',
       'webProtectionStatus': 'حالة الحماية',
-      'webProtectionSummary': 'تصفية المحتوى تحمي أطفالك من المواقع غير المناسبة.',
+      'webProtectionSummary':
+          'تصفية المحتوى تحمي أطفالك من المواقع غير المناسبة.',
       'contentCategories': 'فئات المحتوى',
       'categoriesDescription': 'فعّل أو أوقف فئات المحتوى لكل طفل على حدة.',
       'categorySettings': 'إعدادات الفئات',
@@ -1012,10 +1241,12 @@ class AppLocalizations {
       'trustedSites': 'المواقع الموثوقة',
       'trustedSitesDescription': 'مواقع مسموحة دائمًا تتجاوز كل الفلاتر.',
       'webSettings': 'إعدادات الويب',
-      'webSettingsDescription': 'البحث الآمن وسلوك صفحة الحجب وطلبات الاستثناء.',
+      'webSettingsDescription':
+          'البحث الآمن وسلوك صفحة الحجب وطلبات الاستثناء.',
       'blockHistory': 'سجل الحجب',
       'blockHistoryDescription': 'ماذا حُجب، ومتى، ومَن.',
-      'blockHitsEmpty': 'لا توجد أي عمليات حجب اليوم. هذه علامة صحية على تصفّح آمن.',
+      'blockHitsEmpty':
+          'لا توجد أي عمليات حجب اليوم. هذه علامة صحية على تصفّح آمن.',
       'addDomain': 'إضافة موقع',
       'domainHint': 'مثال: example.com',
       'domain': 'الموقع',
@@ -1053,7 +1284,8 @@ class AppLocalizations {
       'allowGranted': 'سُمح مؤقتًا بالوصول حتى تنتهي المدة.',
       'allowExpired': 'انتهت الموافقة المؤقتة؛ عاد الحجب.',
       'blockedPageChild': 'هذه الصفحة محجوبة',
-      'blockedPageChildBody': 'لا يمكن فتح هذا الموقع الآن لأن والديك فعّلا الحماية.',
+      'blockedPageChildBody':
+          'لا يمكن فتح هذا الموقع الآن لأن والديك فعّلا الحماية.',
       'domainAdded': 'أُضيف الموقع.',
       'domainRemoved': 'أُزيل الموقع.',
       'categoryEnabled': 'مفعّلة',
@@ -1066,7 +1298,8 @@ class AppLocalizations {
       'sensitiveCategory': 'محتوى حساس',
       'ageCategory': 'مناسب للأعمار الأكبر',
       'socialCategory': 'التواصل الاجتماعي',
-      'adultContentWarning': 'تفعيل هذه الفئات يحمي الأطفال من محتوى غير مناسب.',
+      'adultContentWarning':
+          'تفعيل هذه الفئات يحمي الأطفال من محتوى غير مناسب.',
       'protectionStrongBody': 'أغلب الفئات الحساسة مفعّلة للأطفال.',
       'protectionModerateBody': 'بعض الفئات مفعّلة وبعضها متروك للتقدير.',
       'protectionBasicBody': 'حماية أساسية فقط — يُنصح برفع المستوى.',
@@ -1078,22 +1311,28 @@ class AppLocalizations {
       'viewBlocklist': 'قائمة الحجب',
       'viewHistory': 'السجل',
       'domainMustBeValid': 'أدخل اسم موقع صالحًا (مثل example.com).',
-      'webPolicySaved': 'حُفظت تغييرات حماية الويب محليًا وستُزامن عند الاتصال.',
+      'webPolicySaved':
+          'حُفظت تغييرات حماية الويب محليًا وستُزامن عند الاتصال.',
       'accuracyMeters': '±{meters} م من النقطة',
       'acknowledge': 'اعتماد',
       'alertAcknowledged': 'تم اعتماد التنبيه',
       'alertOnEntry': 'تنبيه عند الدخول',
       'alertOnExit': 'تنبيه عند الخروج',
       'backgroundLocation': 'الوصول للموقع في الخلفية',
-      'backgroundLocationDetail': 'يتيح رؤية موقع طفلك حتى عندما يكون التطبيق في الخلفية.',
+      'backgroundLocationDetail':
+          'يتيح رؤية موقع طفلك حتى عندما يكون التطبيق في الخلفية.',
       'batteryLevel': 'مستوى البطارية',
       'batterySaver': 'وضع توفير البطارية',
-      'batterySaverDescription': 'يقلل وتيرة تحديث الموقع لإطالة عمر البطارية. قد يصبح العرض أقل دقة.',
-      'childPrivacySeePrivacy': 'راجع سياسة الخصوصية لمعرفة ما نجمعه وما لا نجمعه.',
-      'childSharingDescription': 'يمكنك إيقاف مشاركة موقعك في أي وقت. يصل أي طلب من والدك عند اتصال الجهاز.',
+      'batterySaverDescription':
+          'يقلل وتيرة تحديث الموقع لإطالة عمر البطارية. قد يصبح العرض أقل دقة.',
+      'childPrivacySeePrivacy':
+          'راجع سياسة الخصوصية لمعرفة ما نجمعه وما لا نجمعه.',
+      'childSharingDescription':
+          'يمكنك إيقاف مشاركة موقعك في أي وقت. يصل أي طلب من والدك عند اتصال الجهاز.',
       'childSharingDisabled': 'تم إيقاف مشاركة موقعك.',
       'childSharingEnabled': 'مشاركة موقعك مفعّلة',
-      'childSyncPending': 'أي تغيير يطلبه والدك يصل إليك فقط عندما يتصل جهازك بالإنترنت.',
+      'childSyncPending':
+          'أي تغيير يطلبه والدك يصل إليك فقط عندما يتصل جهازك بالإنترنت.',
       'coarseLocation': 'الموقع التقريبي',
       'coarseLocationDetail': 'موقع تقريبي داخل نطاق الشبكة الخلوية.',
       'createGeofence': 'إنشاء سياج جغرافي',
@@ -1132,17 +1371,23 @@ class AppLocalizations {
       'permissionNotSupported': 'هذا الإذن غير مدعوم على هذا الجهاز.',
       'permissionOnboarding': 'إعداد إذن الموقع',
       'permissionRationale': 'لماذا نحتاج إذن الموقع؟',
-      'permissionRationaleDetail': 'لن تعمل الخريطة ولا السياج الجغرافي ولا التنبيهات دون إذن موقع حقيقي ممنوح من إعدادات Android. لا نخترق الموقع — إن لم يُمنح الإذن سنعرض الحالة بصدق.',
+      'permissionRationaleDetail':
+          'لن تعمل الخريطة ولا السياج الجغرافي ولا التنبيهات دون إذن موقع حقيقي ممنوح من إعدادات Android. لا نخترق الموقع — إن لم يُمنح الإذن سنعرض الحالة بصدق.',
       'privacyDeleteData': 'حذف بيانات الموقع',
-      'privacyDeleteDataDetail': 'يمكنك حذف سجل المواقع في أي وقت من إعدادات هذا الجهاز. لا تُرسل البيانات إلى أطراف ثالثة.',
+      'privacyDeleteDataDetail':
+          'يمكنك حذف سجل المواقع في أي وقت من إعدادات هذا الجهاز. لا تُرسل البيانات إلى أطراف ثالثة.',
       'privacyLocationCollection': 'ماذا نجمع؟',
-      'privacyLocationCollectionDetail': 'نجمع فقط آخر مواضع معلنة لكل عضو مفعّل له المشاركة، وفق وتيرة تحديث محددة في الإعدادات.',
+      'privacyLocationCollectionDetail':
+          'نجمع فقط آخر مواضع معلنة لكل عضو مفعّل له المشاركة، وفق وتيرة تحديث محددة في الإعدادات.',
       'privacyLocationRetention': 'مدة الاحتفاظ',
-      'privacyLocationRetentionDetail': 'تُحفظ المواضع محليًا وتُزامن مع حسابات العائلة الموثقة فقط. لا تحتفظ العائلة بأي بيانات بعد حذف العضو.',
+      'privacyLocationRetentionDetail':
+          'تُحفظ المواضع محليًا وتُزامن مع حسابات العائلة الموثقة فقط. لا تحتفظ العائلة بأي بيانات بعد حذف العضو.',
       'privacyParentAccess': 'من يرى ماذا؟',
-      'privacyParentAccessDetail': 'الوالدان الموثقان فقط يرون المواقع. يراهما الشريك بحسب الصلاحيات الممنوحة. ولا يرى أي طفل موقع أي عضو آخر.',
+      'privacyParentAccessDetail':
+          'الوالدان الموثقان فقط يرون المواقع. يراهما الشريك بحسب الصلاحيات الممنوحة. ولا يرى أي طفل موقع أي عضو آخر.',
       'privacyThirdParty': 'الأطراف الخارجية',
-      'privacyThirdPartyDetail': 'لا تُباع البيانات ولا تُشارك مع معلنين أو وسطاء. تتم المزامنة فقط داخل بنية العائلة الخاصة بك.',
+      'privacyThirdPartyDetail':
+          'لا تُباع البيانات ولا تُشارك مع معلنين أو وسطاء. تتم المزامنة فقط داخل بنية العائلة الخاصة بك.',
       'radiusMeters': '{radius} م',
       'routeTrace': 'مسار الحركة',
       'save': 'حفظ',
@@ -1152,7 +1397,8 @@ class AppLocalizations {
       'sharingDisabled': 'تم إيقاف المشاركة لهذا العضو.',
       'sharingEnabled': 'تم تفعيل مشاركة الموقع.',
       'sharingMatrix': 'جدول الرؤية',
-      'sharingRevoked': 'أُلغيت مشاركة هذا العضو. يتوقف العرض عند المزامنة التالية.',
+      'sharingRevoked':
+          'أُلغيت مشاركة هذا العضو. يتوقف العرض عند المزامنة التالية.',
       'tapToSetCenter': 'اضغط لتحديد الموقع',
       'templateSchoolHours': 'أوقات المدرسة',
       'templateHomeRange': 'النطاق الآمن حول المنزل',
@@ -1189,7 +1435,8 @@ class AppLocalizations {
       'appBlockHistory': 'سجل حظر التطبيقات',
       'appBlockHistoryDescription': 'سجل تدقيق لجميع أحداث الإنفاذ',
       'noAppsUsage': 'لا توجد بيانات تطبيقات بعد',
-      'noAppsUsageDescription': 'ستظهر التطبيقات فور إرسال الأجهزة بيانات الاستخدام الأولى.',
+      'noAppsUsageDescription':
+          'ستظهر التطبيقات فور إرسال الأجهزة بيانات الاستخدام الأولى.',
       'searchApps': 'ابحث عن تطبيق...',
       'appUsageChip': 'الاستخدام: {usage}',
       'allowed': 'مسموح',
@@ -1213,7 +1460,8 @@ class AppLocalizations {
       'addTrustedApp': 'إضافة تطبيق موثوق',
       'appAllowlistSummary': 'تطبيقات لا تُحظر مهما تغيّرت الأوضاع',
       'noTrustedApps': 'لا توجد تطبيقات موثوقة بعد',
-      'noTrustedAppsDescription': 'أضف تطبيقات المتجر والمدرسة حتى تبقى متاحة دائماً.',
+      'noTrustedAppsDescription':
+          'أضف تطبيقات المتجر والمدرسة حتى تبقى متاحة دائماً.',
       'noReasonGiven': 'بدون مبرر مسجّل',
       'removeFromAllowlist': 'إزالة من قائمة السماح',
       'trustAddedNotice': 'أُضيف التطبيق إلى قائمة السماح (قيد المزامنة)',
@@ -1227,22 +1475,27 @@ class AppLocalizations {
       'limitChip': 'الحد: {limit}',
       'actionChip': 'الإجراء: {action}',
       'noAlertsConfigured': 'لا توجد تنبيهات مهيّأة',
-      'noAlertsConfiguredDescription': 'أضف عتبة تنبيه لتطبيق ما ليُنبهك عند تجاوزه.',
+      'noAlertsConfiguredDescription':
+          'أضف عتبة تنبيه لتطبيق ما ليُنبهك عند تجاوزه.',
       'alertThresholdChip': 'العتبة: {threshold}',
       'usageAlertsSummary': 'تنبيه عند تجاوز الاستخدام لحد معيّن',
       'noUsageData': 'لا توجد بيانات استخدام بعد',
-      'noUsageDataDescription': 'يحتاج تسجيل الاستخدام إلى أول حملة مزامنة من الأجهزة.',
+      'noUsageDataDescription':
+          'يحتاج تسجيل الاستخدام إلى أول حملة مزامنة من الأجهزة.',
       'alertSet': 'تنبيه مفعّل',
       'noBlockEvents': 'لا توجد أحداث حظر',
-      'noBlockEventsDescription': 'لم يُسجَّل أي حدث إنفاذ بعد. سيظهر السجل هنا بأمانة.',
+      'noBlockEventsDescription':
+          'لم يُسجَّل أي حدث إنفاذ بعد. سيظهر السجل هنا بأمانة.',
       'eventTypeLabel': 'حدث: {event}',
       'myAppRules': 'قواعد تطبيقي',
-      'myAppRulesDescription': 'القواعد المطبّقة على تطبيقاتي فقط — لا شيء غير ذلك.',
+      'myAppRulesDescription':
+          'القواعد المطبّقة على تطبيقاتي فقط — لا شيء غير ذلك.',
       'appliedRules': 'القواعد المطبّقة',
       'noRulesApplied': 'لا توجد قواعد مطبّقة عليّ',
       'noRulesAppliedDescription': 'تطبيقاتي تعمل بحرية حالياً.',
       'exceptionRequestCta': 'طلب استثناء',
-      'exceptionRequestDescription': 'هل تعتقد أن قاعدة خاطئة؟ اطلب مراجعة من الوالد.',
+      'exceptionRequestDescription':
+          'هل تعتقد أن قاعدة خاطئة؟ اطلب مراجعة من الوالد.',
       'block': 'حظر',
       'unblock': 'إلغاء حظر',
       'override': 'تجاوز',
@@ -1250,103 +1503,272 @@ class AppLocalizations {
       'addedToAllowlist': 'أُضيف لقائمة السماح',
       'removedFromAllowlist': 'أُزيل من قائمة السماح',
     },
-'en': {
+    'en': {
+      'tkAction': 'Action',
+      'tkScheduleSection': 'Schedule',
+      'tkNoLogYet': 'No log yet',
+      'tkNoLogYetDescription':
+          'The completion log appears here after the first task completion',
+      'tkTasksTitle': 'Tasks',
+      'tkDashboardTitle': 'Family tasks',
+      'tkDashboardSubtitle': 'Clear scheduled tasks for every family member',
+      'tkMyTasks': 'My tasks',
+      'tkOpenTasks': 'Open tasks',
+      'tkDoneTasks': 'Done',
+      'tkTodaySection': 'Today',
+      'tkNoTasks': 'No tasks yet',
+      'tkNoTasksDescription':
+          'Create the first task to start organizing the family day',
+      'tkNoDailyTasks': 'No daily tasks for this day',
+      'tkNoDailyTasksDescription': 'Scheduled tasks appear here on their day',
+      'tkNoWeeklyTasks': 'No weekly tasks',
+      'tkNoWeeklyTasksDescription':
+          'Weekly tasks appear here on their scheduled days',
+      'tkNoPendingCompletions': 'No pending verifications',
+      'tkNoPendingCompletionsDescription':
+          'Child-reported completions appear here for review',
+      'tkNoTimelineYet': 'No completion history yet',
+      'tkNoTimelineYetDescription':
+          'The completion log records every task honestly here',
+      'tkNewTask': 'New task',
+      'tkCreateTask': 'Create task',
+      'tkNewTaskTitle': 'New task',
+      'tkNewTaskHint': 'Add a daily or weekly task for a child or the family',
+      'tkTaskTitle': 'Task title',
+      'tkTaskTitleHint': 'Example: tidy the room before dinner',
+      'tkTitleRequired': 'Task title is required',
+      'tkDescription': 'Description',
+      'tkDescriptionHint': 'Optional details clarifying what is required',
+      'tkChild': 'Child',
+      'tkAssignedTo': 'Assigned to',
+      'tkAssignedSection': 'Assignment',
+      'tkBy': 'by',
+      'tkRecurrenceLabel': 'Recurrence',
+      'tkRecurrenceDaily': 'Daily',
+      'tkRecurrenceWeekly': 'Weekly',
+      'tkRecurringHint': 'The task repeats daily or on chosen weekdays',
+      'tkDailySchedule': 'Daily schedule',
+      'tkWeeklySchedule': 'Weekly schedule',
+      'tkPickDate': 'Pick date',
+      'tkSelectedDate': 'Selected date',
+      'tkRecurringTasks': 'Recurring tasks',
+      'tkDueTime': 'Due time',
+      'tkTaskDetailTitle': 'Task details',
+      'tkTaskDetails': 'Details',
+      'tkTaskMissing': 'Task not found',
+      'tkTaskMissingDescription':
+          'The task may have been deleted or not synced yet',
+      'tkManageSection': 'Manage',
+      'tkMarkDone': 'Mark done',
+      'tkMarkedDone': 'Task marked as done',
+      'tkPendingSection': 'Pending verification',
+      'tkPendingVerifications': 'Pending verifications',
+      'tkVerify': 'Verify',
+      'tkVerified': 'Verified',
+      'tkDecline': 'Decline',
+      'tkDeclined': 'Task declined',
+      'tkStatusOpen': 'Open',
+      'tkStatusDone': 'Done',
+      'tkStatusLate': 'Late',
+      'tkStatusScheduled': 'Scheduled',
+      'tkStatusCancelled': 'Cancelled',
+      'tkCancelTask': 'Cancel task',
+      'tkCancelConfirm':
+          'Cancelling the task makes it uncompletable. Continue?',
+      'tkDeleteTask': 'Delete task',
+      'tkDeleteConfirm':
+          'Deleting the task removes it and its history permanently. Continue?',
+      'tkTaskCreated': 'Task created',
+      'tkTaskDeleted': 'Task deleted',
+      'tkTaskCancelled': 'Task cancelled',
+      'tkSaveFailed': 'Save failed',
+      'tkLogSection': 'Completion log',
+      'tkCompletionsTitle': 'Completion history',
+      'tkCompletionsSubtitle': 'Every completion recorded with state and time',
+      'tkGateTitle': 'Rule gates',
+      'tkGateSubtitle': 'Completing these tasks opens linked rules',
+      'tkGateSection': 'Linked rules',
+      'tkLinkedRulesSection': 'Linked to rules',
+      'tkNoLinkedRules': 'No rules linked to this task',
+      'tkNoLinkedRulesDescription':
+          'Link rules from the family rules screen (for example: unlock games after tidying up)',
+      'tkGateRule': 'Linked rule',
+      'tkGateOpen': 'Gate open — task complete',
+      'tkGateLocked': 'Gate locked — task not complete',
+      'tkReportDone': 'Reported as done',
+      'tkReportedForVerification':
+          'Reported as done, awaiting parent verification',
+      'tkChildNoTasks': 'No tasks assigned to you right now',
+      'tkChildNoTasksDescription':
+          'Your assigned tasks appear here when parents assign them',
+      'tkTimeline': 'Timeline',
+      'tkTimelineHint': 'Honest record of every task state change',
+      'tkRule': 'Rule',
+      'rwRewardsTitle': 'Rewards',
+      'rwBalanceLabel': 'Balance',
+      'rwPoints': 'points',
+      'rwBalancesTitle': 'Children balances',
+      'rwLoadingBalance': 'Loading balance…',
+      'rwBalanceUnavailable': 'Balance unavailable',
+      'rwCatalogTitle': 'Reward catalog',
+      'rwCatalogLoadFailed': 'Catalog failed to load',
+      'rwNewReward': 'New reward',
+      'rwEditReward': 'Edit reward',
+      'rwSaveReward': 'Save reward',
+      'rwSaved': 'Reward saved',
+      'rwSaveFailed': 'Save failed',
+      'rwRewardName': 'Reward name',
+      'rwRewardDescription': 'Reward description',
+      'rwRewardCost': 'Cost in points',
+      'rwCostLabel': 'Cost',
+      'rwInvalidCost': 'Enter a valid cost greater than zero',
+      'rwRequiredFields': 'All fields are required',
+      'rwExpiryDays': 'Expiry days',
+      'rwExpiryHint': 'Days the reward stays available (0 = no expiry)',
+      'rwEmptyCatalog': 'Empty catalog',
+      'rwEmptyCatalogDescription':
+          'Add the first reward to motivate the family',
+      'rwAddFirstReward': 'Add first reward',
+      'rwUnknownReward': 'Unknown reward',
+      'rwRewardGone': 'Reward no longer available',
+      'rwRewardGoneDescription': 'The reward was deleted or its price changed',
+      'rwRequestRedeem': 'Request redeem',
+      'rwRedeemTitle': 'Redeem reward',
+      'rwRedeemNote':
+          'The child requests and the parent decides: approval deducts points, decline deducts nothing',
+      'rwRedeemRequested': 'Redeem request sent',
+      'rwRedeemFailed': 'Redeem request failed',
+      'rwInsufficientPoints': 'Not enough points for this reward',
+      'rwPendingClaimsTitle': 'Pending requests',
+      'rwNoPendingClaims': 'No pending requests',
+      'rwNoPendingClaimsDescription': 'Child redeem requests appear here',
+      'rwApproveClaim': 'Approve',
+      'rwDeclineClaim': 'Decline',
+      'rwRequestedAt': 'Requested at',
+      'rwAutomationTitle': 'Reward automation',
+      'rwNoAutomation': 'No automation active',
+      'rwNoAutomationDescription':
+          'Enable earning rules or link family rules to automate points',
+      'rwLinkedRule': 'Linked rule',
+      'rwLedgerTitle': 'Points ledger',
+      'rwEmptyLedger': 'Empty ledger',
+      'rwEmptyLedgerDescription':
+          'Every earn and spend is recorded honestly here',
+      'rwReasonEarnedTask': 'Task completed',
+      'rwReasonManual': 'Manual grant',
+      'rwReasonAutomation': 'Automation',
+      'rwReasonSpend': 'Reward redeem',
+      'rwReasonRefund': 'Points refund',
+      'rwBalanceAfter': 'Balance after',
+      'rwNoChildren': 'No children in family',
+      'rwNoChildrenDescription':
+          'Balances are tracked for children who joined the family',
+      'rwNoChildSelected': 'Select a child to view the ledger',
       'rpPeriodMonth': 'This month',
       'rpPeriodWeek': 'This week',
-    'frLogSection': 'Engine Decisions',
-    'frRuleNotFound': 'Rule Not Found',
-    'frRuleNotFoundDescription': 'This rule was deleted or no longer exists in the family',
-    'frRulesSection': 'Rule List',
-    'frActionAllowlist': 'Allow Only Selected Apps',
-    'frActionBlock': 'Lock Child Device',
-    'frActionNotify': 'Notify Parent Only',
-    'frActionRestrict': 'Restrict Content',
-    'frActiveRules': 'Active Rules',
-    'frActiveRulesCount': 'active rules',
-    'frAffectedChildren': 'affected children',
-    'frAppTargetHint': 'Choose the apps this rule applies to',
-    'frAppTargets': 'Targeted Apps',
-    'frAssignChildren': 'Targeted Children',
-    'frAssignedAll': 'All Children',
-    'frAssignedNone': 'Nobody assigned',
-    'frAssignedTo': 'Applies To',
-    'frCategoryTargetHint': 'Choose the restricted content categories',
-    'frCategoryTargets': 'Content Categories',
-    'frChildAffectedNow': 'Affected now',
-    'frChildAffectedScheduled': 'Scheduled',
-    'frChooseWeekdays': 'Choose Days',
-    'frConflicts': 'Conflicts',
-    'frConflictsFound': 'conflicts found',
-    'frConflictsOpenHint': 'Open the conflicts page to see what actually wins',
-    'frConflictsSection': 'Detected Conflicts',
-    'frConflictsTitle': 'Rule Conflicts',
-    'frCreateRule': 'Create New Rule',
-    'frCreateRuleHint': 'Build one family rule: kind, action, schedule, targeted children',
-    'frCreateRuleTitle': 'New Rule',
-    'frDailyAll': 'every day',
-    'frDashboardSubtitle': 'The unified policy engine — every rule executes honestly with real states',
-    'frDashboardTitle': 'Family Rules',
-    'frDeleteRule': 'Delete Rule',
-    'frDeleteRuleConfirm': 'This rule will be permanently removed from the family',
-    'frDuration': 'Duration',
-    'frEditRuleTitle': 'Edit Rule',
-    'frEnd': 'End',
-    'frExecutionDescription': 'Every verdict is real — no invented numbers',
-    'frExecutionSection': 'Execution Log',
-    'frFireMoment': 'Fire Moment',
-    'frImpactChildrenSection': 'Affected Children',
-    'frImpactDoes': 'What the rule actually does',
-    'frImpactTitle': 'What Does This Rule Do?',
-    'frImpactWindowOnly': 'Enforces only inside its time window',
-    'frLimitMinutes': 'Daily Minute Limit',
-    'frLimitMinutesHint': 'Screen-time limit in minutes',
-    'frLogEntries': 'logged decisions',
-    'frLogHint': 'Decisions the engine took based on real evidence',
-    'frLogTitle': 'Rule Decision Log',
-    'frLoser': 'Loser',
-    'frManageSection': 'Management',
-    'frNewRuleTitle': 'New Rule',
-    'frNoAffectedChildren': 'No child is affected right now',
-    'frNoAffectedChildrenDescription': 'The rule is assigned to no child or applies to no enabled device',
-    'frNoConflicts': 'No Conflicts',
-    'frNoConflictsDescription': 'The rules compose cleanly — nothing fights',
-    'frNoConflictsHint': 'With no rules there are no conflicts',
-    'frNoLogEntries': 'No Decisions Yet',
-    'frNoLogEntriesDescription': 'Rule decisions will appear here once the rule starts evaluating',
-    'frNoRules': 'No Rules Yet',
-    'frNoRulesDescription': 'Create the first family rule — it applies to children automatically',
-    'frNoVerdicts': 'No Decisions For This Rule',
-    'frNoVerdictsDescription': 'The engine has not taken any decision on this rule yet',
-    'frPauseRule': 'Pause Rule',
-    'frPick': 'Pick',
-    'frPriority': 'Priority',
-    'frReassignChildren': 'Reassign Children',
-    'frRecurrence': 'Recurrence',
-    'frResumeRule': 'Resume Rule',
-    'frRuleAction': 'Action',
-    'frRuleActiveNow': 'Active now',
-    'frRuleDeleted': 'Rule deleted',
-    'frRuleIdentitySection': 'Rule Identity',
-    'frRuleInactiveNow': 'Not active now',
-    'frRuleKind': 'Rule Kind',
-    'frRuleName': 'Rule Name',
-    'frRuleNameHint': 'e.g. Bedtime, Homework hour',
-    'frRuleOff': 'Disabled',
-    'frRuleOn': 'Enabled',
-    'frRulesTitle': 'Family Rules',
-    'frSaveRule': 'Save Rule',
-    'frScheduleDaily': 'Daily',
-    'frScheduleKind': 'Recurrence',
-    'frScheduleNone': 'Always On',
-    'frScheduleOneTime': 'One Time',
-    'frScheduleSection': 'Schedule',
-    'frScheduleTitle': 'Rule Window',
-    'frScheduleWeekly': 'Weekly',
-    'frStart': 'Start',
-    'frTargetsSection': 'Targets',
-    'frWeekdays': 'Weekdays',
-    'frWindowSection': 'Time Window',
-    'frWinner': 'Winner (highest priority)',
+      'frLogSection': 'Engine Decisions',
+      'frRuleNotFound': 'Rule Not Found',
+      'frRuleNotFoundDescription':
+          'This rule was deleted or no longer exists in the family',
+      'frRulesSection': 'Rule List',
+      'frActionAllowlist': 'Allow Only Selected Apps',
+      'frActionBlock': 'Lock Child Device',
+      'frActionNotify': 'Notify Parent Only',
+      'frActionRestrict': 'Restrict Content',
+      'frActiveRules': 'Active Rules',
+      'frActiveRulesCount': 'active rules',
+      'frAffectedChildren': 'affected children',
+      'frAppTargetHint': 'Choose the apps this rule applies to',
+      'frAppTargets': 'Targeted Apps',
+      'frAssignChildren': 'Targeted Children',
+      'frAssignedAll': 'All Children',
+      'frAssignedNone': 'Nobody assigned',
+      'frAssignedTo': 'Applies To',
+      'frCategoryTargetHint': 'Choose the restricted content categories',
+      'frCategoryTargets': 'Content Categories',
+      'frChildAffectedNow': 'Affected now',
+      'frChildAffectedScheduled': 'Scheduled',
+      'frChooseWeekdays': 'Choose Days',
+      'frConflicts': 'Conflicts',
+      'frConflictsFound': 'conflicts found',
+      'frConflictsOpenHint':
+          'Open the conflicts page to see what actually wins',
+      'frConflictsSection': 'Detected Conflicts',
+      'frConflictsTitle': 'Rule Conflicts',
+      'frCreateRule': 'Create New Rule',
+      'frCreateRuleHint':
+          'Build one family rule: kind, action, schedule, targeted children',
+      'frCreateRuleTitle': 'New Rule',
+      'frDailyAll': 'every day',
+      'frDashboardSubtitle':
+          'The unified policy engine — every rule executes honestly with real states',
+      'frDashboardTitle': 'Family Rules',
+      'frDeleteRule': 'Delete Rule',
+      'frDeleteRuleConfirm':
+          'This rule will be permanently removed from the family',
+      'frDuration': 'Duration',
+      'frEditRuleTitle': 'Edit Rule',
+      'frEnd': 'End',
+      'frExecutionDescription': 'Every verdict is real — no invented numbers',
+      'frExecutionSection': 'Execution Log',
+      'frFireMoment': 'Fire Moment',
+      'frImpactChildrenSection': 'Affected Children',
+      'frImpactDoes': 'What the rule actually does',
+      'frImpactTitle': 'What Does This Rule Do?',
+      'frImpactWindowOnly': 'Enforces only inside its time window',
+      'frLimitMinutes': 'Daily Minute Limit',
+      'frLimitMinutesHint': 'Screen-time limit in minutes',
+      'frLogEntries': 'logged decisions',
+      'frLogHint': 'Decisions the engine took based on real evidence',
+      'frLogTitle': 'Rule Decision Log',
+      'frLoser': 'Loser',
+      'frManageSection': 'Management',
+      'frNewRuleTitle': 'New Rule',
+      'frNoAffectedChildren': 'No child is affected right now',
+      'frNoAffectedChildrenDescription':
+          'The rule is assigned to no child or applies to no enabled device',
+      'frNoConflicts': 'No Conflicts',
+      'frNoConflictsDescription': 'The rules compose cleanly — nothing fights',
+      'frNoConflictsHint': 'With no rules there are no conflicts',
+      'frNoLogEntries': 'No Decisions Yet',
+      'frNoLogEntriesDescription':
+          'Rule decisions will appear here once the rule starts evaluating',
+      'frNoRules': 'No Rules Yet',
+      'frNoRulesDescription':
+          'Create the first family rule — it applies to children automatically',
+      'frNoVerdicts': 'No Decisions For This Rule',
+      'frNoVerdictsDescription':
+          'The engine has not taken any decision on this rule yet',
+      'frPauseRule': 'Pause Rule',
+      'frPick': 'Pick',
+      'frPriority': 'Priority',
+      'frReassignChildren': 'Reassign Children',
+      'frRecurrence': 'Recurrence',
+      'frResumeRule': 'Resume Rule',
+      'frRuleAction': 'Action',
+      'frRuleActiveNow': 'Active now',
+      'frRuleDeleted': 'Rule deleted',
+      'frRuleIdentitySection': 'Rule Identity',
+      'frRuleInactiveNow': 'Not active now',
+      'frRuleKind': 'Rule Kind',
+      'frRuleName': 'Rule Name',
+      'frRuleNameHint': 'e.g. Bedtime, Homework hour',
+      'frRuleOff': 'Disabled',
+      'frRuleOn': 'Enabled',
+      'frRulesTitle': 'Family Rules',
+      'frSaveRule': 'Save Rule',
+      'frScheduleDaily': 'Daily',
+      'frScheduleKind': 'Recurrence',
+      'frScheduleNone': 'Always On',
+      'frScheduleOneTime': 'One Time',
+      'frScheduleSection': 'Schedule',
+      'frScheduleTitle': 'Rule Window',
+      'frScheduleWeekly': 'Weekly',
+      'frStart': 'Start',
+      'frTargetsSection': 'Targets',
+      'frWeekdays': 'Weekdays',
+      'frWindowSection': 'Time Window',
+      'frWinner': 'Winner (highest priority)',
       'rpSosTotal': 'Total SOS alerts',
       'rpModesActive': 'Active modes',
       'rpModesTotal': 'Mode activations',
@@ -1358,22 +1780,27 @@ class AppLocalizations {
       'rpActiveDays': 'Active days',
       'rpHitsBlocked': 'Blocked attempts',
       'rpHitsTotal': 'Total attempts',
-      'rpExportHint': 'Export works offline; the report is built from data stored on the device.',
+      'rpExportHint':
+          'Export works offline; the report is built from data stored on the device.',
       'rpShareButton': 'Share report',
       'rpExportSubject': 'Guardian Eye report',
       'rpExportSaved': 'Report saved. You can share it now.',
-      'rpExportRetryHint': 'Try again; if it persists, storage is full or unavailable.',
+      'rpExportRetryHint':
+          'Try again; if it persists, storage is full or unavailable.',
       'rpExportFailed': 'Could not build the report',
       'rpExporting': 'Building the report…',
       'rpFormatCsv': 'CSV (spreadsheet)',
       'rpFormatPdf': 'PDF (document)',
       'rpExportFormat': 'Export format',
-      'rpExportLead': 'Share the family report with family members or professionals.',
-      'rpSosEmptyHint': 'The family did not send any SOS alerts in this period.',
+      'rpExportLead':
+          'Share the family report with family members or professionals.',
+      'rpSosEmptyHint':
+          'The family did not send any SOS alerts in this period.',
       'rpSosTitle': 'SOS report',
       'rpModesEmptyHint': 'No custom mode was activated in this period.',
       'rpModesTitle': 'Modes report',
-      'rpSafetyEmptyHint': 'No incidents were recorded in this period; the family is safe.',
+      'rpSafetyEmptyHint':
+          'No incidents were recorded in this period; the family is safe.',
       'rpSafetyTitle': 'Safety report',
       'rpLocationEmptyHint': 'No location points were recorded in this period.',
       'rpLocationTitle': 'Location report',
@@ -1381,7 +1808,8 @@ class AppLocalizations {
       'rpUsageEmptyHint': 'No application usage was observed in this period.',
       'rpUsageTitle': 'Usage report',
       'rpTopBlockedDomains': 'Most blocked domains',
-      'rpWebEmptyHint': 'No web access attempt was observed in this period, which is a good browsing signal.',
+      'rpWebEmptyHint':
+          'No web access attempt was observed in this period, which is a good browsing signal.',
       'rpWebTitle': 'Web report',
       'rpNoData': 'No data in this period',
       'rpLoadRetryHint': 'Check the device connection and try again',
@@ -1403,14 +1831,18 @@ class AppLocalizations {
       'modeKindTravel': 'Travel',
       'categoryEnabled': 'Category enabled',
       'webProtection': 'Web protection',
-      'modesCustomDescription': 'A custom mode with rules and settings of your choice',
+      'modesCustomDescription':
+          'A custom mode with rules and settings of your choice',
       'allowExpired': 'Allowance expired',
       'allowFor': 'Allow for',
       'blockedPageAskParent': 'Ask a parent for an exception',
-      'blockedPageChildBody': "This page was blocked by your family's web protection rules. You can ask a parent for an exception.",
-      'categoryAdultContentDesc': 'Adult content (pornography, explicit material)',
+      'blockedPageChildBody':
+          "This page was blocked by your family's web protection rules. You can ask a parent for an exception.",
+      'categoryAdultContentDesc':
+          'Adult content (pornography, explicit material)',
       'categoryBullyingDesc': 'Bullying and harassment content',
-      'categoryDangerousContentDesc': 'Dangerous activities and illegal substances',
+      'categoryDangerousContentDesc':
+          'Dangerous activities and illegal substances',
       'categoryDatingDesc': 'Dating and relationship platforms',
       'categoryDrugsDesc': 'Drugs and substance abuse',
       'categoryGamblingDesc': 'Gambling and betting',
@@ -1419,7 +1851,8 @@ class AppLocalizations {
       'categorySocialDesc': 'Social networks and messaging',
       'categoryStreamingDesc': 'Video and audio streaming services',
       'categorySuspiciousLanguageDesc': 'Suspicious or harmful language',
-      'categoryTeenContentDesc': 'Teen-appropriate content with mild restrictions',
+      'categoryTeenContentDesc':
+          'Teen-appropriate content with mild restrictions',
       'categoryToggleSaved': 'Category toggle saved locally',
       'categoryViolenceDesc': 'Violent content and weapons',
       'deleteDomainConfirm': 'Remove this domain from the list?',
@@ -1429,82 +1862,93 @@ class AppLocalizations {
       'protectionLevelModerate': 'Moderate',
       'protectionLevelNone': 'No protection',
       'protectionLevelStrong': 'Strong',
-      'protectionModerateBody': 'Moderate filtering adds category-based blocking.',
+      'protectionModerateBody':
+          'Moderate filtering adds category-based blocking.',
       'protectionNoneBody': 'No filtering is applied to web traffic.',
-      'protectionStrongBody': 'Strong filtering applies category blocking plus safe search.',
+      'protectionStrongBody':
+          'Strong filtering applies category blocking plus safe search.',
       'settingsSavedWeb': 'Web settings saved',
-    'dlActive': 'Active',
-    'dlAlreadyHaveCode': 'Enter the pairing code your parent gave you',
-    'dlAttempts': 'Attempts',
-    'dlAttemptsLabel': 'attempts',
-    'dlCodeCopied': 'Code copied to clipboard',
-    'dlCodeExpired': 'Code has expired — request a new one',
-    'dlCodeValid': 'Code is valid — enrolling',
-    'dlCompleteEnrollment': 'Complete Enrollment',
-    'dlCompleteSpouseEnrollment': 'Complete Spouse Enrollment',
-    'dlConfirmSubtitle': 'The device will be enrolled in the family and the code will no longer be needed',
-    'dlConfirmTitle': 'Confirm Enrollment',
-    'dlConfirmTransfer': 'Transfer Device',
-    'dlConfirmUnlink': 'Unlink Device',
-    'dlCopyCode': 'Copy Code',
-    'dlDeviceMissing': 'Device not found',
-    'dlDevicesTitle': 'Linked Devices',
-    'dlEnrollSubtitle': 'This links your device to the family account and starts honest syncing',
-    'dlEnrollTitle': 'Enroll Your Device',
-    'dlExpiryMinutes': 'Code expires in {minutes} minutes',
-    'dlGenerateSpouseCode': 'Generate Spouse Code',
-    'dlHealthHealthy': 'Healthy',
-    'dlHealthOffline': 'Offline',
-    'dlHealthRevoked': 'Revoked',
-    'dlHealthStale': 'Stale',
-    'dlLockoutActive': 'Pairing is locked after 5 wrong attempts',
-    'dlLockoutHint': 'No new attempts are accepted until the lockout is reset',
-    'dlLockoutTitle': 'Pairing Lockout',
-    'dlMinutesAgo': '{n} minutes ago',
-    'dlNeverSynced': 'Never synced',
-    'dlNoDevices': 'No devices are linked to this family',
-    'dlNoLockout': 'No active lockout',
-    'dlNoLockoutMessage': 'Pairing codes can be tried normally',
-    'dlNoPendingSessions': 'No pending pairing sessions',
-    'dlNoSpouseDevice': 'No spouse device linked',
-    'dlPendingSessions': 'Pending Pairing Sessions',
-    'dlPermBackground': 'Background Operation',
-    'dlPermDefer': 'Defer',
-    'dlPermDeferred': 'Deferred — will be requested later when needed',
-    'dlPermLocation': 'Location',
-    'dlPermNotification': 'Notifications',
-    'dlPermSettingsHint': 'Open Settings and grant the permission manually',
-    'dlPermUsage': 'Usage Stats',
-    'dlPermissionDenied': 'Permission denied — it cannot be enabled from the app',
-    'dlPermissionOnboardingSubtitle': 'What this device needs and why — with real, honest states',
-    'dlPermissionOnboardingTitle': 'This Device’s Permissions',
-    'dlResetLockout': 'Reset Lockout',
-    'dlReview': 'Review',
-    'dlRevokeDevice': 'Revoke Device',
-    'dlRevokeWarning': 'The device will be revoked immediately and cannot sync until re-enrolled',
-    'dlRoleChild': 'Child Device',
-    'dlRoleCoParent': 'Co-Parent Device',
-    'dlRoleLabel': 'Role',
-    'dlRoleParent': 'Parent Device',
-    'dlRoleSpouse': 'Spouse Device',
-    'dlRoleUnknown': 'Unknown',
-    'dlSpouseEnrollSubtitle': 'Links the spouse device to the family and starts syncing',
-    'dlSpouseEnrollTitle': 'Enroll Spouse Device',
-    'dlSpouseLinkSubtitle': 'Enter the pairing code for the spouse device',
-    'dlSpouseLinkTitle': 'Link Spouse Device',
-    'dlSpouseRoleSubtitle': 'Enrolling the spouse device within the family',
-    'dlSpouseRoleTitle': 'Spouse Device Role',
-    'dlSyncNow': 'Sync Now',
-    'dlThisDevice': 'This Device',
-    'dlTransferDevice': 'Transfer Enrollment',
-    'dlTransferOldRevoked': 'Old device revoked (history preserved)',
-    'dlTransferSubtitle': 'Enrollment moves to a new device; the old one is revoked with history kept',
-    'dlTransferSuccess': 'Enrollment transferred to the new device',
-    'dlTransferTitle': 'Transfer Device',
-    'dlUnlinkTitle': 'Unlink Device',
-    'dlVerifyCode': 'Verify Pairing Code',
-    'dlYourCode': 'Your Code',
-      'blockedPageExplain': 'Explain to the child why it was blocked (recommended)',
+      'dlActive': 'Active',
+      'dlAlreadyHaveCode': 'Enter the pairing code your parent gave you',
+      'dlAttempts': 'Attempts',
+      'dlAttemptsLabel': 'attempts',
+      'dlCodeCopied': 'Code copied to clipboard',
+      'dlCodeExpired': 'Code has expired — request a new one',
+      'dlCodeValid': 'Code is valid — enrolling',
+      'dlCompleteEnrollment': 'Complete Enrollment',
+      'dlCompleteSpouseEnrollment': 'Complete Spouse Enrollment',
+      'dlConfirmSubtitle':
+          'The device will be enrolled in the family and the code will no longer be needed',
+      'dlConfirmTitle': 'Confirm Enrollment',
+      'dlConfirmTransfer': 'Transfer Device',
+      'dlConfirmUnlink': 'Unlink Device',
+      'dlCopyCode': 'Copy Code',
+      'dlDeviceMissing': 'Device not found',
+      'dlDevicesTitle': 'Linked Devices',
+      'dlEnrollSubtitle':
+          'This links your device to the family account and starts honest syncing',
+      'dlEnrollTitle': 'Enroll Your Device',
+      'dlExpiryMinutes': 'Code expires in {minutes} minutes',
+      'dlGenerateSpouseCode': 'Generate Spouse Code',
+      'dlHealthHealthy': 'Healthy',
+      'dlHealthOffline': 'Offline',
+      'dlHealthRevoked': 'Revoked',
+      'dlHealthStale': 'Stale',
+      'dlLockoutActive': 'Pairing is locked after 5 wrong attempts',
+      'dlLockoutHint':
+          'No new attempts are accepted until the lockout is reset',
+      'dlLockoutTitle': 'Pairing Lockout',
+      'dlMinutesAgo': '{n} minutes ago',
+      'dlNeverSynced': 'Never synced',
+      'dlNoDevices': 'No devices are linked to this family',
+      'dlNoLockout': 'No active lockout',
+      'dlNoLockoutMessage': 'Pairing codes can be tried normally',
+      'dlNoPendingSessions': 'No pending pairing sessions',
+      'dlNoSpouseDevice': 'No spouse device linked',
+      'dlPendingSessions': 'Pending Pairing Sessions',
+      'dlPermBackground': 'Background Operation',
+      'dlPermDefer': 'Defer',
+      'dlPermDeferred': 'Deferred — will be requested later when needed',
+      'dlPermLocation': 'Location',
+      'dlPermNotification': 'Notifications',
+      'dlPermSettingsHint': 'Open Settings and grant the permission manually',
+      'dlPermUsage': 'Usage Stats',
+      'dlPermissionDenied':
+          'Permission denied — it cannot be enabled from the app',
+      'dlPermissionOnboardingSubtitle':
+          'What this device needs and why — with real, honest states',
+      'dlPermissionOnboardingTitle': 'This Device’s Permissions',
+      'dlResetLockout': 'Reset Lockout',
+      'dlReview': 'Review',
+      'dlRevokeDevice': 'Revoke Device',
+      'dlRevokeWarning':
+          'The device will be revoked immediately and cannot sync until re-enrolled',
+      'dlRoleChild': 'Child Device',
+      'dlRoleCoParent': 'Co-Parent Device',
+      'dlRoleLabel': 'Role',
+      'dlRoleParent': 'Parent Device',
+      'dlRoleSpouse': 'Spouse Device',
+      'dlRoleUnknown': 'Unknown',
+      'dlSpouseEnrollSubtitle':
+          'Links the spouse device to the family and starts syncing',
+      'dlSpouseEnrollTitle': 'Enroll Spouse Device',
+      'dlSpouseLinkSubtitle': 'Enter the pairing code for the spouse device',
+      'dlSpouseLinkTitle': 'Link Spouse Device',
+      'dlSpouseRoleSubtitle': 'Enrolling the spouse device within the family',
+      'dlSpouseRoleTitle': 'Spouse Device Role',
+      'dlSyncNow': 'Sync Now',
+      'dlThisDevice': 'This Device',
+      'dlTransferDevice': 'Transfer Enrollment',
+      'dlTransferOldRevoked': 'Old device revoked (history preserved)',
+      'dlTransferSubtitle':
+          'Enrollment moves to a new device; the old one is revoked with history kept',
+      'dlTransferSuccess': 'Enrollment transferred to the new device',
+      'dlTransferTitle': 'Transfer Device',
+      'dlUnlinkTitle': 'Unlink Device',
+      'dlVerifyCode': 'Verify Pairing Code',
+      'dlYourCode': 'Your Code',
+      'blockedPageExplain':
+          'Explain to the child why it was blocked (recommended)',
       'blockedSites': 'Blocked sites',
       'contentCategories': 'Content categories',
       'create': 'Create',
@@ -1517,9 +1961,11 @@ class AppLocalizations {
       'modesActions': 'Actions',
       'modesActivateMode': 'Activate mode',
       'modesActivationHistory': 'Activation history',
-      'modesActivationHistoryDescription': 'Every activation and deactivation is recorded honestly',
+      'modesActivationHistoryDescription':
+          'Every activation and deactivation is recorded honestly',
       'modesActivations': 'Activation history',
-      'modesActivationsEmptyDescription': 'No activations recorded for this mode yet',
+      'modesActivationsEmptyDescription':
+          'No activations recorded for this mode yet',
       'modesActive': 'Active',
       'modesActiveModes': 'Active modes',
       'modesActiveNow': 'Active now',
@@ -1535,22 +1981,26 @@ class AppLocalizations {
       'modesChildrenSection': 'Targeted children',
       'modesChildrenUpdated': 'Children updated and saved locally',
       'modesConfiguration': 'Configuration',
-      'modesConflictDescription': 'When two modes conflict, higher priority or earlier creation wins',
+      'modesConflictDescription':
+          'When two modes conflict, higher priority or earlier creation wins',
       'modesConflictLoser': 'Loser',
       'modesConflictOrder': 'Priority order',
       'modesConflictResolver': 'Conflict resolution',
       'modesConflictWinner': 'Winner',
       'modesCreateCustom': 'Create custom mode',
-      'modesCreateDescription': 'Create a custom mode that applies instant rules to child devices',
+      'modesCreateDescription':
+          'Create a custom mode that applies instant rules to child devices',
       'modesCreateFirst': 'Create your first mode',
       'modesCreateMode': 'Create mode',
       'modesCustomMode': 'Custom mode',
       'modesDashboardTitle': 'Custom modes',
       'modesDeactivateMode': 'Deactivate mode',
-      'modesDeleteConfirmation': 'Deleting removes the mode and stops its rules when connected. Confirm?',
+      'modesDeleteConfirmation':
+          'Deleting removes the mode and stops its rules when connected. Confirm?',
       'modesDeleteMode': 'Delete mode',
       'modesEditMode': 'Edit mode',
-      'modesEmptyDescription': 'No modes yet. Create a homework, bedtime, or travel mode',
+      'modesEmptyDescription':
+          'No modes yet. Create a homework, bedtime, or travel mode',
       'modesEndTime': 'End time',
       'modesGroup': 'Modes',
       'modesHomeworkMode': 'Homework mode',
@@ -1558,9 +2008,12 @@ class AppLocalizations {
       'modesKind': 'Kind',
       'modesLoserEarlierCreation': 'Earlier-created mode',
       'modesLoserHigherPriority': 'Higher-priority mode',
-      'modesModeActivated': 'Mode activated and will apply when child devices connect',
-      'modesModeCreated': 'Mode created and saved locally; it will sync when connected',
-      'modesModeDeactivated': 'Mode deactivated locally; it will sync when connected',
+      'modesModeActivated':
+          'Mode activated and will apply when child devices connect',
+      'modesModeCreated':
+          'Mode created and saved locally; it will sync when connected',
+      'modesModeDeactivated':
+          'Mode deactivated locally; it will sync when connected',
       'modesModeDeleted': 'Mode deleted and will be removed when connected',
       'modesModeName': 'Mode name',
       'modesModeOff': 'Off',
@@ -1572,13 +2025,16 @@ class AppLocalizations {
       'modesNameAction': 'Name and action',
       'modesNoActivationsYet': 'No activations yet',
       'modesNoActiveModes': 'No modes are active right now',
-      'modesNoActiveModesDescription': 'Activate a mode to apply its rules to specific children',
+      'modesNoActiveModesDescription':
+          'Activate a mode to apply its rules to specific children',
       'modesNoChildren': 'No children targeted',
-      'modesNoChildrenDescription': 'Pick at least one child for the mode to apply to',
+      'modesNoChildrenDescription':
+          'Pick at least one child for the mode to apply to',
       'modesNoModesYet': 'No modes yet',
       'modesNoOverlap': 'No conflicts between your active modes',
       'modesNotFound': 'Mode not found',
-      'modesNotFoundDescription': 'The requested mode could not be found or was removed',
+      'modesNotFoundDescription':
+          'The requested mode could not be found or was removed',
       'modesNotYourProfile': 'This mode is not in your family profile',
       'modesNote': 'Note',
       'modesPriority': 'Priority',
@@ -1587,7 +2043,8 @@ class AppLocalizations {
       'modesScheduleOneTime': 'One time',
       'modesScheduleSection': 'Scheduling',
       'modesScheduleType': 'Schedule type',
-      'modesScheduleUpdated': 'Schedule updated locally; it will sync when connected',
+      'modesScheduleUpdated':
+          'Schedule updated locally; it will sync when connected',
       'modesScheduleWeekly': 'Weekly',
       'modesStartCustom': 'Start from a blank mode',
       'modesStartFromTemplate': 'Start from a template',
@@ -1598,9 +2055,11 @@ class AppLocalizations {
       'modesStateFailed': 'Failed to apply',
       'modesStateRequested': 'Requested',
       'modesSummary': 'Summary',
-      'modesSummaryDescription': 'Mode summary with its window, action, and children',
+      'modesSummaryDescription':
+          'Mode summary with its window, action, and children',
       'modesTemplates': 'Templates',
-      'modesTemplatesDescription': 'Start from a ready-made template and adjust the details',
+      'modesTemplatesDescription':
+          'Start from a ready-made template and adjust the details',
       'modesTotal': 'Total',
       'modesTravelMode': 'Travel mode',
       'modesWeekdayFri': 'Friday',
@@ -1625,97 +2084,109 @@ class AppLocalizations {
       'webFilteringDashboard': 'Web filtering dashboard',
       'webProtectionFor': 'Web protection for {name}',
       'webSettings': 'Web settings',
-    'sosGroup': 'SOS & Emergency',
-    'sosDashboardTitle': 'SOS Dashboard',
-    'sosActivateNow': 'Activate SOS Now',
-    'sosReadinessTitle': 'Readiness Status',
-    'sosReadyCount': 'Ready — {n} responders on roster',
-    'sosNotReady': 'Not ready — add responders first',
-    'sosResponders': 'Responders',
-    'sosTotalRecipients': 'Total Recipients',
-    'sosRecipientsSection': 'Recipients Roster',
-    'sosManage': 'Manage',
-    'sosNoRecipientsYet': 'No recipients yet',
-    'sosAddRecipient': 'Add Recipient',
-    'sosRoleResponder': 'Responder (medic / rescuer)',
-    'sosRoleNotifyOnly': 'Notify Only',
-    'sosDrillSection': 'Readiness Drill',
-    'sosDrillTitle': 'SOS Drill',
-    'sosDrillSubtitle': 'Test your readiness step by step',
-    'sosHistorySection': 'Alert History',
-    'sosNoHistoryYet': 'No alert history yet',
-    'loadFailed': 'Failed to load data — check your connection and retry',
-    'sosConfirmTitle': 'Confirm Emergency Alert',
-    'sosConfirmMessage': 'An emergency alert will be sent to every recipient on the roster with your current location. Are you sure?',
-    'sosSendNow': 'Send SOS Now',
-    'sosUrgentTitle': 'Emergency — Immediate Activation',
-    'sosUrgentSubtitle': 'Alerts every registered recipient with your current location',
-    'sosWhatHappensTitle': 'What Happens When You Send?',
-    'sosWhatHappensBody': 'The alert is stored locally first, then per-recipient notification requests go out through sync. Every request stays honestly pending until it is delivered and acknowledged.',
-    'sosQueuedHonest': 'Emergency alert queued for delivery — recipients notified after sync',
-    'sosWatchLive': 'Watch Live Alert',
-    'sosActiveTitle': 'Active SOS Alert',
-    'sosEmergencyLocation': 'Emergency Location',
-    'sosStandDownTitle': 'Stand Down Alert',
-    'sosStandDownMessage': 'The active alert will be cancelled and kept in the honest history. This cannot be undone.',
-    'sosStandDown': 'Stand Down',
-    'sosStandDownDone': 'Alert stood down',
-    'sosNoActiveAlert': 'No Active Alert',
-    'sosNoActiveSubtitle': 'All calm — activate an alert when needed',
-    'sosPerRecipientTitle': 'Per-Recipient Status',
-    'sosNoRecipientRows': 'No recipient rows for this alert',
-    'sosFamilyLevel': 'Family-Level',
-    'sosLastUpdate': 'Last Update',
-    'sosNoLocationYet': 'No location yet',
-    'sosNoLocationSubtitle': 'Pull to refresh — the location is fetched on demand',
-    'sosLocationNoteTitle': 'Location Note',
-    'sosLocationNoteBody': 'This location is captured on demand only — never published automatically',
-    'sosEmergencyAlert': 'Emergency Alert',
-    'sosAlertNotFound': 'Alert Not Found',
-    'sosAlertReceivedTitle': 'Incoming Emergency Alert',
-    'sosAlertReceivedBody': 'Please acknowledge the alert so your team knows you have seen it',
-    'sosRequestedAt': 'Requested At',
-    'sosAcknowledgeAlert': 'Acknowledge Alert',
-    'sosAckedHonest': 'Acknowledged — visible to the team',
-    'sosAckNotNeeded': 'No acknowledgement needed — the alert is terminal',
-    'sosAckHistoryTitle': 'Acknowledgement History',
-    'sosNoAckEventsYet': 'No acknowledgement events yet',
-    'sosNoAckEventsSubtitle': 'Every emergency alert sent appears here with its honest state',
-    'sosUnknownDevice': 'Unknown Device',
-    'sosDeliveredAt': 'Delivered At',
-    'sosRemoveRecipientTitle': 'Remove Recipient',
-    'sosRemoveRecipientMessage': 'This recipient will no longer receive emergency alerts. Are you sure?',
-    'sosRemoveRecipient': 'Remove',
-    'sosRecipientAdded': 'Recipient added to the roster',
-    'sosRecipientRemoved': 'Recipient removed from the roster',
-    'sosRecipientNotFound': 'Recipient not found',
-    'sosRecipientHint': 'Phone number or recipient identifier',
-    'sosRoleNoteTitle': 'Roles',
-    'sosRoleNoteBody': 'Responders receive a call first; notify-only recipients get an alert without a call',
-    'sosRecipientsTitle': 'Manage Recipients',
-    'sosDrillStepSent': 'Step 1: Send a test alert',
-    'sosDrillStepReceived': 'Step 2: Receive a notification row',
-    'sosDrillStepAcknowledged': 'Step 3: Acknowledge an alert',
-    'sosDrillStepLocation': 'Step 4: Verify location capture',
-    'sosDrillStepDone': 'Passed',
-    'sosDrillTest': 'Test',
-    'sosDrillStepWaiting': 'Waiting',
-    'sosDrillPassedTitle': 'System Passed the Drill',
-    'sosDrillInTitle': 'Drill In Progress',
-    'sosDrillProgress': 'Progress',
-    'sosDrillVerdictBody': 'Every step was confirmed with real state — no fabricated optimism',
-    'sosDrillRestart': 'Restart Drill',
-    'sosDrillAckFailed': 'Could not acknowledge the drill — no open alert',
-    'sosDrillLocationDenied': 'Cannot verify location — permission denied',
-    'sosDrillPassed': 'Drill Passed',
-    'sosStatusAcknowledged': 'Acknowledged',
-    'sosStatusNotified': 'Notified',
-    'sosStatusDelivered': 'Delivered',
-    'sosStatusPending': 'Pending',
-    'sosStatusLocal': 'Local',
-    'sosStatusQueued': 'Queued',
-    'sosStatusFailed': 'Failed',
-    'sosStatusCancelled': 'Cancelled',
+      'sosGroup': 'SOS & Emergency',
+      'sosDashboardTitle': 'SOS Dashboard',
+      'sosActivateNow': 'Activate SOS Now',
+      'sosReadinessTitle': 'Readiness Status',
+      'sosReadyCount': 'Ready — {n} responders on roster',
+      'sosNotReady': 'Not ready — add responders first',
+      'sosResponders': 'Responders',
+      'sosTotalRecipients': 'Total Recipients',
+      'sosRecipientsSection': 'Recipients Roster',
+      'sosManage': 'Manage',
+      'sosNoRecipientsYet': 'No recipients yet',
+      'sosAddRecipient': 'Add Recipient',
+      'sosRoleResponder': 'Responder (medic / rescuer)',
+      'sosRoleNotifyOnly': 'Notify Only',
+      'sosDrillSection': 'Readiness Drill',
+      'sosDrillTitle': 'SOS Drill',
+      'sosDrillSubtitle': 'Test your readiness step by step',
+      'sosHistorySection': 'Alert History',
+      'sosNoHistoryYet': 'No alert history yet',
+      'loadFailed': 'Failed to load data — check your connection and retry',
+      'sosConfirmTitle': 'Confirm Emergency Alert',
+      'sosConfirmMessage':
+          'An emergency alert will be sent to every recipient on the roster with your current location. Are you sure?',
+      'sosSendNow': 'Send SOS Now',
+      'sosUrgentTitle': 'Emergency — Immediate Activation',
+      'sosUrgentSubtitle':
+          'Alerts every registered recipient with your current location',
+      'sosWhatHappensTitle': 'What Happens When You Send?',
+      'sosWhatHappensBody':
+          'The alert is stored locally first, then per-recipient notification requests go out through sync. Every request stays honestly pending until it is delivered and acknowledged.',
+      'sosQueuedHonest':
+          'Emergency alert queued for delivery — recipients notified after sync',
+      'sosWatchLive': 'Watch Live Alert',
+      'sosActiveTitle': 'Active SOS Alert',
+      'sosEmergencyLocation': 'Emergency Location',
+      'sosStandDownTitle': 'Stand Down Alert',
+      'sosStandDownMessage':
+          'The active alert will be cancelled and kept in the honest history. This cannot be undone.',
+      'sosStandDown': 'Stand Down',
+      'sosStandDownDone': 'Alert stood down',
+      'sosNoActiveAlert': 'No Active Alert',
+      'sosNoActiveSubtitle': 'All calm — activate an alert when needed',
+      'sosPerRecipientTitle': 'Per-Recipient Status',
+      'sosNoRecipientRows': 'No recipient rows for this alert',
+      'sosFamilyLevel': 'Family-Level',
+      'sosLastUpdate': 'Last Update',
+      'sosNoLocationYet': 'No location yet',
+      'sosNoLocationSubtitle':
+          'Pull to refresh — the location is fetched on demand',
+      'sosLocationNoteTitle': 'Location Note',
+      'sosLocationNoteBody':
+          'This location is captured on demand only — never published automatically',
+      'sosEmergencyAlert': 'Emergency Alert',
+      'sosAlertNotFound': 'Alert Not Found',
+      'sosAlertReceivedTitle': 'Incoming Emergency Alert',
+      'sosAlertReceivedBody':
+          'Please acknowledge the alert so your team knows you have seen it',
+      'sosRequestedAt': 'Requested At',
+      'sosAcknowledgeAlert': 'Acknowledge Alert',
+      'sosAckedHonest': 'Acknowledged — visible to the team',
+      'sosAckNotNeeded': 'No acknowledgement needed — the alert is terminal',
+      'sosAckHistoryTitle': 'Acknowledgement History',
+      'sosNoAckEventsYet': 'No acknowledgement events yet',
+      'sosNoAckEventsSubtitle':
+          'Every emergency alert sent appears here with its honest state',
+      'sosUnknownDevice': 'Unknown Device',
+      'sosDeliveredAt': 'Delivered At',
+      'sosRemoveRecipientTitle': 'Remove Recipient',
+      'sosRemoveRecipientMessage':
+          'This recipient will no longer receive emergency alerts. Are you sure?',
+      'sosRemoveRecipient': 'Remove',
+      'sosRecipientAdded': 'Recipient added to the roster',
+      'sosRecipientRemoved': 'Recipient removed from the roster',
+      'sosRecipientNotFound': 'Recipient not found',
+      'sosRecipientHint': 'Phone number or recipient identifier',
+      'sosRoleNoteTitle': 'Roles',
+      'sosRoleNoteBody':
+          'Responders receive a call first; notify-only recipients get an alert without a call',
+      'sosRecipientsTitle': 'Manage Recipients',
+      'sosDrillStepSent': 'Step 1: Send a test alert',
+      'sosDrillStepReceived': 'Step 2: Receive a notification row',
+      'sosDrillStepAcknowledged': 'Step 3: Acknowledge an alert',
+      'sosDrillStepLocation': 'Step 4: Verify location capture',
+      'sosDrillStepDone': 'Passed',
+      'sosDrillTest': 'Test',
+      'sosDrillStepWaiting': 'Waiting',
+      'sosDrillPassedTitle': 'System Passed the Drill',
+      'sosDrillInTitle': 'Drill In Progress',
+      'sosDrillProgress': 'Progress',
+      'sosDrillVerdictBody':
+          'Every step was confirmed with real state — no fabricated optimism',
+      'sosDrillRestart': 'Restart Drill',
+      'sosDrillAckFailed': 'Could not acknowledge the drill — no open alert',
+      'sosDrillLocationDenied': 'Cannot verify location — permission denied',
+      'sosDrillPassed': 'Drill Passed',
+      'sosStatusAcknowledged': 'Acknowledged',
+      'sosStatusNotified': 'Notified',
+      'sosStatusDelivered': 'Delivered',
+      'sosStatusPending': 'Pending',
+      'sosStatusLocal': 'Local',
+      'sosStatusQueued': 'Queued',
+      'sosStatusFailed': 'Failed',
+      'sosStatusCancelled': 'Cancelled',
       'addDomain': 'Add domain',
       'addFirstDomain': 'Add first domain',
       'adultContentWarning': 'Adult content warning',
@@ -1788,18 +2259,21 @@ class AppLocalizations {
       'automaticCapture': 'Automatic Capture',
       'awaitingReview': 'Awaiting Review',
       'cameraControl': 'Camera Control',
-      'cameraControlDescription': 'Request a one-shot capture from the device camera',
+      'cameraControlDescription':
+          'Request a one-shot capture from the device camera',
       'cameraRequestHistory': 'Camera Request History',
       'cameraRequestQueued': 'Camera request queued',
       'capture': 'Capture',
       'captureNow': 'Capture Now',
       'captureRequestsHistory': 'Capture Requests History',
-      'captureRequestsHistoryDescription': 'Every capture request and its delivery state',
+      'captureRequestsHistoryDescription':
+          'Every capture request and its delivery state',
       'captureSchedules': 'Capture Schedules',
       'captureSchedulesDescription': 'Automatic capture windows',
       'capturedAt': 'Captured At',
       'capturedShots': 'Captured Shots',
-      'childMonitoringDescription': 'Monitor the device screen and camera under your permissions',
+      'childMonitoringDescription':
+          'Monitor the device screen and camera under your permissions',
       'childNotFound': 'Child Not Found',
       'childNotFoundDescription': 'This child was not found in the family',
       'childSessionDescription': 'This child\'s device activity',
@@ -1823,7 +2297,8 @@ class AppLocalizations {
       'liveNoDevices': 'No connected devices',
       'liveRequestQueued': 'Request queued',
       'liveSession': 'Live Session',
-      'liveSessionDescription': 'Request a live screen session on a connected device',
+      'liveSessionDescription':
+          'Request a live screen session on a connected device',
       'liveWaitingForAgent': 'Waiting for device response',
       'markReviewed': 'Mark Reviewed',
       'minutesUnit': 'minutes',
@@ -1867,7 +2342,8 @@ class AppLocalizations {
       'schedulesEmptyDescription': 'Create an automatic capture window',
       'screenshotsNav': 'Screenshots',
       'screenshotsTimeline': 'Screenshots Timeline',
-      'screenshotsTimelineDescription': 'Shots the device agent actually delivered',
+      'screenshotsTimelineDescription':
+          'Shots the device agent actually delivered',
       'sendSos': 'Send SOS',
       'severity': 'Severity',
       'shotDeliveryEvidence': 'Delivery Evidence',
@@ -1875,7 +2351,8 @@ class AppLocalizations {
       'shotId': 'Shot ID',
       'shotMissing': 'Shot Not Available',
       'shotMissingDescription': 'This shot was not delivered or was removed',
-      'shotsTimelineDescription': 'Shots will appear here when the device agent ships them',
+      'shotsTimelineDescription':
+          'Shots will appear here when the device agent ships them',
       'shotsTimelineEmpty': 'No shots yet',
       'shotsWaitingForAgent': 'Waiting for agent delivery',
       'size': 'Size',
@@ -1944,7 +2421,8 @@ class AppLocalizations {
       'settingsLanguageEn': 'English',
       'goHome': 'Go to home',
       'pageNotFound': 'Page not found',
-      'pageNotFoundBody': 'This page could not be found. You can return safely to the home screen.',
+      'pageNotFoundBody':
+          'This page could not be found. You can return safely to the home screen.',
       'setupRequired': 'Firebase setup required',
       'error': 'Unable to complete the action',
       'safetyPolicies': 'Safety policies',
@@ -2011,90 +2489,101 @@ class AppLocalizations {
       'statusReason': 'Status reason',
       'noData': 'No data',
       'createdFamily': 'Created',
-      'noEvaluation': 'No evaluation yet'
-      ,'dailyLimitMinutes': 'Daily limit in minutes (optional)'
-      ,'policyPackageId': 'Android package ID to measure (for example: com.google.android.youtube)'
-      ,'addPolicyTarget': 'Add target'
-      ,'dailyLimitRequiresPackage': 'A daily limit requires at least one Android package ID.'
-      ,'screenTimeToday': 'Today’s usage'
-      ,'screenTimeEvaluate': 'Measure usage and evaluate policy'
-      ,'screenTimeNoUsage': 'No local usage observations for today.'
-      ,'screenTimeMeasured': 'Measured locally; this does not mean Android blocked an app.'
-      ,'enforcementStatus': 'Enforcement status'
-      ,'permissionRequired': 'Permission is required'
-      ,'enforcementUnsupported': 'Enforcement is unsupported on this device'
-      ,'familyMembers': 'Family members'
-      ,'inviteMember': 'Invite member'
-      ,'memberRole': 'Role'
-      ,'memberStatus': 'Status'
-      ,'memberDevices': 'Linked devices'
-      ,'noMembers': 'No family members are visible yet.'
-      ,'pendingInvitations': 'Pending invitations'
-      ,'invitationPending': 'Pending acceptance'
-      ,'invitationAccepted': 'Accepted'
-      ,'invitationExpired': 'Expired'
-      ,'invitationCancelled': 'Cancelled'
-      ,'cancelInvitation': 'Cancel invitation'
-      ,'revokeAccess': 'Revoke access'
-      ,'changeRole': 'Change role'
-      ,'notConnected': 'Not connected'
-      ,'inviteAdult': 'Invite an adult'
-      ,'targetEmail': 'Recipient email'
-      ,'proposedRole': 'Proposed role'
-      ,'sendInvitation': 'Save invitation'
-      ,'invitationCreated': 'The invitation is saved locally and awaits sync. Email delivery is not part of this phase.'
-      ,'acceptInvitation': 'Accept invitation'
-      ,'rejectInvitation': 'Reject invitation'
-      ,'invitationExpiry': 'Expires'
-      ,'roleParent': 'Parent'
-      ,'roleCoParent': 'Co-parent'
-      ,'roleOwner': 'Family owner'
-      ,'roleChild': 'Child'
-      ,'roleSpouse': 'Spouse'
-      ,'statusActive': 'Active'
-      ,'statusInvited': 'Invited'
-      ,'statusRevoked': 'Access revoked'
-      ,'confirmRevoke': 'Revoke this member’s access? Their associated devices will also be revoked locally.'
-      ,'confirm': 'Confirm'
-      ,'cancel': 'Cancel'
-      ,'invitationActionUnavailable': 'The recipient must open the invitation from their authenticated account after it synchronizes.'
-      ,'actorVerificationRequired': 'Local data is read-only until the Firebase account and matching family membership are verified on the server.'
-      ,'dailySafety': 'Daily safety'
-      ,'safetyTimeline': 'Safety timeline'
-      ,'exceptionUnsupportedNotice': 'Exception requests are stored and reviewed locally only. No actual app delivery exists on the device before Android integration.'
-      ,'reviewRequests': 'Review requests'
-      ,'noRequests': 'No exception requests.'
-      ,'requestDuration': 'Requested duration'
-      ,'requestReason': 'Request reason'
-      ,'reasonDetail': 'Reason detail'
-      ,'reasonHomework': 'Homework'
-      ,'reasonSchoolAssignment': 'School assignment'
-      ,'reasonFamilyActivity': 'Family activity'
-      ,'reasonImportantCommunication': 'Important communication'
-      ,'reasonOther': 'Other'
-      ,'requestPending': 'Awaiting parent review'
-      ,'requestApproved': 'Request approved'
-      ,'requestDenied': 'Request denied'
-      ,'requestExpired': 'Request expired'
-      ,'requestCancelled': 'Request cancelled'
-      ,'approveRequest': 'Approve'
-      ,'denyRequest': 'Deny'
-      ,'requestDecisionSaved': 'Decision saved locally and queued for sync.'
-      ,'requestSavedLocal': 'Request saved locally. It awaits parent review and sync.'
-      ,'requestAdditionalTime': 'Request additional time'
-      ,'submitRequest': 'Submit request'
-      ,'temporaryExceptionUntil': 'Allowance expires at'
-      ,'currentPolicy': 'Current policy'
-      ,'pendingRequests': 'Pending requests'
-      ,'activeException': 'Active exception'
-      ,'noActiveException': 'No active exception'
-      ,'notMeasuredYet': 'Not measured yet'
-      ,'childPolicy': 'Child policy'
-      ,'childPolicyExplanation': 'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.'
-      ,'remainingTime': 'Remaining time'
-      ,'policyConfigured': 'Policy configured'
-      ,'policyDelivered': 'Policy configured'
-      ,'approvalNature': 'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.',
+      'noEvaluation': 'No evaluation yet',
+      'dailyLimitMinutes': 'Daily limit in minutes (optional)',
+      'policyPackageId':
+          'Android package ID to measure (for example: com.google.android.youtube)',
+      'addPolicyTarget': 'Add target',
+      'dailyLimitRequiresPackage':
+          'A daily limit requires at least one Android package ID.',
+      'screenTimeToday': 'Today’s usage',
+      'screenTimeEvaluate': 'Measure usage and evaluate policy',
+      'screenTimeNoUsage': 'No local usage observations for today.',
+      'screenTimeMeasured':
+          'Measured locally; this does not mean Android blocked an app.',
+      'enforcementStatus': 'Enforcement status',
+      'permissionRequired': 'Permission is required',
+      'enforcementUnsupported': 'Enforcement is unsupported on this device',
+      'familyMembers': 'Family members',
+      'inviteMember': 'Invite member',
+      'memberRole': 'Role',
+      'memberStatus': 'Status',
+      'memberDevices': 'Linked devices',
+      'noMembers': 'No family members are visible yet.',
+      'pendingInvitations': 'Pending invitations',
+      'invitationPending': 'Pending acceptance',
+      'invitationAccepted': 'Accepted',
+      'invitationExpired': 'Expired',
+      'invitationCancelled': 'Cancelled',
+      'cancelInvitation': 'Cancel invitation',
+      'revokeAccess': 'Revoke access',
+      'changeRole': 'Change role',
+      'notConnected': 'Not connected',
+      'inviteAdult': 'Invite an adult',
+      'targetEmail': 'Recipient email',
+      'proposedRole': 'Proposed role',
+      'sendInvitation': 'Save invitation',
+      'invitationCreated':
+          'The invitation is saved locally and awaits sync. Email delivery is not part of this phase.',
+      'acceptInvitation': 'Accept invitation',
+      'rejectInvitation': 'Reject invitation',
+      'invitationExpiry': 'Expires',
+      'roleParent': 'Parent',
+      'roleCoParent': 'Co-parent',
+      'roleOwner': 'Family owner',
+      'roleChild': 'Child',
+      'roleSpouse': 'Spouse',
+      'statusActive': 'Active',
+      'statusInvited': 'Invited',
+      'statusRevoked': 'Access revoked',
+      'confirmRevoke':
+          'Revoke this member’s access? Their associated devices will also be revoked locally.',
+      'confirm': 'Confirm',
+      'cancel': 'Cancel',
+      'invitationActionUnavailable':
+          'The recipient must open the invitation from their authenticated account after it synchronizes.',
+      'actorVerificationRequired':
+          'Local data is read-only until the Firebase account and matching family membership are verified on the server.',
+      'dailySafety': 'Daily safety',
+      'safetyTimeline': 'Safety timeline',
+      'exceptionUnsupportedNotice':
+          'Exception requests are stored and reviewed locally only. No actual app delivery exists on the device before Android integration.',
+      'reviewRequests': 'Review requests',
+      'noRequests': 'No exception requests.',
+      'requestDuration': 'Requested duration',
+      'requestReason': 'Request reason',
+      'reasonDetail': 'Reason detail',
+      'reasonHomework': 'Homework',
+      'reasonSchoolAssignment': 'School assignment',
+      'reasonFamilyActivity': 'Family activity',
+      'reasonImportantCommunication': 'Important communication',
+      'reasonOther': 'Other',
+      'requestPending': 'Awaiting parent review',
+      'requestApproved': 'Request approved',
+      'requestDenied': 'Request denied',
+      'requestExpired': 'Request expired',
+      'requestCancelled': 'Request cancelled',
+      'approveRequest': 'Approve',
+      'denyRequest': 'Deny',
+      'requestDecisionSaved': 'Decision saved locally and queued for sync.',
+      'requestSavedLocal':
+          'Request saved locally. It awaits parent review and sync.',
+      'requestAdditionalTime': 'Request additional time',
+      'submitRequest': 'Submit request',
+      'temporaryExceptionUntil': 'Allowance expires at',
+      'currentPolicy': 'Current policy',
+      'pendingRequests': 'Pending requests',
+      'activeException': 'Active exception',
+      'noActiveException': 'No active exception',
+      'notMeasuredYet': 'Not measured yet',
+      'childPolicy': 'Child policy',
+      'childPolicyExplanation':
+          'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.',
+      'remainingTime': 'Remaining time',
+      'policyConfigured': 'Policy configured',
+      'policyDelivered': 'Policy configured',
+      'approvalNature':
+          'Approval creates a temporary policy allowance. It is not evidence that Android blocked or unblocked an app.',
       'familyIdentity': 'Family identity',
       'childOverview': 'Children overview',
       'childContext': 'Child context',
@@ -2138,44 +2627,58 @@ class AppLocalizations {
       'redeemConfirm': 'Link device',
       'redeemValidating': 'Checking the code…',
       'redeemSuccess': 'Device linked successfully',
-      'redeemSuccessBody': 'The device is now linked to the chosen child. Sync with the server may take a few moments if the network is unavailable.',
+      'redeemSuccessBody':
+          'The device is now linked to the chosen child. Sync with the server may take a few moments if the network is unavailable.',
       'codeInvalid': 'Code is invalid',
-      'codeInvalidBody': 'Check that you entered the 6-digit code correctly, or ask the parent device for a new code.',
+      'codeInvalidBody':
+          'Check that you entered the 6-digit code correctly, or ask the parent device for a new code.',
       'codeExpired': 'Code has expired',
-      'codeExpiredBody': 'Pairing codes are valid for 10 minutes only. Ask the parent device for a new code.',
+      'codeExpiredBody':
+          'Pairing codes are valid for 10 minutes only. Ask the parent device for a new code.',
       'codeLocked': 'This code has been locked',
-      'codeLockedBody': 'Too many failed attempts. Ask the parent device for a new code.',
+      'codeLockedBody':
+          'Too many failed attempts. Ask the parent device for a new code.',
       'codeAlreadyUsed': 'This code was already used',
-      'codeAlreadyUsedBody': 'Each pairing code can only be redeemed once. Ask the parent device for a new code.',
+      'codeAlreadyUsedBody':
+          'Each pairing code can only be redeemed once. Ask the parent device for a new code.',
       'alreadyEnrolled': 'This device is already linked',
-      'alreadyEnrolledBody': 'A child device is already linked to this family. The parent can revoke the old link first, then issue a new code.',
+      'alreadyEnrolledBody':
+          'A child device is already linked to this family. The parent can revoke the old link first, then issue a new code.',
       'unauthorizedRedeem': 'Not authorized to link',
-      'unauthorizedRedeemBody': 'This device cannot be linked right now. Verify the account and request a new code from the parent device.',
+      'unauthorizedRedeemBody':
+          'This device cannot be linked right now. Verify the account and request a new code from the parent device.',
       'networkUnavailable': 'Network unavailable',
-      'networkUnavailableBody': 'The link was saved locally and will complete when the server connection returns. Sync state: pending synchronization.',
+      'networkUnavailableBody':
+          'The link was saved locally and will complete when the server connection returns. Sync state: pending synchronization.',
       'pendingSync': 'Pending synchronization',
       'retryRedeemLater': 'Retry later',
       'unknownRedeemError': 'Unable to complete the link',
-      'unknownRedeemErrorBody': 'An unexpected error occurred. Check your network and try again, or ask for a new code.',
-      'provisioningServerError': 'Could not create the pairing code on the server. Check your connection and try again.',
+      'unknownRedeemErrorBody':
+          'An unexpected error occurred. Check your network and try again, or ask for a new code.',
+      'provisioningServerError':
+          'Could not create the pairing code on the server. Check your connection and try again.',
       'redeemPairingCode': 'Enter pairing code',
       'pairForChild': 'Child device',
       'noChildToPair': 'No child profile has been created yet.',
       'selectChild': 'Choose a child',
       'pairingExpiry': 'Valid until',
       'pairingExpiryExpiresAt': 'Expires in {minutes} minutes',
-      'pairingRedeemHint': 'Enter this code on the child device, or scan the QR code',
+      'pairingRedeemHint':
+          'Enter this code on the child device, or scan the QR code',
       'linkedDevice': 'Linked device',
       'deviceLifecycle': 'Device status',
       'unlinkDevice': 'Unlink device',
       'unlinkConfirmTitle': 'Unlink this device?',
-      'unlinkConfirmBody': 'The device loses trust and is recorded as revoked. The change is saved locally and sent when connectivity returns.',
+      'unlinkConfirmBody':
+          'The device loses trust and is recorded as revoked. The change is saved locally and sent when connectivity returns.',
       'unlinkCancel': 'Keep linked',
       'unlinkConfirmed': 'Device unlinked — pending synchronization',
       'unauthorizedActor': 'Not authorized',
-      'unauthorizedActorBody': 'This action is available to a parent only. Sign in with a parent account from this family.',
+      'unauthorizedActorBody':
+          'This action is available to a parent only. Sign in with a parent account from this family.',
       'linkedStatus': 'Linked',
-      'redemptionPendingHint': 'The link is waiting to finish syncing with the server before it is fully trusted.',
+      'redemptionPendingHint':
+          'The link is waiting to finish syncing with the server before it is fully trusted.',
       // — M5 Family Management (append-only) —
       'familyOverview': 'Family overview',
       'familyStatus': 'Family status',
@@ -2185,17 +2688,22 @@ class AppLocalizations {
       'deviceCount': 'Devices',
       'roleUpdateTitle': 'Change role',
       'roleUpdated': 'Member role updated locally — pending sync',
-      'roleUpdateOwnerOnly': 'Role changes are available to the family owner only',
+      'roleUpdateOwnerOnly':
+          'Role changes are available to the family owner only',
       'invitationHistory': 'Invitation history',
       'invitationAll': 'All',
       'invitationHistoryEmpty': 'No invitation history yet.',
       'invitationCancelledConfirm': 'Cancel this invitation permanently?',
-      'revokeConfirmBody': 'The member loses access and their linked devices are blocked. The change is saved locally and sent when connectivity returns.',
+      'revokeConfirmBody':
+          'The member loses access and their linked devices are blocked. The change is saved locally and sent when connectivity returns.',
       'memberRevoked': 'Member access revoked locally — pending sync',
-      'offlineHint': 'You are offline. Changes are saved locally and sent automatically when connectivity returns.',
+      'offlineHint':
+          'You are offline. Changes are saved locally and sent automatically when connectivity returns.',
       'onlineAgain': 'Back online — sending saved changes.',
-      'inviteMemberHint': 'Only adult roles can be invited: parent or co-parent.',
-      'invitedPending': 'Invitation pending — awaiting recipient acceptance after sync',
+      'inviteMemberHint':
+          'Only adult roles can be invited: parent or co-parent.',
+      'invitedPending':
+          'Invitation pending — awaiting recipient acceptance after sync',
       'memberSavedLocal': 'Saved locally',
       'memberPendingSync': 'Pending sync',
       'memberSynced': 'Synced',
@@ -2203,297 +2711,350 @@ class AppLocalizations {
       'familyNotFound': 'No family registered yet',
       'familyNotFoundHint': 'Create your family first from the main dashboard.'
       // — M6 Screen-Time Administration (append-only) —
-      ,'screenTimeAdmin': 'Screen time'
-      ,'screenTimeManage': 'Manage screen time'
-      ,'policiesSummary': 'Policies'
-      ,'policiesActiveCount': 'active policy'
-      ,'policiesActiveCountPlural': 'active policies'
-      ,'effectiveDecisionNow': 'Effective decision now'
-      ,'decisionSampleNote': 'Preview under the current policy — not an enforcement claim on the device'
-      ,'noPoliciesForChild': 'No policies for this child yet'
-      ,'addFirstPolicy': 'Add first policy'
-      ,'policySchedule': 'Schedule'
-      ,'policyActiveStatus': 'Active'
-      ,'policyInactiveStatus': 'Inactive'
-      ,'enablePolicy': 'Enable'
-      ,'disablePolicy': 'Disable policy'
-      ,'deletePolicyUnavailable': 'Disabling is the supported way to pause a policy — no permanent delete in this phase'
-      ,'policySavedSuccessfully': 'Policy saved locally — pending sync'
-      ,'policyEditedSuccessfully': 'Policy edited locally — pending sync'
-      ,'policyDisabledNotice': 'Policy disabled — it no longer applies'
-      ,'policyEnabledNotice': 'Policy enabled — it now governs the scheduled window'
-      ,'policyValidationFailed': 'Complete the required fields and fix the schedule'
-      ,'policyNameEmpty': 'Policy name is required'
-      ,'policyScheduleInvalid': 'The schedule is invalid'
-      ,'noLimit': 'No daily limit'
-      ,'minutesShort': 'min'
-      ,'hoursMinutesFormat': '{hours}h {minutes}m'
-      ,'hoursMinutesZero': '0h 0m'
-      ,'overrideGrant': 'Temporary allow'
-      ,'overrideGrantFor': 'Temporarily allow {target}'
-      ,'overrideDuration': 'Allowance duration'
-      ,'overrideExpiresAt': 'Allowance expires at {time}'
-      ,'activeOverride': 'Active temporary allowance until {time}'
-      ,'noActiveOverrides': 'No active temporary allowances'
-      ,'exceptionRequestsTitle': 'Exception requests'
-      ,'pendingExceptionBadge': 'pending request'
-      ,'pendingExceptionBadgePlural': 'pending requests'
-      ,'noPendingExceptions': 'No pending exception requests'
-      ,'exceptionRequestDetails': 'Request details'
-      ,'exceptionApprove': 'Approve'
-      ,'exceptionDeny': 'Deny'
-      ,'exceptionApproved': 'Approved locally — a temporary allowance was created and queued for sync'
-      ,'exceptionDenied': 'Denied locally — pending sync'
-      ,'exceptionReviewFailed': 'The request could not be reviewed — try again'
-      ,'exceptionReviewTitle': 'Time extension request'
-      ,'exceptionChildWantsTime': 'is asking for more time for {target}'
-      ,'overrideMinutes15': '15 minutes'
-      ,'overrideMinutes30': '30 minutes'
-      ,'overrideMinutes60': '1 hour'
-      ,'overrideMinutes120': '2 hours'
-      ,'overrideMinutes240': '4 hours'
-      ,'overrideSavedLocally': 'Temporary allowance saved locally — pending sync'
-      ,'overrideGrantUnavailable': 'Granting an allowance requires a verified parent account for this family'
-      ,'effectiveDecisionRestricted': 'Restricted'
-      ,'effectiveDecisionAllowed': 'Allowed'
-      ,'effectiveDecisionNoPolicy': 'No active policy'
-      ,'effectiveDecisionOverride': 'Temporary allowance active'
-      ,'childUnlinkedPolicyNotice': 'No device is linked for this child — policies are managed but not delivered until a device is linked'
-      ,'screenTimeAdminUnavailable': 'Screen-time management unavailable'
-      ,'screenTimeAdminUnavailableBody': 'This section requires policy management permission. Sign in with a parent account from this family or ask a parent to manage it'
-      ,'m7UsageToday': "Today's usage"
-      ,'m7NoObservation': 'No measurement data for today'
-      ,'m7StaleData': 'Stale data'
-      ,'m7OfflineCached': 'Offline cached'
-      ,'m7SyncPending': 'Sync pending'
-      ,'m7SyncFailed': 'Sync delivery failed'
-      ,'m7PermissionRequired': 'Usage statistics access required'
-      ,'m7PermissionRequiredBody': 'Allow usage statistics access to measure daily screen time for this device only'
-      ,'m7PermissionDenied': 'Permission denied'
-      ,'m7PermissionDeniedBody': 'Usage statistics permission was denied. Screen-time measurement is not possible until it is approved in system settings'
-      ,'m7Unsupported': 'Measurement unsupported on this device'
-      ,'m7UnsupportedBody': 'This device does not expose app usage statistics. Screen time can be measured through a dedicated app instead'
-      ,'m7GrantUsageAccess': 'Grant access'
-      ,'m7UsageAccessPurpose': 'To measure this device own daily screen time only'
-      ,'m7WithinLimit': 'Within limit'
-      ,'m7NearLimit': 'Near limit'
-      ,'m7OverLimit': 'Over limit'
-      ,'m7NoActivePolicy': 'No active policy'
-      ,'m7UnableToEvaluate': 'Unable to evaluate'
-      ,'m7BreakdownTitle': 'Breakdown by category'
-      ,'m7TotalScreenTime': 'Total screen time'
-      ,'m7UsageUnavailable': 'Measurement unavailable right now'
-      ,'m7UsageUnavailableBody': 'Could not gather usage data for this device right now. Retry or check that the device is linked'
-      ,'m7LastObserved': 'Last observed'
-      ,'m7MeasuredZero': 'Zero minutes measured'
-      ,'m7Observing': 'Observing'
-      ,'m7ConditionDetected': 'Policy condition detected'
-      ,'m7RefreshMeasurement': 'Refresh measurement'
-      ,'m7UsageMinutes': '{count} min'
-      ,'m8EnforcementTitle': 'Protection status'
-      ,'m8EnforcementSubtitle': 'Device compliance with screen-time rules'
-      ,'m8StateNotRequested': 'Protection not requested'
-      ,'m8StateNotRequestedDetail': 'No limit has been decided for this device today.'
-      ,'m8StatePermissionRequired': 'Protection awaiting permission'
-      ,'m8StatePermissionRequiredDetail': 'Enforcement requires system permissions that have not been granted yet.'
-      ,'m8StateEvaluationReady': 'Ready for evaluation'
-      ,'m8StateEvaluationReadyDetail': 'No active restriction right now; the policy will apply if usage changes.'
-      ,'m8StateEnforcementApplied': 'Applied and verified'
-      ,'m8StateEnforcementAppliedDetail': 'The device confirmed the limit is active; losing the network will not relax it.'
-      ,'m8StateEnforcementFailed': 'Application failed'
-      ,'m8StateEnforcementFailedDetail': 'The system attempted to apply the limit on the device and could not confirm it.'
-      ,'m8StatePolicyStale': 'Policy needs refresh'
-      ,'m8StatePolicyStaleDetail': 'The local policy is too old to drive any action; request a re-sync.'
-      ,'m8StateDeviceOffline': 'Device unavailable'
-      ,'m8StateDeviceOfflineDetail': 'The device cannot be reached right now; the last known state is kept.'
-      ,'m8StateUnsupported': 'Unsupported on this device'
-      ,'m8StateUnsupportedDetail': 'The system version does not support this capability.'
-      ,'m8StatePermissionDenied': 'Permission not granted'
-      ,'m8StatePermissionDeniedDetail': 'The required system permission was revoked; protection is paused until you grant it again.'
-      ,'m8RefreshEnforcement': 'Refresh status'
-      ,'m8EnforcementUnavailable': 'Protection status is not available right now.'
-      ,'m8NotVerified': 'Awaiting confirmation'
-      ,'m8VerificationNote': 'The action was requested and is still awaiting device-side system confirmation.'
-      ,'m8SyncedNow': 'Last sync: now'
-      ,'m8SyncPending': 'Pending sync'
-      ,'m8SyncFailed': 'Sync failed'
-      ,'loading': 'Loading...'
-      ,'nothingHereYet': 'Nothing here yet.'
-      ,'offlineMode': 'You are currently offline.'
-      ,'offlineChangesSaved': 'Changes are saved locally and sync automatically when you are back.'
-      ,'somethingWentWrong': 'Something went wrong. Please try again.'
-      ,'accuracyMeters': '±{meters} m of the point'
-      ,'acknowledge': 'Acknowledge'
-      ,'alertAcknowledged': 'Alert acknowledged'
-      ,'alertOnEntry': 'Alert on entry'
-      ,'alertOnExit': 'Alert on exit'
-      ,'authorizationFailure': 'Authorization failure'
-      ,'backgroundLocation': 'Background location'
-      ,'backgroundLocationDetail': 'Allows the app to keep seeing your child’s position while it runs in the background.'
-      ,'batteryLevel': 'Battery level'
-      ,'batterySaver': 'Battery saver mode'
-      ,'batterySaverDescription': 'Lowers the location update frequency to save battery. The view may become less precise.'
-      ,'childPrivacySeePrivacy': 'See the privacy note for what is collected and what is never collected.'
-      ,'childSharingDescription': 'You can stop sharing your location at any time. A parent’s stop request arrives when this device reconnects.'
-      ,'childSharingDisabled': 'Your location sharing is now off.'
-      ,'childSharingEnabled': 'Your location sharing is on'
-      ,'childSyncPending': 'Any change a parent requests reaches this screen only when your device connects to the internet.'
-      ,'coarseLocation': 'Approximate location'
-      ,'coarseLocationDetail': 'An approximate position within the cellular network area.'
-      ,'createGeofence': 'Create geofence'
-      ,'delete': 'Delete'
-      ,'editGeofence': 'Edit geofence'
-      ,'familyMap': 'Family map'
-      ,'favoritePlaces': 'Favorite places'
-      ,'fineLocation': 'Precise location'
-      ,'fineLocationDetail': 'Coordinates accurate to a few meters.'
-      ,'geofenceName': 'Geofence name'
-      ,'geofenceNameRequired': 'A geofence name is required.'
-      ,'geofenceRadius': 'Radius'
-      ,'geofenceRadiusHint': 'Radius must be between 50 and 5000 meters.'
-      ,'geofenceRemoved': 'The geofence is marked for removal and will sync when connected.'
-      ,'geofenceSaved': 'The geofence was saved locally and will sync when connected.'
-      ,'geofenceTemplates': 'Ready-made templates'
-      ,'geofences': 'Geofences'
-      ,'hoursAgo': '{n} h ago'
-      ,'justNow': 'Just now'
-      ,'lastUpdated': 'Last updated'
-      ,'locationAlerts': 'Location alerts'
-      ,'locationAlertsNav': 'Location alerts'
-      ,'locationHistory': 'Location history'
-      ,'locationPrivacy': 'Location privacy'
-      ,'locationSettings': 'Location settings'
-      ,'locationSharing': 'Location sharing'
-      ,'memberLocationDetails': 'Member location details'
-      ,'memberNotNearAnyGeofence': 'This member is not inside any active geofence.'
-      ,'members': 'Members'
-      ,'minutesAgo': '{n} min ago'
-      ,'noAlertsYet': 'No location alerts yet.'
-      ,'noGeofencesYet': 'No geofences yet. Create one from above.'
-      ,'noLocationsYet': 'No location points have arrived for this member yet.'
-      ,'noMembersYet': 'There are no members to show on the map yet.'
-      ,'noPlacesYet': 'No favorite places yet. Pin one from the map.'
-      ,'permissionNotSupported': 'This permission is not supported on this device.'
-      ,'permissionOnboarding': 'Location permission setup'
-      ,'permissionRationale': 'Why we need location permission'
-      ,'permissionRationaleDetail': 'The map, geofences and alerts cannot work without real location permission granted in Android settings. We never fabricate positions — if the permission is missing we say so honestly.'
-      ,'privacyDeleteData': 'Delete location data'
-      ,'privacyDeleteDataDetail': 'You can delete the location history at any time from this device’s settings. Data is never shared with third parties.'
-      ,'privacyLocationCollection': 'What we collect'
-      ,'privacyLocationCollectionDetail': 'We only collect the last announced positions of each member whose sharing is enabled, at the update frequency set in Location settings.'
-      ,'privacyLocationRetention': 'Retention'
-      ,'privacyLocationRetentionDetail': 'Positions are stored locally and synced only with verified family accounts. No location data is retained after a member is removed.'
-      ,'privacyParentAccess': 'Who sees what'
-      ,'privacyParentAccessDetail': 'Only verified parents see member locations. A spouse sees according to granted permissions. No child ever sees another member’s location.'
-      ,'privacyThirdParty': 'Third parties'
-      ,'privacyThirdPartyDetail': 'Data is never sold or shared with advertisers or brokers. Sync happens only within your own family infrastructure.'
-      ,'radiusMeters': '{radius} m'
-      ,'roleNotAllowed': 'Your family role is not allowed to view this page.'
-      ,'routeTrace': 'Route trace'
-      ,'save': 'Save'
-      ,'saveChanges': 'Save changes'
-      ,'selectPlaceOnMap': 'Pick the position on the map'
-      ,'setFavoritePlace': 'Set as favorite'
-      ,'sharingDisabled': 'Sharing is now off for this member.'
-      ,'sharingEnabled': 'Location sharing is now on.'
-      ,'sharingMatrix': 'Sharing matrix'
-      ,'sharingRevoked': 'This member’s sharing was revoked. Their view stops at the next sync.'
-      ,'tapToSetCenter': 'Tap to set the position'
-      ,'templateSchoolHours': 'School hours'
-      ,'templateHomeRange': 'Safe home range'
-      ,'templatePrayerPlace': 'Prayer place'
-      ,'templateSchoolHoursName': 'School — class hours'
-      ,'templateHomeRangeName': 'Home — safe range'
-      ,'templatePrayerPlaceName': 'Mosque'
-      ,'viewAll': 'View all'
-      ,'favoritePlacesNav': 'Favorite places'
-      ,'webProtectionNav': 'Web protection'
-      ,'webFilterHistoryNav': 'Block history'
-      ,'childDeviceExperience': 'Device'
-      ,'sosUtilityNotice': 'Record an emergency event and sync the local queue.'
-      ,'open': 'Open'
-      ,'appControlDashboard': 'App control'
-      ,'blockedApps': 'Blocked apps'
-      ,'blockedTodayApps': 'Blocked today'
-      ,'appProtectionSummary': 'Current protection level'
-      ,'appProtectionActive': 'Protection active: some apps are blocked or limited.'
-      ,'appProtectionRelaxed': 'No active blocking policies right now.'
-      ,'installedAppsNav': 'All apps'
-      ,'appsBlocked': '{count} apps blocked'
-      ,'noAppsBlocked': 'No apps blocked'
-      ,'protected': 'Protected'
-      ,'notProtected': 'Not protected'
-      ,'limited': 'Limited'
-      ,'appControlSyncFailed': 'App control sync failed'
-      ,'installedApps': 'Installed apps'
-      ,'installedAppsDescription': 'Apps on linked devices with each app status'
-      ,'appAllowlist': 'Allowlist'
-      ,'appAllowlistDescription': 'Trusted apps that are never blocked'
-      ,'usageAlerts': 'Usage alerts'
-      ,'usageAlertsDescription': 'Per-app alert thresholds'
-      ,'appBlockHistory': 'App block history'
-      ,'appBlockHistoryDescription': 'Audit log of all enforcement events'
-      ,'noAppsUsage': 'No app data yet'
-      ,'noAppsUsageDescription': 'Apps appear as soon as devices send their first usage report.'
-      ,'searchApps': 'Search apps...'
-      ,'appUsageChip': 'Usage: {usage}'
-      ,'allowed': 'Allowed'
-      ,'blocked': 'Blocked'
-      ,'timeLimited': 'Time-limited'
-      ,'trusted': 'Trusted'
-      ,'unrestricted': 'Unrestricted'
-      ,'allowApp': 'Allow'
-      ,'blockApp': 'Block app'
-      ,'appBlockedNotice': 'App added to the block list (syncing)'
-      ,'appAllowedNotice': 'App allowed (syncing)'
-      ,'usageToday': 'Usage today'
-      ,'policyAction': 'Policy action'
-      ,'currentAction': 'Current action'
-      ,'choosePolicyAction': 'Choose policy action'
-      ,'dailyAllowance': 'Daily allowance'
-      ,'dailyTimeLimit': 'Daily limit'
-      ,'syncEvidence': 'Sync evidence'
-      ,'policySyncState': 'Sync state'
-      ,'syncStateLabel': '{state}'
-      ,'addTrustedApp': 'Add trusted app'
-      ,'appAllowlistSummary': 'Apps that are never blocked regardless of conditions'
-      ,'noTrustedApps': 'No trusted apps yet'
-      ,'noTrustedAppsDescription': 'Add store and school apps so they always stay available.'
-      ,'noReasonGiven': 'No reason recorded'
-      ,'removeFromAllowlist': 'Remove from allowlist'
-      ,'trustAddedNotice': 'App added to the allowlist (syncing)'
-      ,'addTrustedAppAction': 'Add'
-      ,'appTargetHint': 'App identifier (e.g. com.example.app)'
-      ,'trustReasonHint': 'Reason for trust (recorded in audit)'
-      ,'perChildRules': 'Child app rules'
-      ,'childAppPolicies': 'Policies'
-      ,'noChildRules': 'No rules specific to this child'
-      ,'noChildRulesDescription': 'Family-wide policies apply for now.'
-      ,'limitChip': 'Limit: {limit}'
-      ,'actionChip': 'Action: {action}'
-      ,'noAlertsConfigured': 'No alerts configured'
-      ,'noAlertsConfiguredDescription': 'Add an alert threshold for an app to be notified when exceeded.'
-      ,'alertThresholdChip': 'Threshold: {threshold}'
-      ,'usageAlertsSummary': 'Alert when usage exceeds a set limit'
-      ,'noUsageData': 'No usage data yet'
-      ,'noUsageDataDescription': 'Usage tracking needs the first device sync batch.'
-      ,'alertSet': 'Alert set'
-      ,'noBlockEvents': 'No block events'
-      ,'noBlockEventsDescription': 'No enforcement event recorded yet. The log will appear here honestly.'
-      ,'eventTypeLabel': 'Event: {event}'
-      ,'myAppRules': 'My app rules'
-      ,'myAppRulesDescription': 'The rules applied to my apps only — nothing else.'
-      ,'appliedRules': 'Applied rules'
-      ,'noRulesApplied': 'No rules applied to me'
-      ,'noRulesAppliedDescription': 'My apps are running freely right now.'
-      ,'exceptionRequestCta': 'Request exception'
-      ,'exceptionRequestDescription': 'Think a rule is wrong? Ask a parent to review it.'
-      ,'block': 'Block'
-      ,'unblock': 'Unblock'
-      ,'override': 'Override'
-      ,'timeout': 'Time limit'
-      ,'addedToAllowlist': 'Added to allowlist'
-      ,'removedFromAllowlist': 'Removed from allowlist'
+      ,
+      'screenTimeAdmin': 'Screen time',
+      'screenTimeManage': 'Manage screen time',
+      'policiesSummary': 'Policies',
+      'policiesActiveCount': 'active policy',
+      'policiesActiveCountPlural': 'active policies',
+      'effectiveDecisionNow': 'Effective decision now',
+      'decisionSampleNote':
+          'Preview under the current policy — not an enforcement claim on the device',
+      'noPoliciesForChild': 'No policies for this child yet',
+      'addFirstPolicy': 'Add first policy',
+      'policySchedule': 'Schedule',
+      'policyActiveStatus': 'Active',
+      'policyInactiveStatus': 'Inactive',
+      'enablePolicy': 'Enable',
+      'disablePolicy': 'Disable policy',
+      'deletePolicyUnavailable':
+          'Disabling is the supported way to pause a policy — no permanent delete in this phase',
+      'policySavedSuccessfully': 'Policy saved locally — pending sync',
+      'policyEditedSuccessfully': 'Policy edited locally — pending sync',
+      'policyDisabledNotice': 'Policy disabled — it no longer applies',
+      'policyEnabledNotice':
+          'Policy enabled — it now governs the scheduled window',
+      'policyValidationFailed':
+          'Complete the required fields and fix the schedule',
+      'policyNameEmpty': 'Policy name is required',
+      'policyScheduleInvalid': 'The schedule is invalid',
+      'noLimit': 'No daily limit',
+      'minutesShort': 'min',
+      'hoursMinutesFormat': '{hours}h {minutes}m',
+      'hoursMinutesZero': '0h 0m',
+      'overrideGrant': 'Temporary allow',
+      'overrideGrantFor': 'Temporarily allow {target}',
+      'overrideDuration': 'Allowance duration',
+      'overrideExpiresAt': 'Allowance expires at {time}',
+      'activeOverride': 'Active temporary allowance until {time}',
+      'noActiveOverrides': 'No active temporary allowances',
+      'exceptionRequestsTitle': 'Exception requests',
+      'pendingExceptionBadge': 'pending request',
+      'pendingExceptionBadgePlural': 'pending requests',
+      'noPendingExceptions': 'No pending exception requests',
+      'exceptionRequestDetails': 'Request details',
+      'exceptionApprove': 'Approve',
+      'exceptionDeny': 'Deny',
+      'exceptionApproved':
+          'Approved locally — a temporary allowance was created and queued for sync',
+      'exceptionDenied': 'Denied locally — pending sync',
+      'exceptionReviewFailed': 'The request could not be reviewed — try again',
+      'exceptionReviewTitle': 'Time extension request',
+      'exceptionChildWantsTime': 'is asking for more time for {target}',
+      'overrideMinutes15': '15 minutes',
+      'overrideMinutes30': '30 minutes',
+      'overrideMinutes60': '1 hour',
+      'overrideMinutes120': '2 hours',
+      'overrideMinutes240': '4 hours',
+      'overrideSavedLocally':
+          'Temporary allowance saved locally — pending sync',
+      'overrideGrantUnavailable':
+          'Granting an allowance requires a verified parent account for this family',
+      'effectiveDecisionRestricted': 'Restricted',
+      'effectiveDecisionAllowed': 'Allowed',
+      'effectiveDecisionNoPolicy': 'No active policy',
+      'effectiveDecisionOverride': 'Temporary allowance active',
+      'childUnlinkedPolicyNotice':
+          'No device is linked for this child — policies are managed but not delivered until a device is linked',
+      'screenTimeAdminUnavailable': 'Screen-time management unavailable',
+      'screenTimeAdminUnavailableBody':
+          'This section requires policy management permission. Sign in with a parent account from this family or ask a parent to manage it',
+      'm7UsageToday': "Today's usage",
+      'm7NoObservation': 'No measurement data for today',
+      'm7StaleData': 'Stale data',
+      'm7OfflineCached': 'Offline cached',
+      'm7SyncPending': 'Sync pending',
+      'm7SyncFailed': 'Sync delivery failed',
+      'm7PermissionRequired': 'Usage statistics access required',
+      'm7PermissionRequiredBody':
+          'Allow usage statistics access to measure daily screen time for this device only',
+      'm7PermissionDenied': 'Permission denied',
+      'm7PermissionDeniedBody':
+          'Usage statistics permission was denied. Screen-time measurement is not possible until it is approved in system settings',
+      'm7Unsupported': 'Measurement unsupported on this device',
+      'm7UnsupportedBody':
+          'This device does not expose app usage statistics. Screen time can be measured through a dedicated app instead',
+      'm7GrantUsageAccess': 'Grant access',
+      'm7UsageAccessPurpose':
+          'To measure this device own daily screen time only',
+      'm7WithinLimit': 'Within limit',
+      'm7NearLimit': 'Near limit',
+      'm7OverLimit': 'Over limit',
+      'm7NoActivePolicy': 'No active policy',
+      'm7UnableToEvaluate': 'Unable to evaluate',
+      'm7BreakdownTitle': 'Breakdown by category',
+      'm7TotalScreenTime': 'Total screen time',
+      'm7UsageUnavailable': 'Measurement unavailable right now',
+      'm7UsageUnavailableBody':
+          'Could not gather usage data for this device right now. Retry or check that the device is linked',
+      'm7LastObserved': 'Last observed',
+      'm7MeasuredZero': 'Zero minutes measured',
+      'm7Observing': 'Observing',
+      'm7ConditionDetected': 'Policy condition detected',
+      'm7RefreshMeasurement': 'Refresh measurement',
+      'm7UsageMinutes': '{count} min',
+      'm8EnforcementTitle': 'Protection status',
+      'm8EnforcementSubtitle': 'Device compliance with screen-time rules',
+      'm8StateNotRequested': 'Protection not requested',
+      'm8StateNotRequestedDetail':
+          'No limit has been decided for this device today.',
+      'm8StatePermissionRequired': 'Protection awaiting permission',
+      'm8StatePermissionRequiredDetail':
+          'Enforcement requires system permissions that have not been granted yet.',
+      'm8StateEvaluationReady': 'Ready for evaluation',
+      'm8StateEvaluationReadyDetail':
+          'No active restriction right now; the policy will apply if usage changes.',
+      'm8StateEnforcementApplied': 'Applied and verified',
+      'm8StateEnforcementAppliedDetail':
+          'The device confirmed the limit is active; losing the network will not relax it.',
+      'm8StateEnforcementFailed': 'Application failed',
+      'm8StateEnforcementFailedDetail':
+          'The system attempted to apply the limit on the device and could not confirm it.',
+      'm8StatePolicyStale': 'Policy needs refresh',
+      'm8StatePolicyStaleDetail':
+          'The local policy is too old to drive any action; request a re-sync.',
+      'm8StateDeviceOffline': 'Device unavailable',
+      'm8StateDeviceOfflineDetail':
+          'The device cannot be reached right now; the last known state is kept.',
+      'm8StateUnsupported': 'Unsupported on this device',
+      'm8StateUnsupportedDetail':
+          'The system version does not support this capability.',
+      'm8StatePermissionDenied': 'Permission not granted',
+      'm8StatePermissionDeniedDetail':
+          'The required system permission was revoked; protection is paused until you grant it again.',
+      'm8RefreshEnforcement': 'Refresh status',
+      'm8EnforcementUnavailable':
+          'Protection status is not available right now.',
+      'm8NotVerified': 'Awaiting confirmation',
+      'm8VerificationNote':
+          'The action was requested and is still awaiting device-side system confirmation.',
+      'm8SyncedNow': 'Last sync: now',
+      'm8SyncPending': 'Pending sync',
+      'm8SyncFailed': 'Sync failed',
+      'loading': 'Loading...',
+      'nothingHereYet': 'Nothing here yet.',
+      'offlineMode': 'You are currently offline.',
+      'offlineChangesSaved':
+          'Changes are saved locally and sync automatically when you are back.',
+      'somethingWentWrong': 'Something went wrong. Please try again.',
+      'accuracyMeters': '±{meters} m of the point',
+      'acknowledge': 'Acknowledge',
+      'alertAcknowledged': 'Alert acknowledged',
+      'alertOnEntry': 'Alert on entry',
+      'alertOnExit': 'Alert on exit',
+      'authorizationFailure': 'Authorization failure',
+      'backgroundLocation': 'Background location',
+      'backgroundLocationDetail':
+          'Allows the app to keep seeing your child’s position while it runs in the background.',
+      'batteryLevel': 'Battery level',
+      'batterySaver': 'Battery saver mode',
+      'batterySaverDescription':
+          'Lowers the location update frequency to save battery. The view may become less precise.',
+      'childPrivacySeePrivacy':
+          'See the privacy note for what is collected and what is never collected.',
+      'childSharingDescription':
+          'You can stop sharing your location at any time. A parent’s stop request arrives when this device reconnects.',
+      'childSharingDisabled': 'Your location sharing is now off.',
+      'childSharingEnabled': 'Your location sharing is on',
+      'childSyncPending':
+          'Any change a parent requests reaches this screen only when your device connects to the internet.',
+      'coarseLocation': 'Approximate location',
+      'coarseLocationDetail':
+          'An approximate position within the cellular network area.',
+      'createGeofence': 'Create geofence',
+      'delete': 'Delete',
+      'editGeofence': 'Edit geofence',
+      'familyMap': 'Family map',
+      'favoritePlaces': 'Favorite places',
+      'fineLocation': 'Precise location',
+      'fineLocationDetail': 'Coordinates accurate to a few meters.',
+      'geofenceName': 'Geofence name',
+      'geofenceNameRequired': 'A geofence name is required.',
+      'geofenceRadius': 'Radius',
+      'geofenceRadiusHint': 'Radius must be between 50 and 5000 meters.',
+      'geofenceRemoved':
+          'The geofence is marked for removal and will sync when connected.',
+      'geofenceSaved':
+          'The geofence was saved locally and will sync when connected.',
+      'geofenceTemplates': 'Ready-made templates',
+      'geofences': 'Geofences',
+      'hoursAgo': '{n} h ago',
+      'justNow': 'Just now',
+      'lastUpdated': 'Last updated',
+      'locationAlerts': 'Location alerts',
+      'locationAlertsNav': 'Location alerts',
+      'locationHistory': 'Location history',
+      'locationPrivacy': 'Location privacy',
+      'locationSettings': 'Location settings',
+      'locationSharing': 'Location sharing',
+      'memberLocationDetails': 'Member location details',
+      'memberNotNearAnyGeofence':
+          'This member is not inside any active geofence.',
+      'members': 'Members',
+      'minutesAgo': '{n} min ago',
+      'noAlertsYet': 'No location alerts yet.',
+      'noGeofencesYet': 'No geofences yet. Create one from above.',
+      'noLocationsYet': 'No location points have arrived for this member yet.',
+      'noMembersYet': 'There are no members to show on the map yet.',
+      'noPlacesYet': 'No favorite places yet. Pin one from the map.',
+      'permissionNotSupported':
+          'This permission is not supported on this device.',
+      'permissionOnboarding': 'Location permission setup',
+      'permissionRationale': 'Why we need location permission',
+      'permissionRationaleDetail':
+          'The map, geofences and alerts cannot work without real location permission granted in Android settings. We never fabricate positions — if the permission is missing we say so honestly.',
+      'privacyDeleteData': 'Delete location data',
+      'privacyDeleteDataDetail':
+          'You can delete the location history at any time from this device’s settings. Data is never shared with third parties.',
+      'privacyLocationCollection': 'What we collect',
+      'privacyLocationCollectionDetail':
+          'We only collect the last announced positions of each member whose sharing is enabled, at the update frequency set in Location settings.',
+      'privacyLocationRetention': 'Retention',
+      'privacyLocationRetentionDetail':
+          'Positions are stored locally and synced only with verified family accounts. No location data is retained after a member is removed.',
+      'privacyParentAccess': 'Who sees what',
+      'privacyParentAccessDetail':
+          'Only verified parents see member locations. A spouse sees according to granted permissions. No child ever sees another member’s location.',
+      'privacyThirdParty': 'Third parties',
+      'privacyThirdPartyDetail':
+          'Data is never sold or shared with advertisers or brokers. Sync happens only within your own family infrastructure.',
+      'radiusMeters': '{radius} m',
+      'roleNotAllowed': 'Your family role is not allowed to view this page.',
+      'routeTrace': 'Route trace',
+      'save': 'Save',
+      'saveChanges': 'Save changes',
+      'selectPlaceOnMap': 'Pick the position on the map',
+      'setFavoritePlace': 'Set as favorite',
+      'sharingDisabled': 'Sharing is now off for this member.',
+      'sharingEnabled': 'Location sharing is now on.',
+      'sharingMatrix': 'Sharing matrix',
+      'sharingRevoked':
+          'This member’s sharing was revoked. Their view stops at the next sync.',
+      'tapToSetCenter': 'Tap to set the position',
+      'templateSchoolHours': 'School hours',
+      'templateHomeRange': 'Safe home range',
+      'templatePrayerPlace': 'Prayer place',
+      'templateSchoolHoursName': 'School — class hours',
+      'templateHomeRangeName': 'Home — safe range',
+      'templatePrayerPlaceName': 'Mosque',
+      'viewAll': 'View all',
+      'favoritePlacesNav': 'Favorite places',
+      'webProtectionNav': 'Web protection',
+      'webFilterHistoryNav': 'Block history',
+      'childDeviceExperience': 'Device',
+      'sosUtilityNotice': 'Record an emergency event and sync the local queue.',
+      'open': 'Open',
+      'appControlDashboard': 'App control',
+      'blockedApps': 'Blocked apps',
+      'blockedTodayApps': 'Blocked today',
+      'appProtectionSummary': 'Current protection level',
+      'appProtectionActive':
+          'Protection active: some apps are blocked or limited.',
+      'appProtectionRelaxed': 'No active blocking policies right now.',
+      'installedAppsNav': 'All apps',
+      'appsBlocked': '{count} apps blocked',
+      'noAppsBlocked': 'No apps blocked',
+      'protected': 'Protected',
+      'notProtected': 'Not protected',
+      'limited': 'Limited',
+      'appControlSyncFailed': 'App control sync failed',
+      'installedApps': 'Installed apps',
+      'installedAppsDescription': 'Apps on linked devices with each app status',
+      'appAllowlist': 'Allowlist',
+      'appAllowlistDescription': 'Trusted apps that are never blocked',
+      'usageAlerts': 'Usage alerts',
+      'usageAlertsDescription': 'Per-app alert thresholds',
+      'appBlockHistory': 'App block history',
+      'appBlockHistoryDescription': 'Audit log of all enforcement events',
+      'noAppsUsage': 'No app data yet',
+      'noAppsUsageDescription':
+          'Apps appear as soon as devices send their first usage report.',
+      'searchApps': 'Search apps...',
+      'appUsageChip': 'Usage: {usage}',
+      'allowed': 'Allowed',
+      'blocked': 'Blocked',
+      'timeLimited': 'Time-limited',
+      'trusted': 'Trusted',
+      'unrestricted': 'Unrestricted',
+      'allowApp': 'Allow',
+      'blockApp': 'Block app',
+      'appBlockedNotice': 'App added to the block list (syncing)',
+      'appAllowedNotice': 'App allowed (syncing)',
+      'usageToday': 'Usage today',
+      'policyAction': 'Policy action',
+      'currentAction': 'Current action',
+      'choosePolicyAction': 'Choose policy action',
+      'dailyAllowance': 'Daily allowance',
+      'dailyTimeLimit': 'Daily limit',
+      'syncEvidence': 'Sync evidence',
+      'policySyncState': 'Sync state',
+      'syncStateLabel': '{state}',
+      'addTrustedApp': 'Add trusted app',
+      'appAllowlistSummary':
+          'Apps that are never blocked regardless of conditions',
+      'noTrustedApps': 'No trusted apps yet',
+      'noTrustedAppsDescription':
+          'Add store and school apps so they always stay available.',
+      'noReasonGiven': 'No reason recorded',
+      'removeFromAllowlist': 'Remove from allowlist',
+      'trustAddedNotice': 'App added to the allowlist (syncing)',
+      'addTrustedAppAction': 'Add',
+      'appTargetHint': 'App identifier (e.g. com.example.app)',
+      'trustReasonHint': 'Reason for trust (recorded in audit)',
+      'perChildRules': 'Child app rules',
+      'childAppPolicies': 'Policies',
+      'noChildRules': 'No rules specific to this child',
+      'noChildRulesDescription': 'Family-wide policies apply for now.',
+      'limitChip': 'Limit: {limit}',
+      'actionChip': 'Action: {action}',
+      'noAlertsConfigured': 'No alerts configured',
+      'noAlertsConfiguredDescription':
+          'Add an alert threshold for an app to be notified when exceeded.',
+      'alertThresholdChip': 'Threshold: {threshold}',
+      'usageAlertsSummary': 'Alert when usage exceeds a set limit',
+      'noUsageData': 'No usage data yet',
+      'noUsageDataDescription':
+          'Usage tracking needs the first device sync batch.',
+      'alertSet': 'Alert set',
+      'noBlockEvents': 'No block events',
+      'noBlockEventsDescription':
+          'No enforcement event recorded yet. The log will appear here honestly.',
+      'eventTypeLabel': 'Event: {event}',
+      'myAppRules': 'My app rules',
+      'myAppRulesDescription':
+          'The rules applied to my apps only — nothing else.',
+      'appliedRules': 'Applied rules',
+      'noRulesApplied': 'No rules applied to me',
+      'noRulesAppliedDescription': 'My apps are running freely right now.',
+      'exceptionRequestCta': 'Request exception',
+      'exceptionRequestDescription':
+          'Think a rule is wrong? Ask a parent to review it.',
+      'block': 'Block',
+      'unblock': 'Unblock',
+      'override': 'Override',
+      'timeout': 'Time limit',
+      'addedToAllowlist': 'Added to allowlist',
+      'removedFromAllowlist': 'Removed from allowlist'
     },
   };
   String t(String key) => _values[locale.languageCode]?[key] ?? key;
