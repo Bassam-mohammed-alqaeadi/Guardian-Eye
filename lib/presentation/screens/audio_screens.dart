@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../domain/guardian_models.dart';
 import '../../domain/audio_monitoring.dart';
 import '../../application/guardian_providers.dart';
@@ -197,10 +198,47 @@ class AudioAuthGateScreen extends ConsumerWidget {
     );
   }
 
-  void _start(BuildContext context, WidgetRef ref) {
-    // In a real app, we'd select a child device first. 
-    // For this implementation, we'll use a placeholder ID.
-    context.pushReplacement('/audio/$familyId/listening/connecting', extra: 'child-1');
+  Future<void> _start(BuildContext context, WidgetRef ref) async {
+    final t = AppLocalizations.of(context);
+    final status = await Permission.microphone.request();
+
+    if (status.isGranted) {
+      // In a real app, we'd select a child device first.
+      // For this implementation, we'll use a placeholder ID.
+      if (context.mounted) {
+        context.pushReplacement('/audio/$familyId/listening/connecting',
+            extra: 'child-1');
+      }
+    } else if (status.isPermanentlyDenied) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(t.t('au_mic_permission_title')),
+            content: Text(t.t('au_mic_permission_body')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(t.t('cancel')),
+              ),
+              TextButton(
+                onPressed: () {
+                  openAppSettings();
+                  Navigator.pop(context);
+                },
+                child: Text(t.t('au_mic_permission_grant')),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.t('au_mic_permission_denied'))),
+        );
+      }
+    }
   }
 }
 

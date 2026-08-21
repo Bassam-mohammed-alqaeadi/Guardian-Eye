@@ -67,12 +67,15 @@ dependencies:
   firebase_crashlytics: ^5.0.2
   firebase_remote_config: ^6.0.2
   local_auth: ^3.0.1
+  record: ^5.2.0
+  audioplayers: ^6.0.0
   vector_math: ^2.2.0
   sqflite_common_ffi: ^2.3.7+1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  mocktail: ^1.0.4
   flutter_lints: ^3.0.1
   build_runner: ^2.4.9
   freezed: ^2.5.2

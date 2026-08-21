@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:guardian_ai/domain/audio_monitoring.dart';
@@ -8,8 +9,14 @@ import 'package:guardian_ai/application/audio_monitor_service.dart';
 import 'package:guardian_ai/application/family_context_provider.dart';
 import 'package:guardian_ai/core/database/guardian_database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'fs008_audio_mocks.dart';
 
 void main() {
+  setupAudioMocks();
+  TestWidgetsFlutterBinding.ensureInitialized();
   late ProviderContainer container;
   late AudioRepository repository;
   late GuardianDatabase database;
@@ -88,6 +95,12 @@ void main() {
         )),
       ],
     );
+
+    // Mock PathProvider to avoid MissingPluginException
+    const channel = MethodChannel('plugins.flutter.io/path_provider');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return '.';
+    });
   });
 
   tearDown(() {
@@ -153,6 +166,91 @@ void main() {
       await repository.deleteKeyword('kw-1');
       final afterDelete = await repository.getKeywords('fam-1');
       expect(afterDelete.isEmpty, isTrue);
+    });
+  });
+
+  group('FS-008 Audio Monitoring Service Hardening', () {
+    test('startSession verifies policy before recording', () async {
+      final actor = FamilyMember(
+        id: 'parent-1',
+        familyId: 'fam-1',
+        displayName: 'Parent',
+        role: FamilyRole.primaryParent,
+        status: FamilyMemberStatus.active,
+        joinedAt: DateTime.now(),
+        createdAt: DateTime.now(),
+      );
+      
+      final mockRecorder = MockAudioRecorder();
+      final mockPlayer = MockAudioPlayer();
+      
+      // Ensure policy is disabled in DB
+      await repository.savePolicy(AudioPolicy(familyId: 'fam-1', enabled: false));
+
+      final service = AudioMonitorService(
+        repository: repository,
+        familyId: 'fam-1',
+        actor: actor,
+        recorder: mockRecorder,
+        player: mockPlayer,
+      );
+
+      // Policy is disabled, should throw before any plugin calls
+      expect(
+        service.startSession(childMemberId: 'child-1', deviceId: 'dev-1'),
+        throwsA(isA<StateError>().having((e) => e.message, 'message', 'audio_monitoring_disabled_by_policy')),
+      );
+      
+      // Verify no plugin methods were called
+      verifyNever(() => mockRecorder.hasPermission());
+    });
+
+    test('Session lifecycle updates repository status with mocks', () async {
+      final actor = FamilyMember(
+        id: 'parent-1',
+        familyId: 'fam-1',
+        displayName: 'Parent',
+        role: FamilyRole.primaryParent,
+        status: FamilyMemberStatus.active,
+        joinedAt: DateTime.now(),
+        createdAt: DateTime.now(),
+      );
+      
+      await repository.savePolicy(AudioPolicy(
+        familyId: 'fam-1',
+        enabled: true,
+      ));
+
+      final mockRecorder = MockAudioRecorder();
+      final mockPlayer = MockAudioPlayer();
+      
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.start(any(), path: any(named: 'path'))).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => 'test.m4a');
+      when(() => mockPlayer.setSourceDeviceFile(any())).thenAnswer((_) async {});
+      when(() => mockPlayer.resume()).thenAnswer((_) async {});
+      when(() => mockPlayer.stop()).thenAnswer((_) async {});
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(() => mockPlayer.dispose()).thenAnswer((_) async {});
+
+      final service = AudioMonitorService(
+        repository: repository,
+        familyId: 'fam-1',
+        actor: actor,
+        recorder: mockRecorder,
+        player: mockPlayer,
+      );
+
+      final session = await service.startSession(childMemberId: 'child-1', deviceId: 'dev-1');
+      expect(session.status, AudioSessionStatus.active);
+      
+      final saved = await repository.getSessions('fam-1');
+      expect(saved.first.status, AudioSessionStatus.active);
+      
+      await service.stopSession();
+      final ended = await repository.getSessions('fam-1');
+      expect(ended.first.status, AudioSessionStatus.completed);
+      expect(ended.first.endedAt, isNotNull);
     });
   });
 }

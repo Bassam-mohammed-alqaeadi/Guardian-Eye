@@ -17,6 +17,8 @@
     <!-- Required on Android 14+ (API 34+) when a foreground service uses the
          `location` type; without it the OS rejects startForeground entirely. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 <application
@@ -72,6 +74,10 @@
             android:name=".EnforcementService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+        <service
+            android:name=".AudioCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
         <!-- M8 boot resilience: restart enforcement monitoring after reboot.
              WorkManager periodic rescheduling after boot is handled by the
              workmanager Flutter plugin. -->
