@@ -151,6 +151,8 @@ class _ChildContextBody extends ConsumerWidget {
             childId: childId,
             hasDevice: snapshot.deviceState != null),
         const SizedBox(height: 12),
+        _AudioMonitoringCard(familyId: familyId, canAct: canAct),
+        const SizedBox(height: 12),
         Center(
           child: TextButton.icon(
             onPressed: () => context.pop(),
@@ -925,6 +927,51 @@ class _breakdownAndComparison extends StatelessWidget {
             style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant)),
       ],
+    );
+  }
+}
+
+class _AudioMonitoringCard extends StatelessWidget {
+  const _AudioMonitoringCard({required this.familyId, required this.canAct});
+  final String familyId;
+  final bool canAct;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        onTap: () => context.push('/audio/$familyId'),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(Icons.mic_none_outlined,
+                  color: theme.colorScheme.primary),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.t('au_live_audio'),
+                        style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(l10n.t('au_live_audio_desc'),
+                        style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              if (!canAct)
+                Icon(Icons.lock_outline,
+                    size: 18, color: GuardianTokens.statusWatch)
+              else
+                const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

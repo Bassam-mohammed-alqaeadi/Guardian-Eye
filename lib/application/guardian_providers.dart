@@ -10,6 +10,7 @@ import '../domain/couple_harmony.dart';
 import '../domain/subscription_entitlements.dart';
 import '../application/guardian_ai_engine.dart';
 export 'family_membership_providers.dart';
+export 'audio_monitor_service.dart';
 import 'family_context_provider.dart';
 import '../core/database/guardian_database.dart';
 import '../core/firebase/guardian_firebase_bootstrap.dart';
@@ -23,6 +24,7 @@ import 'child_screen_time_coordinator.dart';
 import 'child_usage_measurement_provider.dart';
 import 'child_enforcement_coordinator.dart';
 import 'device_link_service.dart';
+import 'audio_monitor_service.dart';
 import 'remote_provisioning_service.dart';
 import '../data/fcm_token_repository.dart';
 import '../data/child_device_repository.dart';
@@ -954,3 +956,5 @@ final subscriptionUsageMetersProvider =
 final subscriptionBillingProvider =
     FutureProvider.family<List<BillingRecord>, String>((ref, String familyId) =>
         ref.watch(subscriptionRepositoryProvider).listBilling(familyId));
+
+

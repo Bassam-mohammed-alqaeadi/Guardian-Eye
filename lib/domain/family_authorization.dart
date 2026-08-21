@@ -58,6 +58,10 @@ class FamilyAuthorization {
             // within role-scoped threads (family / per-member / spouse);
             // children are granted nothing and are fail-closed below.
             FamilyPermission.viewChat,
+            // FS-008 — One-Way Audio. Co-parents may initiate monitoring
+            // and view history; the primary parent manages the policy.
+            FamilyPermission.viewAudioHistory,
+            FamilyPermission.initiateAudioMonitor,
           },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
@@ -83,6 +87,9 @@ class FamilyAuthorization {
             // deduction).
             FamilyPermission.viewOwnRewards,
             FamilyPermission.requestOwnRedemption,
+            // FS-008 — a child sees only the disclosure that monitoring
+            // is active (honest transparency).
+            FamilyPermission.viewOwnAudioDisclosure,
           },
         FamilyRole.spouse => {
             FamilyPermission.viewFamily,
@@ -110,6 +117,9 @@ class FamilyAuthorization {
             // (including the symmetric spouse pair) but never manages
             // thread scope.
             FamilyPermission.viewChat,
+            // FS-008 — a spouse observes audio history but never mutates
+            // policy or initiates a monitor session.
+            FamilyPermission.viewAudioHistory,
           },
       };
   bool hasPermission(FamilyMember member, FamilyPermission permission) =>

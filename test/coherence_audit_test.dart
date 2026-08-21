@@ -67,6 +67,14 @@ const Map<String, String> _canonicalRoutes = {
   'SO-006 sosAcknowledgement': '/sos/:familyId/ack',
   'SO-007 sosRecipients': '/sos/:familyId/recipients',
   'SO-008 sosDrill': '/sos/:familyId/drill',
+  // FS-008 One-Way Audio (AU-001 … AU-014)
+  'AU-001 audioDashboard': '/audio/:familyId',
+  'AU-002 audioAuthGate': '/audio/:familyId/auth',
+  'AU-003 audioConnecting': '/audio/:familyId/listening/connecting',
+  'AU-004 audioActive': '/audio/:familyId/listening/active',
+  'AU-005 audioHistory': '/audio/:familyId/history',
+  'AU-007 audioSettings': '/audio/:familyId/settings/policy',
+  'AU-012 audioKeywords': '/audio/:familyId/settings/keywords',
 };
 
 /// Collects every registered route path from the app router by walking its
@@ -144,9 +152,37 @@ void main() {
   });
 
   group('CL-007 bilingual coverage for audit-added keys', () {
-    test('all FS-001 keys exist in the AR localization map', () {
+    test('all FS-001 and FS-008 keys exist in the AR localization map', () {
       final ar = AppLocalizations(const Locale('ar'));
       for (final key in <String>[
+        'au_dashboard_title',
+        'au_active_sessions',
+        'au_recent_history',
+        'au_capability_status',
+        'au_status_ready',
+        'au_status_disabled',
+        'au_start_listening',
+        'au_start_disclosure',
+        'au_auth_gate_title',
+        'au_auth_disclosure_title',
+        'au_auth_disclosure_body',
+        'au_auth_confirm',
+        'au_connecting',
+        'au_live_active',
+        'au_live_listening',
+        'au_session_ended',
+        'au_end_session',
+        'au_history_title',
+        'au_settings_title',
+        'au_policy_enabled',
+        'au_policy_disclosure',
+        'au_max_duration',
+        'au_wifi_only',
+        'au_spouse_consent',
+        'au_keyword_alerts',
+        'au_keywords_title',
+        'au_keywords_disclosure',
+        'au_add_keyword',
         'familyMap',
         'locationHistory',
         'geofences',
@@ -171,9 +207,37 @@ void main() {
       }
     });
 
-    test('all FS-001 keys exist in the EN localization map', () {
+    test('all FS-001 and FS-008 keys exist in the EN localization map', () {
       final en = AppLocalizations(const Locale('en'));
       for (final key in <String>[
+        'au_dashboard_title',
+        'au_active_sessions',
+        'au_recent_history',
+        'au_capability_status',
+        'au_status_ready',
+        'au_status_disabled',
+        'au_start_listening',
+        'au_start_disclosure',
+        'au_auth_gate_title',
+        'au_auth_disclosure_title',
+        'au_auth_disclosure_body',
+        'au_auth_confirm',
+        'au_connecting',
+        'au_live_active',
+        'au_live_listening',
+        'au_session_ended',
+        'au_end_session',
+        'au_history_title',
+        'au_settings_title',
+        'au_policy_enabled',
+        'au_policy_disclosure',
+        'au_max_duration',
+        'au_wifi_only',
+        'au_spouse_consent',
+        'au_keyword_alerts',
+        'au_keywords_title',
+        'au_keywords_disclosure',
+        'au_add_keyword',
         'familyMap',
         'locationHistory',
         'geofences',

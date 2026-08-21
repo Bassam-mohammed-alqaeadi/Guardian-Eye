@@ -26,7 +26,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 31,
+        version: 32,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -120,6 +120,20 @@ class GuardianDatabase {
         'CREATE TABLE child_enforcement_states(id TEXT PRIMARY KEY, device_id TEXT NOT NULL REFERENCES devices(id), family_id TEXT NOT NULL REFERENCES families(id), state TEXT NOT NULL, outcome TEXT, reason TEXT NOT NULL, decided_at TEXT NOT NULL, applied_at TEXT, policy_version INTEGER, enqueued_for_sync INTEGER NOT NULL DEFAULT 0)');
     batch.execute(
         'CREATE INDEX idx_enforcement_states_device_time ON child_enforcement_states(device_id, decided_at DESC)');
+
+    // FS-008 — One-Way Audio tables: live monitoring sessions, history,
+    // policies, and keyword triggers.
+    batch.execute(
+        'CREATE TABLE audio_sessions(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), member_id TEXT NOT NULL, device_id TEXT NOT NULL, status TEXT NOT NULL, privacy_class TEXT NOT NULL, started_at TEXT NOT NULL, ended_at TEXT, duration_seconds INTEGER, notes TEXT, sync_state TEXT NOT NULL DEFAULT \'localOnly\')');
+    batch.execute(
+        'CREATE INDEX idx_audio_sessions_family_time ON audio_sessions(family_id, started_at DESC)');
+    batch.execute(
+        'CREATE TABLE audio_keywords(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), phrase TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL)');
+    batch.execute(
+        'CREATE INDEX idx_audio_keywords_family ON audio_keywords(family_id)');
+    batch.execute(
+        'CREATE TABLE audio_policies(family_id TEXT PRIMARY KEY REFERENCES families(id), enabled INTEGER NOT NULL DEFAULT 0, max_duration_minutes INTEGER NOT NULL DEFAULT 5, wifi_only INTEGER NOT NULL DEFAULT 1, require_spouse_consent INTEGER NOT NULL DEFAULT 0, keywords_enabled INTEGER NOT NULL DEFAULT 0)');
+
     // FS-002 — Web Filtering tables: observed block events (hits),
     // parent-managed blocked/trusted domains, per-child category rules,
     // and family web settings.
@@ -848,6 +862,20 @@ class GuardianDatabase {
         await db.execute(
             'CREATE UNIQUE INDEX IF NOT EXISTS idx_family_invitations_code ON family_invitations(code) WHERE code IS NOT NULL');
       }
+    }
+
+    // FS-008 — One-Way Audio tables (v32).
+    if (oldVersion < 32) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS audio_sessions(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), member_id TEXT NOT NULL, device_id TEXT NOT NULL, status TEXT NOT NULL, privacy_class TEXT NOT NULL, started_at TEXT NOT NULL, ended_at TEXT, duration_seconds INTEGER, notes TEXT, sync_state TEXT NOT NULL DEFAULT \'localOnly\')');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_audio_sessions_family_time ON audio_sessions(family_id, started_at DESC)');
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS audio_keywords(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), phrase TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_audio_keywords_family ON audio_keywords(family_id)');
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS audio_policies(family_id TEXT PRIMARY KEY REFERENCES families(id), enabled INTEGER NOT NULL DEFAULT 0, max_duration_minutes INTEGER NOT NULL DEFAULT 5, wifi_only INTEGER NOT NULL DEFAULT 1, require_spouse_consent INTEGER NOT NULL DEFAULT 0, keywords_enabled INTEGER NOT NULL DEFAULT 0)');
     }
   }
 }

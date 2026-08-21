@@ -77,6 +77,14 @@ enum FamilyPermission {
   // The child role is deliberately granted NOTHING here, so
   // `ctx.can(viewChat)` fail-closes children out of the chat surface.
   viewChat,
+
+  // FS-008 — One-Way Audio. Parents and co-parents may initiate live
+  // monitoring sessions; a spouse observes the history; a child sees
+  // only the disclosure that monitoring is active (honest transparency).
+  viewAudioHistory,
+  manageAudioPolicy,
+  initiateAudioMonitor,
+  viewOwnAudioDisclosure,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }

@@ -34,6 +34,7 @@ import '../screens/insights_screens.dart';
 import '../screens/couple_screens.dart';
 import '../screens/chat_screens.dart';
 import '../screens/subscription_screens.dart';
+import '../screens/audio_screens.dart';
 import '../screens/notification_open_screen.dart';
 import '../screens/startup_screens.dart';
 import '../screens/whats_new_screen.dart';
@@ -411,6 +412,50 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => BlockedPageScreen(
                 familyId: state.pathParameters['familyId']!,
                 childId: state.pathParameters['childId']!),
+          ),
+          // FS-008 One-Way Audio subsystem routes (AU-001 … AU-014).
+          GoRoute(
+            path: '/audio/:familyId',
+            name: 'audioDashboard',
+            builder: (context, state) => AudioDashboardScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/audio/:familyId/auth',
+            name: 'audioAuthGate',
+            builder: (context, state) => AudioAuthGateScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/audio/:familyId/listening/connecting',
+            name: 'audioConnecting',
+            builder: (context, state) => AudioListeningScreen(
+                familyId: state.pathParameters['familyId']!,
+                isConnecting: true),
+          ),
+          GoRoute(
+            path: '/audio/:familyId/listening/active',
+            name: 'audioActive',
+            builder: (context, state) => AudioListeningScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/audio/:familyId/history',
+            name: 'audioHistory',
+            builder: (context, state) => AudioHistoryScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/audio/:familyId/settings/policy',
+            name: 'audioSettings',
+            builder: (context, state) => AudioSettingsScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/audio/:familyId/settings/keywords',
+            name: 'audioKeywords',
+            builder: (context, state) => AudioKeywordSettingsScreen(
+                familyId: state.pathParameters['familyId']!),
           ),
           // FS-001 Location & Geofencing subsystem routes (LO-001 … LO-015).
           GoRoute(
