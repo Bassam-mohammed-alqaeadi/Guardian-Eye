@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/guardian_providers.dart';
 import '../application/notification_providers.dart';
+import '../application/startup_state_service.dart';
 import '../core/localization/app_localizations.dart';
 import '../core/theme/app_theme.dart';
 import 'router/app_router.dart';
@@ -27,10 +29,35 @@ class GuardianApp extends ConsumerStatefulWidget {
 
 class _GuardianAppState extends ConsumerState<GuardianApp> {
   StreamSubscription<bool>? _connectivitySub;
+  bool _entryShown = false;
 
   @override
   void initState() {
     super.initState();
+    // FS-016 — ST-001 first-run entry. Pushes the splash exactly once per
+    // install: on the first launch `onb_onboarding_seen` is absent, the
+    // splash is shown and marked; on subsequent launches the app goes
+    // straight to the dashboard. The read happens after the first frame so
+    // the splash never delays the first paint, and persistence failure
+    // skips the splash instead of breaking the shell.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_entryShown) return;
+      _entryShown = true;
+      // Capture the navigation context before any async gap — the async
+      // persistence reads would otherwise cross into a stale BuildContext.
+      final navigator = context;
+      try {
+        final persistence = ref.read(onboardingPersistenceProvider);
+        final seen = await persistence.read(OnboardingIdentityKeys.seen);
+        if (seen == null) {
+          await persistence.write(OnboardingIdentityKeys.seen, 'true');
+          if (navigator.mounted) navigator.push('/splash');
+        }
+      } catch (_) {
+        // Persistence failure must never break the shell: the app runs
+        // without the splash, and the role gate still guards every entry.
+      }
+    });
     // M9 Trigger A — app startup. Fire once after the first frame so sync
     // never blocks the first paint. Safe when logged out, Firebase
     // unavailable, outbox empty, or the database is not yet reachable: the

@@ -70,6 +70,19 @@ class FamilyRuntimeContext {
   /// Device runtime states for the family, keyed by device id.
   final List<ChildDeviceState> devices;
 
+  /// FS-016 — public fail-closed unverified context. Used by the role gate
+  /// when binding resolution fails so the gate never decides from a default.
+  factory FamilyRuntimeContext.unverified() => FamilyRuntimeContext(
+        familyId: '',
+        family: null,
+        actor: null,
+        isVerified: false,
+        permissionsFor: const FamilyAuthorization().permissionsFor,
+        allMembers: const [],
+        children: const [],
+        devices: const [],
+      );
+
   /// Permission check for the verified actor, or `false` when unverified.
   bool can(FamilyPermission permission) {
     final a = actor;
@@ -120,8 +133,10 @@ class FamilyContextResolver {
     }
 
     // Canonical actor resolution (fail-closed).
-    final bindingResult = await _actorBinding.resolveForFamily(normalizedFamilyId);
-    final actor = bindingResult.isVerified ? bindingResult.binding?.member : null;
+    final bindingResult =
+        await _actorBinding.resolveForFamily(normalizedFamilyId);
+    final actor =
+        bindingResult.isVerified ? bindingResult.binding?.member : null;
 
     // Canonical members (all), canonical children (role-filtered),
     // canonical device runtime states.
@@ -221,8 +236,7 @@ class DeviceContextResolver {
   }) async {
     final ChildDeviceState? state;
     try {
-      final all =
-          await _deviceRepository.statesForFamily(familyId);
+      final all = await _deviceRepository.statesForFamily(familyId);
       state = all.where((s) => s.deviceId == deviceId).firstOrNull;
     } catch (_) {
       return null;
@@ -256,9 +270,12 @@ class DeviceContextResolver {
 }
 
 /// Canonical Riverpod exposure for device context.
-final deviceRuntimeContextProvider =
-    FutureProvider.family<DeviceRuntimeContext?, ({String familyId, String deviceId})>(
-        (ref, ({String familyId, String deviceId}) scope) {
+final deviceRuntimeContextProvider = FutureProvider.family<
+    DeviceRuntimeContext?,
+    ({
+      String familyId,
+      String deviceId
+    })>((ref, ({String familyId, String deviceId}) scope) {
   final devices = ref.watch(childDeviceRepositoryProvider);
   final membership = ref.watch(familyMembershipRepositoryProvider);
   return DeviceContextResolver(

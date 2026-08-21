@@ -35,6 +35,8 @@ import '../screens/couple_screens.dart';
 import '../screens/chat_screens.dart';
 import '../screens/subscription_screens.dart';
 import '../screens/notification_open_screen.dart';
+import '../screens/startup_screens.dart';
+import '../screens/whats_new_screen.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
@@ -160,6 +162,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/firebase-session',
             name: 'firebaseSession',
             builder: (context, state) => const FirebaseSessionScreen(),
+          ),
+          // FS-016 — ST-001/ST-005 entry surfaces. First-run pushes `/splash`
+          // from the shell (once per install); the role gate is reachable
+          // again via `/role` for any actor whose membership has changed.
+          GoRoute(
+            path: '/splash',
+            name: 'startupSplash',
+            builder: (context, state) => const StartupSplashScreen(),
+          ),
+          GoRoute(
+            path: '/role',
+            name: 'roleGate',
+            builder: (context, state) => const RoleGateScreen(),
+          ),
+          GoRoute(
+            path: '/whats-new',
+            name: 'whatsNew',
+            builder: (context, state) => const WhatsNewScreen(),
+          ),
+          // FS-016 — ST-004 child landing. Wraps the child vertical in the
+          // single gated entry; the legacy `/child/:familyId/:childId`
+          // detail route stays untouched inside the shell.
+          GoRoute(
+            path: '/child/:familyId/:childId/landing',
+            name: 'childLanding',
+            builder: (context, state) => ChildLandingWrapper(
+                familyId: state.pathParameters['familyId']!,
+                childId: state.pathParameters['childId']!),
           ),
           GoRoute(
             path: '/privacy-controls',

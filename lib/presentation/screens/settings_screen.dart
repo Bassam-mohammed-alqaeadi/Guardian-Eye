@@ -141,6 +141,28 @@ class SettingsScreen extends ConsumerWidget {
             // resolved the tile is simply not shown (children cannot reach
             // it either — the chat screen enforces viewChat itself).
             const _ChatEntryTile(),
+            const SizedBox(height: 8),
+            // FS-016 — ST-005 what's-new entry. Every role can view the
+            // version stream; it carries no authorization beyond reading
+            // `app_identity` on this device.
+            Card.filled(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.push('/whats-new'),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    const Icon(Icons.auto_awesome_outlined),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: Text(l10n.t('settingsWhatsNew'),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600))),
+                    const Icon(Icons.chevron_right),
+                  ]),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -233,12 +255,8 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(title,
-          style: Theme.of(context)
-              .textTheme
-              .labelLarge
-              ?.copyWith(color: Theme.of(context)
-                  .colorScheme
-                  .onSurfaceVariant)));
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant)));
 }
 
 /// FS-010 — Chats section entry. Resolves the session family id from the
@@ -265,8 +283,9 @@ class _ChatEntryTile extends ConsumerWidget {
           child: Row(children: [
             const Icon(Icons.chat_outlined),
             const SizedBox(width: 12),
-            Expanded(child: Text(l10n.t('chatSettingsEntry'),
-                style: const TextStyle(fontWeight: FontWeight.w600))),
+            Expanded(
+                child: Text(l10n.t('chatSettingsEntry'),
+                    style: const TextStyle(fontWeight: FontWeight.w600))),
             const Icon(Icons.chevron_right),
           ]),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/guardian_providers.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/firebase_auth_context.dart';
 
 class FirebaseSessionScreen extends ConsumerStatefulWidget {
@@ -42,7 +43,8 @@ class _FirebaseSessionScreenState extends ConsumerState<FirebaseSessionScreen> {
     } on AuthUnavailableException catch (error) {
       setState(() => _error = error.reason);
     } catch (_) {
-      setState(() => _error = 'authentication_failed');
+      setState(
+          () => _error = AppLocalizations.of(context).t('firebaseAuthFailed'));
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -58,7 +60,8 @@ class _FirebaseSessionScreenState extends ConsumerState<FirebaseSessionScreen> {
     } on AuthUnavailableException catch (error) {
       setState(() => _error = error.reason);
     } catch (_) {
-      setState(() => _error = 'anonymous_authentication_failed');
+      setState(() => _error =
+          AppLocalizations.of(context).t('firebaseAnonymousAuthFailed'));
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -66,27 +69,27 @@ class _FirebaseSessionScreenState extends ConsumerState<FirebaseSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final session = ref.watch(firebaseAuthSessionProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('حساب Firebase')),
+      appBar: AppBar(title: Text(l10n.t('firebaseAccountTitle'))),
       body: SafeArea(
         child: session.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const _SessionMessage(
-              title: 'تعذر قراءة حالة المصادقة',
-              body: 'حاول مرة أخرى بعد التحقق من إعداد Firebase.'),
-          data: (value) => _body(value),
+          error: (_, __) => _SessionMessage(
+              title: l10n.t('firebaseAuthReadErrorTitle'),
+              body: l10n.t('firebaseAuthReadErrorBody')),
+          data: (value) => _body(l10n, value),
         ),
       ),
     );
   }
 
-  Widget _body(AuthSession session) {
+  Widget _body(AppLocalizations l10n, AuthSession session) {
     if (session.status == AuthSessionStatus.unconfigured) {
-      return const _SessionMessage(
-          title: 'Firebase غير مهيأ',
-          body:
-              'يبقى التطبيق محليًا دون اتصال. لا يمكن تسجيل الدخول أو مزامنة أي بيانات حتى يضيف مالك المشروع إعداد Firebase المعتمد.');
+      return _SessionMessage(
+          title: l10n.t('firebaseUnconfiguredTitle'),
+          body: l10n.t('firebaseUnconfiguredBody'));
     }
     if (session.isAuthenticated) {
       final isAnonymous = session.identity!.isAnonymous;
@@ -95,19 +98,21 @@ class _FirebaseSessionScreenState extends ConsumerState<FirebaseSessionScreen> {
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Icon(
-              isAnonymous
-                  ? Icons.person_outline
-                  : Icons.verified_user_outlined,
+              isAnonymous ? Icons.person_outline : Icons.verified_user_outlined,
               size: 48),
           const SizedBox(height: 16),
-          Text(isAnonymous ? 'جلسة مؤقتة' : 'تمت المصادقة',
+          Text(
+              isAnonymous
+                  ? l10n.t('firebaseAnonymousSession')
+                  : l10n.t('firebaseAuthenticated'),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
               isAnonymous
-                  ? 'هذه الجلسة المجهولة لا تمنح دور والد أو صلاحيات عائلية تلقائيًا.'
-                  : (session.identity!.email ?? 'حساب بلا بريد'),
+                  ? l10n.t('firebaseAnonymousNote')
+                  : (session.identity!.email ??
+                      l10n.t('firebaseNoEmailAccount')),
               textAlign: TextAlign.center),
           const Spacer(),
           FilledButton.tonalIcon(
@@ -124,7 +129,7 @@ class _FirebaseSessionScreenState extends ConsumerState<FirebaseSessionScreen> {
                       }
                     },
               icon: const Icon(Icons.logout),
-              label: const Text('تسجيل الخروج')),
+              label: Text(l10n.t('firebaseSignOut'))),
           if (_error != null) _ErrorText(value: _error!),
         ]),
       );
@@ -132,42 +137,46 @@ class _FirebaseSessionScreenState extends ConsumerState<FirebaseSessionScreen> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text(_createAccount ? 'إنشاء حساب' : 'تسجيل الدخول',
+        Text(l10n.t('firebaseSignInOrCreate'),
             style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
-        const Text('يُستخدم هذا التدفق فقط مع Firebase الذي يملكه المشروع.'),
+        Text(l10n.t('firebaseProjectNote')),
         const SizedBox(height: 24),
         OutlinedButton.icon(
             onPressed: _working ? null : _signInAnonymously,
             icon: const Icon(Icons.person_outline),
-            label: const Text('المتابعة بجلسة مؤقتة')),
+            label: Text(l10n.t('firebaseContinueAnonymous'))),
         const SizedBox(height: 8),
-        const Text(
-            'الجلسة المؤقتة لا تمثل حساب والد ولا تمنح عضوية أو صلاحيات عائلية.'),
+        Text(l10n.t('firebaseAnonymousNote')),
         const SizedBox(height: 24),
         TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
-            decoration: const InputDecoration(labelText: 'البريد الإلكتروني')),
+            decoration:
+                InputDecoration(labelText: l10n.t('firebaseEmailLabel'))),
         const SizedBox(height: 12),
         TextField(
             controller: _password,
             obscureText: true,
             autofillHints: const [AutofillHints.password],
-            decoration: const InputDecoration(labelText: 'كلمة المرور')),
+            decoration:
+                InputDecoration(labelText: l10n.t('firebasePasswordLabel'))),
         const SizedBox(height: 20),
         FilledButton(
             onPressed: _working ? null : _submit,
             child: Text(_working
-                ? 'جارٍ التحقق…'
-                : (_createAccount ? 'إنشاء الحساب' : 'تسجيل الدخول'))),
+                ? l10n.t('firebaseVerifying')
+                : (_createAccount
+                    ? l10n.t('firebaseCreateAccountSubmit')
+                    : l10n.t('firebaseSignInSubmit')))),
         TextButton(
             onPressed: _working
                 ? null
                 : () => setState(() => _createAccount = !_createAccount),
-            child:
-                Text(_createAccount ? 'لدي حساب بالفعل' : 'إنشاء حساب جديد')),
+            child: Text(_createAccount
+                ? l10n.t('firebaseHaveAccount')
+                : l10n.t('firebaseNewAccount'))),
         if (_error != null) _ErrorText(value: _error!),
       ],
     );
