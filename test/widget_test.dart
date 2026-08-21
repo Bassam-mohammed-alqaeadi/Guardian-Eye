@@ -22,7 +22,13 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Guardian Eye Pro'), findsOneWidget);
-    expect(find.text('إنشاء عائلة'), findsOneWidget);
+    // FS-014: Dashboard now renders FamilySetupEntryScreen when family is null.
+    // We look for the main prompt "ابدأ بإعداد عائلتك. لا تُنشأ أي بيانات تجريبية." (noFamily l10n key).
+    expect(find.text('ابدأ بإعداد عائلتك. لا تُنشأ أي بيانات تجريبية.'),
+        findsOneWidget);
+    // And the two path cards.
+    expect(find.text('إنشاء عائلة جديدة'), findsOneWidget);
+    expect(find.text('الانضمام إلى عائلة موجودة'), findsOneWidget);
   });
   testWidgets(
       'Firebase account entry states that sync is unavailable when unconfigured',

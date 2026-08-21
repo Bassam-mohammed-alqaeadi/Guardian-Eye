@@ -26,22 +26,51 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             _SectionHeader(title: l10n.t('accountSession')),
             Card.filled(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => context.push('/firebase-session'),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(children: [
-                    const Icon(Icons.account_circle_outlined),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(l10n.t('notSignedIn'),
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+              child: Column(
+                children: [
+                  InkWell(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16)),
+                    onTap: () => context.push('/firebase-session'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(children: [
+                        const Icon(Icons.account_circle_outlined),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(l10n.t('notSignedIn'),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                        Icon(Icons.chevron_right,
+                            semanticLabel: l10n.t('settings')),
+                      ]),
                     ),
-                    Icon(Icons.chevron_right,
-                        semanticLabel: l10n.t('settings')),
-                  ]),
-                ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Consumer(builder: (context, ref, _) {
+                    final dashboard = ref.watch(dashboardProvider).valueOrNull;
+                    if (dashboard?.family == null)
+                      return const SizedBox.shrink();
+                    return InkWell(
+                      borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(16)),
+                      onTap: () => context.push('/family/profile',
+                          extra: dashboard!.family),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(children: [
+                          const Icon(Icons.family_restroom_rounded),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(l10n.t('familyProfileTitle')),
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ]),
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
             const SizedBox(height: 20),

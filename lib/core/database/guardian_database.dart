@@ -26,7 +26,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 30,
+        version: 31,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -53,7 +53,7 @@ class GuardianDatabase {
     batch.execute(
         "CREATE TABLE family_members(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), display_name TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', account_uid TEXT, invitation_id TEXT, invited_at TEXT, joined_at TEXT, revoked_at TEXT, updated_at TEXT, created_at TEXT NOT NULL)");
     batch.execute(
-        'CREATE TABLE family_invitations(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), inviter_member_id TEXT NOT NULL REFERENCES family_members(id), target_email TEXT NOT NULL, proposed_role TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, accepted_at TEXT, accepted_account_uid TEXT, accepted_member_id TEXT REFERENCES family_members(id), cancelled_at TEXT)');
+        'CREATE TABLE family_invitations(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), inviter_member_id TEXT NOT NULL REFERENCES family_members(id), target_email TEXT NOT NULL, proposed_role TEXT NOT NULL, status TEXT NOT NULL, code TEXT UNIQUE, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, accepted_at TEXT, accepted_account_uid TEXT, accepted_member_id TEXT REFERENCES family_members(id), cancelled_at TEXT)');
     batch.execute(
         'CREATE TABLE devices(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), member_id TEXT NOT NULL, owner_member_id TEXT, role TEXT NOT NULL, sync_state TEXT NOT NULL, last_synced_at TEXT, revoked_at TEXT, created_at TEXT NOT NULL)');
     batch.execute(
@@ -828,6 +828,26 @@ class GuardianDatabase {
           'CREATE INDEX IF NOT EXISTS idx_chat_messages_thread_time ON chat_messages(thread_id, created_at DESC)');
       await db.execute(
           'CREATE INDEX IF NOT EXISTS idx_chat_messages_expiry ON chat_messages(thread_id, expires_at)');
+    }
+
+    // FS-014 — PD-003 Join Existing Family. Adds a human-readable invitation
+    // code (e.g. 6-digit) to support joining without an email deep link.
+    // Existing invitations get a null code; new invitations will generate
+    // one during creation.
+    if (oldVersion < 31) {
+      // FS-014 PD-003 Join Existing Family. Column presence is checked
+      // explicitly because legacy databases that passed through the foundational
+      // schema guard (v29) might not carry family_invitations yet if they
+      // never crossed the v12 threshold.
+      final tables = await db.query('sqlite_master',
+          columns: ['name'],
+          where: "type = 'table' AND name = ?",
+          whereArgs: ['family_invitations']);
+      if (tables.isNotEmpty) {
+        await _addColumnIfMissing(db, 'family_invitations', 'code', 'TEXT');
+        await db.execute(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_family_invitations_code ON family_invitations(code) WHERE code IS NOT NULL');
+      }
     }
   }
 }

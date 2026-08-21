@@ -168,7 +168,8 @@ class FamilyMembershipRepository {
           'Only parent or coParent may be invited in Phase 17.');
     }
     if (validity <= Duration.zero) {
-      throw ArgumentError.value(validity, 'validity', 'Invitation must expire later.');
+      throw ArgumentError.value(
+          validity, 'validity', 'Invitation must expire later.');
     }
     final now = _now();
     final invitation = FamilyInvitation(
@@ -178,12 +179,13 @@ class FamilyMembershipRepository {
         targetEmail: email,
         proposedRole: proposedRole,
         status: FamilyInvitationStatus.pending,
+        code: _generateInvitationCode(),
         createdAt: now,
         expiresAt: now.add(validity));
     final db = await _database.database;
     return db.transaction((tx) async {
-      await _requireOwner(tx, familyId, actorMemberId,
-          FamilyPermission.inviteMembers);
+      await _requireOwner(
+          tx, familyId, actorMemberId, FamilyPermission.inviteMembers);
       await tx.insert('family_invitations', _invitationMap(invitation));
       await _enqueue(tx,
           aggregateId: invitation.id,
@@ -194,11 +196,26 @@ class FamilyMembershipRepository {
             'inviterMemberId': invitation.inviterMemberId,
             'targetEmail': invitation.targetEmail,
             'proposedRole': invitation.proposedRole.name,
+            'code': invitation.code,
             'createdAt': invitation.createdAt.toIso8601String(),
             'expiresAt': invitation.expiresAt.toIso8601String(),
           });
       return invitation;
     });
+  }
+
+  Future<FamilyInvitation?> lookupInvitationByCode(String code) async {
+    final value = code.trim().toUpperCase();
+    if (value.isEmpty) return null;
+    final db = await _database.database;
+    final rows = await db.query('family_invitations',
+        where: 'code = ? AND status = ?',
+        whereArgs: [value, FamilyInvitationStatus.pending.name],
+        limit: 1);
+    if (rows.isEmpty) return null;
+    final invitation = FamilyInvitation.fromMap(rows.single);
+    if (invitation.isExpiredAt(_now())) return null;
+    return invitation;
   }
 
   Future<FamilyMember> acceptInvitation(
@@ -210,7 +227,8 @@ class FamilyMembershipRepository {
     final email = _canonicalEmail(accountEmail);
     final name = displayName.trim();
     if (uid.isEmpty || name.isEmpty) {
-      throw ArgumentError('An authenticated account UID and display name are required.');
+      throw ArgumentError(
+          'An authenticated account UID and display name are required.');
     }
     final db = await _database.database;
     return db.transaction((tx) async {
@@ -221,7 +239,8 @@ class FamilyMembershipRepository {
             invitation.acceptedMemberId == null) {
           throw StateError('family_invitation_already_accepted');
         }
-        return _requiredMember(tx, invitation.familyId, invitation.acceptedMemberId!);
+        return _requiredMember(
+            tx, invitation.familyId, invitation.acceptedMemberId!);
       }
       await _expireIfDue(tx, invitation, now);
       if (invitation.isExpiredAt(now) ||
@@ -240,10 +259,15 @@ class FamilyMembershipRepository {
       final childIdentity = await tx.query('family_members',
           columns: const ['id'],
           where: 'account_uid = ? AND role = ? AND status = ?',
-          whereArgs: [uid, FamilyRole.child.name, FamilyMemberStatus.active.name],
+          whereArgs: [
+            uid,
+            FamilyRole.child.name,
+            FamilyMemberStatus.active.name
+          ],
           limit: 1);
       if (childIdentity.isNotEmpty) {
-        throw StateError('family_child_identity_cannot_accept_adult_invitation');
+        throw StateError(
+            'family_child_identity_cannot_accept_adult_invitation');
       }
       final existing = await tx.query('family_members',
           columns: const ['id'],
@@ -303,8 +327,8 @@ class FamilyMembershipRepository {
       if (invitation.familyId != familyId) {
         throw StateError('family_invitation_family_mismatch');
       }
-      await _requireOwner(tx, familyId, actorMemberId,
-          FamilyPermission.inviteMembers);
+      await _requireOwner(
+          tx, familyId, actorMemberId, FamilyPermission.inviteMembers);
       await _expireIfDue(tx, invitation, now);
       if (invitation.status != FamilyInvitationStatus.pending ||
           invitation.isExpiredAt(now)) {
@@ -336,8 +360,8 @@ class FamilyMembershipRepository {
     final db = await _database.database;
     await db.transaction((tx) async {
       final now = _now();
-      await _requireOwner(tx, familyId, actorMemberId,
-          FamilyPermission.revokeMembers);
+      await _requireOwner(
+          tx, familyId, actorMemberId, FamilyPermission.revokeMembers);
       final target = await _requiredMember(tx, familyId, targetMemberId);
       _requireRevocableAdult(target);
       await tx.update(
@@ -384,8 +408,8 @@ class FamilyMembershipRepository {
     final db = await _database.database;
     await db.transaction((tx) async {
       final now = _now();
-      await _requireOwner(tx, familyId, actorMemberId,
-          FamilyPermission.manageRoles);
+      await _requireOwner(
+          tx, familyId, actorMemberId, FamilyPermission.manageRoles);
       final target = await _requiredMember(tx, familyId, targetMemberId);
       _requireRevocableAdult(target);
       if (target.status != FamilyMemberStatus.active) {
@@ -460,8 +484,8 @@ class FamilyMembershipRepository {
   Future<void> _expireIfDue(
       Transaction tx, FamilyInvitation invitation, DateTime now) async {
     if (!invitation.isExpiredAt(now)) return;
-    await tx.update('family_invitations',
-        {'status': FamilyInvitationStatus.expired.name},
+    await tx.update(
+        'family_invitations', {'status': FamilyInvitationStatus.expired.name},
         where: 'id = ? AND status = ?',
         whereArgs: [invitation.id, FamilyInvitationStatus.pending.name]);
   }
@@ -484,7 +508,8 @@ class FamilyMembershipRepository {
   String _canonicalEmail(String rawEmail) {
     final value = rawEmail.trim().toLowerCase();
     if (value.isEmpty || !value.contains('@')) {
-      throw ArgumentError.value(rawEmail, 'email', 'A valid target email is required.');
+      throw ArgumentError.value(
+          rawEmail, 'email', 'A valid target email is required.');
     }
     return value;
   }
@@ -513,6 +538,7 @@ class FamilyMembershipRepository {
         'target_email': invitation.targetEmail,
         'proposed_role': invitation.proposedRole.name,
         'status': invitation.status.name,
+        'code': invitation.code,
         'created_at': invitation.createdAt.toIso8601String(),
         'expires_at': invitation.expiresAt.toIso8601String(),
         'accepted_at': invitation.acceptedAt?.toIso8601String(),
@@ -520,6 +546,11 @@ class FamilyMembershipRepository {
         'accepted_member_id': invitation.acceptedMemberId,
         'cancelled_at': invitation.cancelledAt?.toIso8601String(),
       };
+
+  String _generateInvitationCode() {
+    final random = _uuid.v4().replaceAll('-', '').substring(0, 6).toUpperCase();
+    return random;
+  }
 
   Future<void> _enqueue(Transaction tx,
       {required String aggregateId,

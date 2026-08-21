@@ -37,7 +37,10 @@ import '../screens/subscription_screens.dart';
 import '../screens/notification_open_screen.dart';
 import '../screens/startup_screens.dart';
 import '../screens/whats_new_screen.dart';
+import '../screens/family_setup_screens.dart';
+import '../screens/family_dashboard_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
+import '../../domain/guardian_models.dart';
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
 
@@ -200,6 +203,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/export-controls',
             name: 'exportControls',
             builder: (context, state) => const ExportControlsScreen(),
+          ),
+          GoRoute(
+            path: '/family/profile',
+            name: 'familyProfile',
+            builder: (context, state) => FamilyProfileScreen(
+              family: state.extra as GuardianFamily,
+            ),
+          ),
+          GoRoute(
+            path: '/family/setup',
+            name: 'familySetup',
+            builder: (context, state) => const FamilySetupEntryScreen(),
+          ),
+          GoRoute(
+            path: '/family/create',
+            name: 'familyCreate',
+            builder: (context, state) => const FamilyCreateScreen(),
+          ),
+          GoRoute(
+            path: '/family/join',
+            name: 'familyJoin',
+            builder: (context, state) => const FamilyJoinScreen(),
           ),
           GoRoute(
             path: '/safety/pairing/:familyId',

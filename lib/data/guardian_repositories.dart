@@ -99,11 +99,34 @@ class FamilyRepository {
     final queued = Sqflite.firstIntValue(await db.rawQuery(
             "SELECT COUNT(*) FROM outbox WHERE state IN ('queued','failed','blocked')")) ??
         0;
+
+    // FS-014 — PD-005 Aggregation. Derived from local subsystem tables.
+    final sos = Sqflite.firstIntValue(await db.rawQuery(
+            "SELECT COUNT(*) FROM sos_events WHERE family_id = ? AND status = 'active'",
+            [family.id])) ??
+        0;
+    final geofences = Sqflite.firstIntValue(await db.rawQuery(
+            "SELECT COUNT(*) FROM geofences WHERE family_id = ? AND status = 'active'",
+            [family.id])) ??
+        0;
+    final chat = Sqflite.firstIntValue(await db.rawQuery(
+            "SELECT COUNT(*) FROM chat_messages WHERE family_id = ? AND state = 'queued'",
+            [family.id])) ??
+        0;
+    final locations = Sqflite.firstIntValue(await db.rawQuery(
+            "SELECT COUNT(*) FROM location_points WHERE family_id = ?",
+            [family.id])) ??
+        0;
+
     return GuardianDashboard(
         family: family,
         children: children.map(FamilyMember.fromMap).toList(),
         incidentsToday: incidents,
-        queuedOperations: queued);
+        queuedOperations: queued,
+        activeSosCount: sos,
+        geofenceCount: geofences,
+        unreadChatCount: chat,
+        locationCount: locations);
   }
 
   Future<void> _enqueue(Transaction tx,
@@ -362,15 +385,17 @@ class PairingRepository {
     final db = await _database.database;
     return db.query('pairing_sessions',
         where: 'family_id = ? AND status IN (?, ?)',
-        whereArgs: [familyId, PairingState.pending.storageKey,
-            PairingState.verified.storageKey],
+        whereArgs: [
+          familyId,
+          PairingState.pending.storageKey,
+          PairingState.verified.storageKey
+        ],
         orderBy: 'created_at DESC');
   }
 
   /// The most recent pairing session for a family, or null — used by the
   /// DL-002 lockout view.
-  Future<Map<String, Object?>?> latestSessionForFamily(
-      String familyId) async {
+  Future<Map<String, Object?>?> latestSessionForFamily(String familyId) async {
     final db = await _database.database;
     final rows = await db.query('pairing_sessions',
         where: 'family_id = ?',
@@ -412,7 +437,8 @@ class PairingRepository {
   Future<List<Map<String, Object?>>> devicesForFamily(String familyId) async {
     final db = await _database.database;
     return db.query('devices',
-        where: 'family_id = ?', whereArgs: [familyId],
+        where: 'family_id = ?',
+        whereArgs: [familyId],
         orderBy: 'created_at ASC');
   }
 
@@ -426,8 +452,7 @@ class PairingRepository {
 
   /// The child-device lifecycle row for a device, or null (adult devices
   /// have none).
-  Future<Map<String, Object?>?> lifecycleForDevice(
-      String deviceId) async {
+  Future<Map<String, Object?>?> lifecycleForDevice(String deviceId) async {
     final db = await _database.database;
     final rows = await db.query('child_device_states',
         where: 'device_id = ?', whereArgs: [deviceId], limit: 1);
@@ -465,33 +490,41 @@ class PairingRepository {
     return db.transaction((tx) async {
       final old = await tx.query('devices',
           where: 'id = ? AND family_id = ?',
-          whereArgs: [oldDeviceId, familyId], limit: 1);
+          whereArgs: [oldDeviceId, familyId],
+          limit: 1);
       if (old.isEmpty) {
         return (succeeded: false, newDeviceId: null, failure: 'device_missing');
       }
       final oldRow = old.single;
       if (oldRow['revoked_at'] != null) {
-        return (succeeded: false, newDeviceId: null,
-            failure: 'device_already_revoked');
+        return (
+          succeeded: false,
+          newDeviceId: null,
+          failure: 'device_already_revoked'
+        );
       }
       final now = DateTime.now().toUtc();
-      await tx.update('devices',
+      await tx.update(
+          'devices',
           {
             'revoked_at': now.toIso8601String(),
             'sync_state': SyncState.queued.storageKey
           },
-          where: 'id = ?', whereArgs: [oldDeviceId]);
+          where: 'id = ?',
+          whereArgs: [oldDeviceId]);
       final lifecycle = await tx.query('child_device_states',
           where: 'device_id = ?', whereArgs: [oldDeviceId], limit: 1);
       final wasChild = lifecycle.isNotEmpty;
       if (wasChild) {
-        await tx.update('child_device_states',
+        await tx.update(
+            'child_device_states',
             {
               'lifecycle': 'transferred',
               'failure_code': 'device_transferred',
               'updated_at': now.toIso8601String()
             },
-            where: 'device_id = ?', whereArgs: [oldDeviceId]);
+            where: 'device_id = ?',
+            whereArgs: [oldDeviceId]);
       }
       final newDeviceId = _uuid.v4();
       await tx.insert('devices', {

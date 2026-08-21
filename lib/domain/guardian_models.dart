@@ -180,6 +180,7 @@ class FamilyInvitation {
       required this.targetEmail,
       required this.proposedRole,
       required this.status,
+      this.code,
       required this.createdAt,
       required this.expiresAt,
       this.acceptedAt,
@@ -192,6 +193,7 @@ class FamilyInvitation {
   final String targetEmail;
   final FamilyRole proposedRole;
   final FamilyInvitationStatus status;
+  final String? code;
   final DateTime createdAt;
   final DateTime expiresAt;
   final DateTime? acceptedAt;
@@ -211,6 +213,7 @@ class FamilyInvitation {
               FamilyRole.values.byName(map['proposed_role']! as String),
           status:
               FamilyInvitationStatus.values.byName(map['status']! as String),
+          code: map['code'] as String?,
           createdAt: DateTime.parse(map['created_at']! as String),
           expiresAt: DateTime.parse(map['expires_at']! as String),
           acceptedAt: map['accepted_at'] == null
@@ -329,11 +332,19 @@ class GuardianDashboard {
       {required this.family,
       required this.children,
       required this.incidentsToday,
-      required this.queuedOperations});
+      required this.queuedOperations,
+      this.activeSosCount = 0,
+      this.geofenceCount = 0,
+      this.unreadChatCount = 0,
+      this.locationCount = 0});
   final GuardianFamily? family;
   final List<FamilyMember> children;
   final int incidentsToday;
   final int queuedOperations;
+  final int activeSosCount;
+  final int geofenceCount;
+  final int unreadChatCount;
+  final int locationCount;
 }
 
 class SafetyObservation {

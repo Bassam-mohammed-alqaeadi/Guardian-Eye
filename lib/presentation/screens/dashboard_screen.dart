@@ -8,6 +8,8 @@ import '../../domain/guardian_models.dart';
 import '../../domain/child_device_enforcement.dart';
 import '../../application/family_context_provider.dart';
 import '../widgets/guardian_primitives.dart';
+import 'family_setup_screens.dart';
+import 'family_dashboard_screens.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -33,7 +35,7 @@ class DashboardScreen extends ConsumerWidget {
           error: (_, __) =>
               _Failure(onRetry: () => ref.invalidate(dashboardProvider)),
           data: (data) => data.family == null
-              ? _FamilySetup(onCreated: () => ref.invalidate(dashboardProvider))
+              ? const FamilySetupEntryScreen()
               : _Dashboard(data: data),
         ),
       ),
@@ -151,6 +153,12 @@ class _Dashboard extends ConsumerWidget {
     final verifiedActor = runtime.valueOrNull?.isVerified ?? false;
     final deviceStates = ref.watch(childDeviceStatesProvider(familyId));
     final recentIncidents = ref.watch(recentIncidentsProvider(familyId));
+
+    // PD-005: Primary parent sees the aggregated dashboard.
+    if (actor?.role == FamilyRole.primaryParent) {
+      return PrimaryParentDashboard(data: data);
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(dashboardProvider);
