@@ -62,7 +62,27 @@ class NotificationTransportException implements Exception {
 ///   membership itself.
 /// - The backend is the only entity that can read FCM tokens and send
 ///   through the Admin SDK.
-class RenderNotificationGateway {
+abstract class NotificationGateway {
+  Future<NotificationDispatchResult> dispatch({
+    required String familyId,
+    required String kind,
+    String? incidentId,
+    String? sosId,
+  });
+}
+
+/// Asks the trusted Render backend (`POST /api/notify`) to push a safety
+/// event to the family's active parent devices.
+///
+/// Security contract (architecture report Phase B, kept for reference):
+/// - The caller never supplies recipient identities; only `familyId`, `kind`
+///   and optional event references travel.
+/// - The request is authenticated with the current user's Firebase ID token
+///   (Bearer) — the backend re-derives the caller's UID and verifies family
+///   membership itself.
+/// - The backend is the only entity that can read FCM tokens and send
+///   through the Admin SDK.
+class RenderNotificationGateway implements NotificationGateway {
   const RenderNotificationGateway({
     Dio? client,
     Future<String> Function()? idToken,
@@ -114,14 +134,10 @@ class RenderNotificationGateway {
     return token;
   }
 
-  /// Requests dispatch for a safety event the device has just created or
-  /// observed locally. `kind` is strictly validated before anything leaves
-  /// the device. The backend is the event's only legitimate producer: it
-  /// verifies the event exists, derives the family, selects tokens, sends a
-  /// data-only message, and records delivery evidence.
-  Future<NotificationDispatchResult> requestServerDispatch({
+  @override
+  Future<NotificationDispatchResult> dispatch({
     required String familyId,
-    required NotificationKind kind,
+    required String kind,
     String? incidentId,
     String? sosId,
   }) async {
@@ -139,7 +155,7 @@ class RenderNotificationGateway {
             accepted: false, reason: 'not_authenticated');
       }
     }
-    if (!_allowedKinds.contains(kind.name)) {
+    if (!_allowedKinds.contains(kind)) {
       return const NotificationDispatchResult(
           accepted: false, reason: 'invalid_kind');
     }
@@ -153,7 +169,7 @@ class RenderNotificationGateway {
         '$_url/api/notify',
         data: {
           'familyId': familyId,
-          'kind': kind.name,
+          'kind': kind,
           if (incidentId != null && incidentId.isNotEmpty)
             'incidentId': incidentId,
           if (sosId != null && sosId.isNotEmpty) 'sosId': sosId,

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/database/guardian_database.dart';
 import 'firebase_auth_context.dart';
 import 'firestore_contracts.dart';
+import 'notification_contract.dart' hide AuthenticatedIdentity;
 import 'sync_services.dart';
 
 enum SyncFailureKind { retryable, permanent, malformed }
@@ -53,11 +54,15 @@ class UnconfiguredOutboxRemoteWriter implements OutboxRemoteWriter {
 }
 
 class FirestoreOutboxRemoteWriter implements OutboxRemoteWriter {
-  FirestoreOutboxRemoteWriter(this._firestore,
+  FirestoreOutboxRemoteWriter(this._firestoreOverride,
       {FirestoreEventContract? contract})
       : _contract = contract ?? const FirestoreEventContract();
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestoreOverride;
   final FirestoreEventContract _contract;
+
+  FirebaseFirestore get _firestore =>
+      _firestoreOverride ?? FirebaseFirestore.instance;
+
   @override
   Future<void> write(
       {required OutboxEvent event,
@@ -146,14 +151,18 @@ class OutboxSyncReport {
 
 class OutboxSyncExecutor {
   OutboxSyncExecutor(this._database, this._auth, this._writer,
-      {OutboxRetryPolicy? retryPolicy, DateTime Function()? clock})
+      {OutboxRetryPolicy? retryPolicy,
+      DateTime Function()? clock,
+      NotificationGateway? notificationGateway})
       : _retry = retryPolicy ?? const OutboxRetryPolicy(),
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? DateTime.now,
+        _notificationGateway = notificationGateway;
   final GuardianDatabase _database;
   final AuthContext _auth;
   final OutboxRemoteWriter _writer;
   final OutboxRetryPolicy _retry;
   final DateTime Function() _clock;
+  final NotificationGateway? _notificationGateway;
 
   Future<OutboxSyncReport> executeDue({int limit = 25}) async {
     final session = _auth.currentSession;
@@ -194,6 +203,28 @@ class OutboxSyncExecutor {
       final event = OutboxEvent.fromRow(row);
       try {
         await _writer.write(event: event, identity: session.identity!);
+
+        // FS-006 / FS-001 — Notification Dispatch. When an incident, SOS, or
+        // alert is synced to Firestore, we immediately attempt to trigger the
+        // remote notification dispatch through the Render backend. This ensures
+        // that safety events aren't just recorded, but actively announced.
+        if (event.operation == 'notification.requested' &&
+            _notificationGateway != null) {
+          final kind = event.payload['kind'] as String?;
+          final familyId = event.payload['familyId'] as String?;
+          final incidentId = event.payload['incidentId'] as String?;
+          final sosId = event.payload['sosId'] as String?;
+
+          if (kind != null && familyId != null) {
+            await _notificationGateway!.dispatch(
+              familyId: familyId,
+              kind: kind,
+              incidentId: incidentId,
+              sosId: sosId,
+            );
+          }
+        }
+
         await db.update('outbox', {'state': 'synced', 'last_error': null},
             where: 'id = ?', whereArgs: [event.id]);
         synced++;

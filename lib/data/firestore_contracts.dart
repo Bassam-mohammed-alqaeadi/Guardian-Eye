@@ -305,6 +305,25 @@ class FirestoreEventContract {
               'accuracyMeters': payload['accuracyMeters'],
               'createdAtClient': payload['createdAt']
             });
+      case 'notification.requested':
+        final notificationId = payload['notificationId'] as String?;
+        if (notificationId == null) {
+          throw const FormatException('notification.requested payload incomplete.');
+        }
+        return FirestoreMutation(
+            path: FirestorePaths.notification(familyId, notificationId),
+            idempotencyKey: idempotencyKey,
+            data: {
+              ...common,
+              'notificationId': notificationId,
+              'kind': payload['kind'],
+              'sosId': payload['sosId'],
+              'incidentId': payload['incidentId'],
+              'recipientId': payload['recipientId'],
+              'requestedAtClient':
+                  payload['requestedAt'] ?? DateTime.now().toUtc().toIso8601String(),
+              'status': 'pending',
+            });
       case 'notification.token.registered':
         final deviceId = payload['deviceId'] as String?;
         final token = payload['token'] as String?;

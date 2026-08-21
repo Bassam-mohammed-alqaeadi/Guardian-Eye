@@ -119,9 +119,9 @@ void main() {
         idToken: () async => 'id-token',
         baseUrl: 'https://stub.test',
       );
-      final result = await gateway.requestServerDispatch(
+      final result = await gateway.dispatch(
           familyId: 'family-a',
-          kind: contract.NotificationKind.sos,
+          kind: 'sos',
           incidentId: 'incident-1',
           sosId: 'sos-1');
       expect(result.accepted, isTrue);
@@ -136,8 +136,8 @@ void main() {
         () async {
       final gateway = contract.RenderNotificationGateway(
           idToken: () async => 'x', baseUrl: 'https://stub.test');
-      final result = await gateway.requestServerDispatch(
-          familyId: 'family-a', kind: contract.NotificationKind.incident);
+      final result = await gateway.dispatch(
+          familyId: 'family-a', kind: 'incident');
       expect(result.accepted, isFalse);
       expect(result.reason, 'backend_unavailable');
     });
@@ -158,8 +158,8 @@ void main() {
           client: dio,
           idToken: () async => 'id-token',
           baseUrl: 'https://stub.test');
-      final result = await gateway.requestServerDispatch(
-          familyId: '', kind: contract.NotificationKind.incident);
+      final result = await gateway.dispatch(
+          familyId: '', kind: 'incident');
       expect(result.accepted, isFalse);
       expect(result.reason, 'invalid_family');
     });
@@ -173,8 +173,8 @@ void main() {
           client: dio,
           idToken: () async => 'id-token',
           baseUrl: 'https://stub.test');
-      final result = await gateway.requestServerDispatch(
-          familyId: 'family-x', kind: contract.NotificationKind.sos);
+      final result = await gateway.dispatch(
+          familyId: 'family-x', kind: 'sos');
       expect(result.accepted, isFalse);
       expect(result.reason, 'not_a_member');
     });
@@ -187,8 +187,8 @@ void main() {
           client: dio,
           idToken: () async => 'id-token',
           baseUrl: 'https://stub.test');
-      final result = await gateway.requestServerDispatch(
-          familyId: 'family-a', kind: contract.NotificationKind.incident);
+      final result = await gateway.dispatch(
+          familyId: 'family-a', kind: 'incident');
       expect(result.reason, 'not_authenticated');
     });
 
@@ -200,8 +200,8 @@ void main() {
           client: dio,
           idToken: () async => 'id-token',
           baseUrl: 'https://stub.test');
-      final result = await gateway.requestServerDispatch(
-          familyId: 'family-a', kind: contract.NotificationKind.incident);
+      final result = await gateway.dispatch(
+          familyId: 'family-a', kind: 'incident');
       expect(result.reason, 'server_unreachable');
       expect(result.accepted, isFalse);
     });
@@ -219,8 +219,8 @@ void main() {
           client: dio,
           idToken: () async => 'id-token',
           baseUrl: 'https://stub.test');
-      final result = await gateway.requestServerDispatch(
-          familyId: 'family-a', kind: contract.NotificationKind.incident);
+      final result = await gateway.dispatch(
+          familyId: 'family-a', kind: 'incident');
       expect(result.accepted, isTrue);
       expect(result.noTokens, isTrue);
       expect(result.reason, 'no_tokens');

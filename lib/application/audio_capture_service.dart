@@ -26,9 +26,9 @@ class AudioCaptureService {
   
   Future<void> initialize() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings();
+    const darwin = DarwinInitializationSettings();
     await _notifications.initialize(
-      const InitializationSettings(android: android, ios: ios),
+      settings: InitializationSettings(android: android, iOS: darwin),
     );
   }
 
@@ -97,10 +97,10 @@ class AudioCaptureService {
   /// Called when a 'stop_audio' command is received via FCM or local timeout.
   Future<void> onStopCommandReceived() async {
     if (!_isMonitoring) return;
-    
+
     _isMonitoring = false;
     await _recorder.stop();
-    await _notifications.cancel(808); // AU-008 notification ID
+    await _notifications.cancel(id: 808); // AU-008 notification ID
   }
 
   Future<void> _showActiveNotification() async {
@@ -117,10 +117,10 @@ class AudioCaptureService {
     );
     
     await _notifications.show(
-      808,
-      'Audio Monitoring Active',
-      'The device surroundings are being monitored by parents.',
-      const NotificationDetails(android: android),
+      id: 808,
+      title: 'Audio Monitoring Active',
+      body: 'The device surroundings are being monitored by parents.',
+      notificationDetails: NotificationDetails(android: android),
     );
   }
 }

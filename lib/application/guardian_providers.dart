@@ -55,6 +55,7 @@ import '../domain/sos_config.dart';
 import '../domain/device_linking.dart';
 import '../domain/screen_time.dart';
 import 'sync_coordinator.dart';
+import 'notification_providers.dart';
 import '../core/platform/network_connectivity_service.dart';
 import '../domain/incident_engine.dart';
 import '../domain/guardian_models.dart';
@@ -203,7 +204,8 @@ final outboxRemoteWriterProvider = Provider<OutboxRemoteWriter>((ref) {
 final outboxSyncExecutorProvider = Provider((ref) => OutboxSyncExecutor(
     GuardianDatabase.instance,
     ref.watch(firebaseAuthContextProvider),
-    ref.watch(outboxRemoteWriterProvider)));
+    ref.watch(outboxRemoteWriterProvider),
+    notificationGateway: ref.watch(notificationGatewayProvider)));
 
 /// M9 — canonical runtime sync coordinator. All triggers (startup,
 /// connectivity restoration, manual sync, WorkManager) funnel through this
