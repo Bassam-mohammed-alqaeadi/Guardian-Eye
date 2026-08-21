@@ -457,6 +457,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => AudioKeywordSettingsScreen(
                 familyId: state.pathParameters['familyId']!),
           ),
+          GoRoute(
+            path: '/audio/:familyId/notification',
+            name: 'audioNotification',
+            builder: (context, state) => Scaffold(
+              appBar: AppBar(title: const Text('Audio Notification')),
+              body: const Center(child: Text('Child Audio Notification Surface')),
+            ),
+          ),
           // FS-001 Location & Geofencing subsystem routes (LO-001 … LO-015).
           GoRoute(
             path: '/location/:familyId',

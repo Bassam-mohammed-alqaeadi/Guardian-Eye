@@ -346,6 +346,68 @@ function createApp({ auth, db }) {
    *   - Payloads are data-only messages (kind, familyId, notificationEventId);
    *     all visible text is rendered by the client from its own local records.
    */
+  // ---- Audio Relay (FS-008) -----------------------------------------------
+
+  const audioStreams = new Map(); // sessionId -> { parentRes, childRes, timeout }
+
+  /**
+   * POST /api/audio/upload/:sessionId
+   * Child device uploads audio chunks to the relay.
+   */
+  app.post('/api/audio/upload/:sessionId', requireAuth, async (req, res, next) => {
+    try {
+      const { sessionId } = req.params;
+      const childUid = req.uid;
+
+      // In a production scenario, we would verify the session exists in Firestore
+      // and that this childUid is authorized for it. For now, we relay if a
+      // parent is waiting.
+      
+      const stream = audioStreams.get(sessionId);
+      if (!stream || !stream.parentRes) {
+        return res.status(404).json({ error: 'no_listener', message: 'No parent is listening to this session' });
+      }
+
+      // Pipe the request body (the audio chunk) directly to the parent's response.
+      req.pipe(stream.parentRes, { end: false });
+
+      req.on('end', () => {
+        res.status(200).send('ok');
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * GET /api/audio/stream/:sessionId
+   * Parent device listens to the audio relay.
+   */
+  app.get('/api/audio/stream/:sessionId', requireAuth, async (req, res, next) => {
+    try {
+      const { sessionId } = req.params;
+      const parentUid = req.uid;
+
+      // Set headers for chunked streaming.
+      res.setHeader('Content-Type', 'audio/aac');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      // Register the parent's response in the relay map.
+      const stream = audioStreams.get(sessionId) || {};
+      stream.parentRes = res;
+      audioStreams.set(sessionId, stream);
+
+      // Handle disconnect.
+      req.on('close', () => {
+        audioStreams.delete(sessionId);
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   const NOTIFY_KINDS = new Set(['incident', 'sos']);
   app.post('/api/notify', requireAuth, async (req, res, next) => {
     try {

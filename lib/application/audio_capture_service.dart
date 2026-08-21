@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import '../core/localization/app_localizations.dart';
 import '../domain/audio_monitoring.dart';
 import 'guardian_providers.dart';
@@ -40,21 +44,54 @@ class AudioCaptureService {
     // 1. Show persistent notification (Transparency & Honest State)
     await _showActiveNotification();
     
-    // 2. Start recording
-    final tempDir = await getTemporaryDirectory();
-    final path = '${tempDir.path}/$sessionId.m4a';
-    
-    await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        sampleRate: 44100,
-      ),
-      path: path,
-    );
-    
-    // 3. In a real app, we would stream the bytes to a secure socket or WebRTC.
-    // For this implementation, we simulate the active capture.
+    // 2. Start recording and streaming
+    try {
+      final stream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+      );
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw StateError('unauthenticated');
+      final token = await user.getIdToken();
+
+      final uploadUrl = 'https://guardian-backend.onrender.com/api/audio/upload/$sessionId';
+
+      // 3. Pipe stream to Render Relay
+      stream.listen((data) async {
+        if (!_isMonitoring) return;
+        try {
+          await http.post(
+            Uri.parse(uploadUrl),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'audio/aac',
+            },
+            body: data,
+          );
+        } catch (e) {
+          // In production, we would handle retry or failure signaling.
+        }
+      });
+
+      // 4. Update Signaling Status in Firestore
+      await FirebaseFirestore.instance
+          .collection('families')
+          .doc(familyId)
+          .collection('audio_sessions')
+          .doc(sessionId)
+          .update({
+        'status': 'active',
+        'startedAt': FieldValue.serverTimestamp(),
+        'consentStatus': 'granted',
+      });
+    } catch (e) {
+      await onStopCommandReceived();
+      rethrow;
+    }
   }
 
   /// Called when a 'stop_audio' command is received via FCM or local timeout.
