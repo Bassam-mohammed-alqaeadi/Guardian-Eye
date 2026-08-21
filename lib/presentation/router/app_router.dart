@@ -32,6 +32,7 @@ import '../screens/tasks_screens.dart';
 import '../screens/rewards_screens.dart';
 import '../screens/insights_screens.dart';
 import '../screens/couple_screens.dart';
+import '../screens/chat_screens.dart';
 import '../screens/subscription_screens.dart';
 import '../screens/notification_open_screen.dart';
 import '../widgets/guardian_bottom_nav.dart';
@@ -903,6 +904,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'familyCoupleHandovers',
             builder: (context, state) => CoupleHandoversScreen(
                 familyId: state.pathParameters['familyId']!),
+          ),
+          // FS-010 — Ephemeral Family Chat (CH-001 … CH-004). 24-hour
+          // auto-expiration, role-scoped threads, offline-first honesty.
+          // Authorization lives in the chat screens via viewChat — the
+          // routes themselves stay open so the honest denied state can
+          // render for children, invited, and revoked actors.
+          GoRoute(
+            path: ChatListScreen.route,
+            name: 'familyChatList',
+            builder: (context, state) =>
+                ChatListScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: ChatScreen.route,
+            name: 'familyChatThread',
+            builder: (context, state) => ChatScreen(
+                familyId: state.pathParameters['familyId']!,
+                threadId: state.pathParameters['threadId']!),
           ),
           // Subscription & entitlements (ST-001 … ST-005). Local-only grant
           // decisions with honest usage meters; no payment processor is

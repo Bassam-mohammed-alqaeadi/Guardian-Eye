@@ -71,6 +71,12 @@ enum FamilyPermission {
   // ST-001 — Subscription. Only the primary parent views or changes the
   // family plan, entitlements, and billing.
   manageSubscription,
+
+  // FS-010 — Ephemeral Family Chat. Any active ADULT role may read and send
+  // within the approved role-scoped threads (family / per-member / spouse).
+  // The child role is deliberately granted NOTHING here, so
+  // `ctx.can(viewChat)` fail-closes children out of the chat surface.
+  viewChat,
 }
 
 enum DeviceRole { parentDevice, childDevice, spouseDevice, coParentDevice }

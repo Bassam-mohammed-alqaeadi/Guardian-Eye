@@ -39,6 +39,11 @@ const Set<String> familyExportForbiddenKeys = {
   'credentials',
   'auth_token',
   'password',
+  // FS-010 — chat content is never exported, even partially: message bodies
+  // and thread participation are excluded domain data, and the forbidden-key
+  // scanner fails the whole bundle if any chat row ever leaks in.
+  'chat_messages',
+  'chat_threads',
 };
 
 /// One export section: its identity, an honest inclusion status, and the

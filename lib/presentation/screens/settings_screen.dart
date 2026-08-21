@@ -134,6 +134,13 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+            // FS-010 — Ephemeral Family Chat entry. The session family id is
+            // derived from the same dashboard fact the app bar uses, so the
+            // entry is honest about which family it opens; when no family is
+            // resolved the tile is simply not shown (children cannot reach
+            // it either — the chat screen enforces viewChat itself).
+            const _ChatEntryTile(),
           ],
         ),
       ),
@@ -232,4 +239,38 @@ class _SectionHeader extends StatelessWidget {
               ?.copyWith(color: Theme.of(context)
                   .colorScheme
                   .onSurfaceVariant)));
+}
+
+/// FS-010 — Chats section entry. Resolves the session family id from the
+/// canonical dashboard provider; renders nothing until a family is bound so
+/// the entry is never a dead link. Authorization beyond entry is enforced
+/// inside the chat screens via viewChat.
+class _ChatEntryTile extends ConsumerWidget {
+  const _ChatEntryTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final dashboard = ref.watch(dashboardProvider);
+    final familyId = dashboard.valueOrNull?.family?.id;
+    if (familyId == null) {
+      return const SizedBox.shrink();
+    }
+    return Card.filled(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => context.push('/chat/$familyId'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(children: [
+            const Icon(Icons.chat_outlined),
+            const SizedBox(width: 12),
+            Expanded(child: Text(l10n.t('chatSettingsEntry'),
+                style: const TextStyle(fontWeight: FontWeight.w600))),
+            const Icon(Icons.chevron_right),
+          ]),
+        ),
+      ),
+    );
+  }
 }

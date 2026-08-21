@@ -186,6 +186,16 @@ class LocalPurgeService {
     'app_identity',
     'pairing_sessions',
     'policies',
+    // FS-010 — ephemeral chat is purgable local data: threads and their
+    // (already-expired or active) messages are removable by the actor's
+    // honest purge request. Nothing in chat is retained or frozen.
+    // `chat_messages` references `chat_threads(id)`, so it must be wiped
+    // BEFORE `chat_threads`; both reference `families(id)` and are wiped
+    // after `family_members`-referencing tables but before nothing else
+    // depends on them — placed before `family_members` last position is
+    // unnecessary because no later purged table references chat ids.
+    'chat_messages',
+    'chat_threads',
     'family_members',
   ];
 

@@ -26,7 +26,7 @@ class GuardianDatabase {
         ? await _pathResolver!()
         : join(await getDatabasesPath(), 'guardian_eye_pro.db');
     final options = OpenDatabaseOptions(
-        version: 29,
+        version: 30,
         onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
         onCreate: _createSchema,
         onUpgrade: _upgradeSchema);
@@ -327,6 +327,19 @@ class GuardianDatabase {
     // reinstalled. Preferences stay decoupled from this identity.
     await db.execute(
         'CREATE TABLE IF NOT EXISTS app_identity(key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at TEXT NOT NULL)');
+    // FS-010 — ephemeral family chat. Fresh installs get these tables in the
+    // same pass; legacy upgrades reach the identical shape via the v30
+    // incremental migration below (bit-identical DDL).
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS chat_threads(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), type TEXT NOT NULL, member_id TEXT, expiration_window TEXT NOT NULL DEFAULT \'hours24\', created_by_member_id TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_chat_threads_family ON chat_threads(family_id)');
+    await db.execute(
+        'CREATE TABLE IF NOT EXISTS chat_messages(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), thread_id TEXT NOT NULL REFERENCES chat_threads(id), sender_member_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, state TEXT NOT NULL DEFAULT \'queued\', idempotency_key TEXT NOT NULL UNIQUE, outbox_event_id TEXT)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_chat_messages_thread_time ON chat_messages(thread_id, created_at DESC)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_chat_messages_expiry ON chat_messages(thread_id, expires_at)');
   }
 
   /// Foundational schema guard (Phase 4 migration compatibility gate).
@@ -794,6 +807,27 @@ class GuardianDatabase {
     if (oldVersion < 29) {
       await db.execute(
           'CREATE TABLE IF NOT EXISTS app_identity(key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at TEXT NOT NULL)');
+    }
+    // FS-010 — Ephemeral Family Chat. Two new tables: role-scoped threads
+    // (`chat_threads`) and the messages themselves (`chat_messages`). The
+    // foundational `messages` table (v1) is left untouched — it carries its
+    // own legacy contract and is already classified as purged in the
+    // Phase 4C purge domain contract.
+    //
+    // Expiration is timezone-independent: `expires_at` is always a UTC
+    // instant (`created_at + approved window`) and expiry is evaluated in
+    // UTC at read/query time. Expired rows are never surfaced as active.
+    if (oldVersion < 30) {
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS chat_threads(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), type TEXT NOT NULL, member_id TEXT, expiration_window TEXT NOT NULL DEFAULT \'hours24\', created_by_member_id TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_chat_threads_family ON chat_threads(family_id)');
+      await db.execute(
+          'CREATE TABLE IF NOT EXISTS chat_messages(id TEXT PRIMARY KEY, family_id TEXT NOT NULL REFERENCES families(id), thread_id TEXT NOT NULL REFERENCES chat_threads(id), sender_member_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, state TEXT NOT NULL DEFAULT \'queued\', idempotency_key TEXT NOT NULL UNIQUE, outbox_event_id TEXT)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_chat_messages_thread_time ON chat_messages(thread_id, created_at DESC)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_chat_messages_expiry ON chat_messages(thread_id, expires_at)');
     }
   }
 }

@@ -54,6 +54,10 @@ class FamilyAuthorization {
             // FS-013 — a co-parent authors decisions and manages routines.
             FamilyPermission.viewCoupleHarmony,
             FamilyPermission.manageCoupleDecisions,
+            // FS-010 — Ephemeral Family Chat. Adult actors read and send
+            // within role-scoped threads (family / per-member / spouse);
+            // children are granted nothing and are fail-closed below.
+            FamilyPermission.viewChat,
           },
         FamilyRole.child => {
             FamilyPermission.viewFamily,
@@ -102,6 +106,10 @@ class FamilyAuthorization {
             // FS-013 — a spouse views harmony screens and their own
             // linking state; decisions remain with parent roles.
             FamilyPermission.viewCoupleHarmony,
+            // FS-010 — a spouse participates in role-scoped chat threads
+            // (including the symmetric spouse pair) but never manages
+            // thread scope.
+            FamilyPermission.viewChat,
           },
       };
   bool hasPermission(FamilyMember member, FamilyPermission permission) =>
