@@ -11,6 +11,7 @@ import '../screens/family_safety_experience_screens.dart';
 import '../screens/safety_actions_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/privacy_controls_screen.dart';
+import '../screens/export_controls_screen.dart';
 import '../screens/pairing_screen.dart';
 import '../screens/child_redemption_screen.dart';
 import '../screens/permissions_screen.dart';
@@ -163,6 +164,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/privacy-controls',
             name: 'privacyControls',
             builder: (context, state) => const PrivacyControlsScreen(),
+          ),
+          GoRoute(
+            path: '/export-controls',
+            name: 'exportControls',
+            builder: (context, state) => const ExportControlsScreen(),
           ),
           GoRoute(
             path: '/safety/pairing/:familyId',

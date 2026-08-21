@@ -118,6 +118,22 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            Card.filled(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.push('/export-controls'),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    const Icon(Icons.download_outlined),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l10n.t('exportControls'))),
+                    const Icon(Icons.chevron_right),
+                  ]),
+                ),
+              ),
+            ),
           ],
         ),
       ),
