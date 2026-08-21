@@ -34,24 +34,27 @@ const String _familyId = 'fam-audit';
 const String _childId = 'kid-audit';
 
 /// Seeded family fixture — a real populated family (parent + child).
-GuardianDashboard seededFamily() => GuardianDashboard(
-      family: GuardianFamily(
-        id: _familyId,
-        name: 'عائلة القاعدي',
-        createdAt: DateTime.parse('2026-01-01T00:00:00Z'),
-      ),
-      children: [
-        FamilyMember(
-          id: _childId,
-          familyId: _familyId,
-          displayName: 'أحمد',
-          role: FamilyRole.child,
-          createdAt: DateTime.parse('2026-01-01T00:00:00Z'),
-        ),
-      ],
-      incidentsToday: 1,
-      queuedOperations: 0,
-    );
+GuardianDashboard seededFamily() {
+  final family = GuardianFamily(
+    id: _familyId,
+    name: 'عائلة القاعدي',
+    createdAt: DateTime.parse('2026-01-01T00:00:00Z'),
+  );
+  final child = FamilyMember(
+    id: _childId,
+    familyId: _familyId,
+    displayName: 'أحمد',
+    role: FamilyRole.child,
+    createdAt: DateTime.parse('2026-01-01T00:00:00Z'),
+  );
+  return GuardianDashboard(
+    family: family,
+    member: child,
+    children: [child],
+    incidentsToday: 1,
+    queuedOperations: 0,
+  );
+}
 
 /// Canonical resolved family runtime context for the harness — a verified
 /// primary parent actor with the full permission matrix. Every screen in
@@ -112,8 +115,8 @@ List<Override> _dataSourceOverrides() => [
       familyRuntimeContextProvider(_familyId)
           .overrideWith((ref) async => _resolvedContext()),
       familyPendingSyncProvider(_familyId).overrideWith((ref) async => false),
-      childDeviceRepositoryProvider.overrideWithValue(
-          _NoChildDevicesRepository()),
+      childDeviceRepositoryProvider
+          .overrideWithValue(_NoChildDevicesRepository()),
       recentIncidentsProvider(_familyId).overrideWith((ref) async => const []),
       familyRepositoryProvider.overrideWithValue(_NoFamilyRepository()),
       locationGeofenceRepositoryProvider
@@ -166,8 +169,7 @@ class _NoLocationGeofenceRepository implements LocationGeofenceRepository {
   Future<List<FavoritePlace>> placesForFamily(String familyId) async =>
       const [];
   @override
-  Future<FavoritePlace?> placeByKey(
-          String familyId, String placeKey) async =>
+  Future<FavoritePlace?> placeByKey(String familyId, String placeKey) async =>
       null;
   @override
   Future<String> setting(
@@ -230,8 +232,8 @@ final List<MapEntry<String, String>> _screens = [
   const MapEntry('/child/fam-audit/kid-audit', 'child-context'),
   const MapEntry('/child/fam-audit/kid-audit/policies', 'child-policies'),
   const MapEntry('/child/fam-audit/kid-audit/device', 'child-device'),
-  const MapEntry('/child/fam-audit/kid-audit/location-sharing',
-      'child-location-sharing'),
+  const MapEntry(
+      '/child/fam-audit/kid-audit/location-sharing', 'child-location-sharing'),
   const MapEntry('/location/sharing/self', 'location-sharing-self'),
   const MapEntry('/onboard/location', 'location-onboarding'),
   const MapEntry('/location/fam-audit', 'family-map'),
@@ -281,9 +283,8 @@ Future<void> _pumpApp(WidgetTester tester, String languageCode) async {
         localeProvider.overrideWith((ref) => languageCode),
       ],
       child: Directionality(
-        textDirection: languageCode == 'ar'
-            ? TextDirection.rtl
-            : TextDirection.ltr,
+        textDirection:
+            languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: Stack(
           children: [
             const GuardianApp(),
@@ -362,7 +363,8 @@ Future<void> _capture(WidgetTester tester, String key, String lang) async {
       .renderObject! as dynamic;
   final image = await renderObject.toImage(pixelRatio: 1.0);
   final bytes = await image.toByteData(format: ImageByteFormat.png);
-  File('$_shotsDir/$key-$lang.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+  File('$_shotsDir/$key-$lang.png')
+      .writeAsBytesSync(bytes!.buffer.asUint8List());
   await image.dispose();
 }
 
@@ -399,13 +401,20 @@ void main() {
           // Screenshotting every single route with toImage stalls the
           // software-rendered tester; widget-tree assertion below still
           // proves every canonical path builds a real page.
-          if (name.startsWith('root-') || name.startsWith('settings') ||
-              name.startsWith('family-') || name.startsWith('child-') ||
-              name.startsWith('safety-') || name.startsWith('location-') ||
-              name.startsWith('geofence-') || name.startsWith('web-') ||
-              name.startsWith('timeline') || name.startsWith('requests') ||
-              name.startsWith('pairing') || name.startsWith('device-') ||
-              name.startsWith('firebase') || name.startsWith('daily')) {
+          if (name.startsWith('root-') ||
+              name.startsWith('settings') ||
+              name.startsWith('family-') ||
+              name.startsWith('child-') ||
+              name.startsWith('safety-') ||
+              name.startsWith('location-') ||
+              name.startsWith('geofence-') ||
+              name.startsWith('web-') ||
+              name.startsWith('timeline') ||
+              name.startsWith('requests') ||
+              name.startsWith('pairing') ||
+              name.startsWith('device-') ||
+              name.startsWith('firebase') ||
+              name.startsWith('daily')) {
             await _capture(tester, name, lang);
           }
           // The page must not be a dead-end 404: the router always

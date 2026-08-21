@@ -434,6 +434,14 @@ class PairingRepository {
     return rows.isEmpty ? null : rows.single;
   }
 
+  /// Raw session row by id — DL-003/DL-006 detail source.
+  Future<Map<String, Object?>?> sessionById(String requestId) async {
+    final db = await _database.database;
+    final rows = await db.query('pairing_sessions',
+        where: 'id = ?', whereArgs: [requestId], limit: 1);
+    return rows.isEmpty ? null : rows.single;
+  }
+
   /// DL-002 — clears the honest failure counter on the family's latest
   /// pairing session. The session rows themselves are never deleted (audit
   /// trail kept); only the counter gates unlock.

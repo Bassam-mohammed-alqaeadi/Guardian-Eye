@@ -2035,9 +2035,21 @@ class AppLocalizations {
       'familyChecklistDevices': 'ربط أجهزة الأطفال',
       'familyChecklistDone': 'تم الإكمال',
       'familyChecklistPending': 'قيد الانتظار',
+      'dlScanQr': 'مسح رمز QR',
+      'or': 'أو',
+      'dlEnrollConfirmTitle': 'تأكيد التسجيل',
+      'dlEnrollConfirmSubtitle': 'اختر العضو الذي سيستخدم هذا الجهاز.',
+      'needsSettingsExplanation':
+          'يرجى تفعيل هذا الإذن من إعدادات النظام لضمان الحماية.',
     },
     'en': {
       'securityTitle': 'Security & Privacy',
+      'dlScanQr': 'Scan QR Code',
+      'or': 'OR',
+      'dlEnrollConfirmTitle': 'Confirm Enrollment',
+      'dlEnrollConfirmSubtitle': 'Select the member who will use this device.',
+      'needsSettingsExplanation':
+          'Please enable this permission in system settings for protection.',
       'securityChatBiometricLock': 'Biometric Chat Lock',
       'securityChatBiometricLockDesc':
           'Require biometric auth to open family chats',

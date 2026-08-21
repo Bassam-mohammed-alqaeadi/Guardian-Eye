@@ -14,6 +14,7 @@ import 'package:guardian_ai/core/database/guardian_database.dart';
 import 'package:guardian_ai/data/guardian_repositories.dart';
 import 'package:guardian_ai/domain/device_linking.dart';
 import 'package:guardian_ai/domain/guardian_models.dart';
+
 /// Each test gets its own isolated temporary database file — the shared
 /// `:memory:` handle (sqflite_common_ffi) would otherwise make every
 /// test in this file reuse the same in-memory database.
@@ -26,6 +27,7 @@ Future<GuardianDatabase> openTestDatabase() async {
   await database.initialize();
   return database;
 }
+
 final DateTime _seededAt = DateTime.utc(2025, 7, 2);
 Future<GuardianDatabase> _seededDatabase() async {
   final database = await openTestDatabase();
@@ -53,17 +55,19 @@ Future<GuardianDatabase> _seededDatabase() async {
   });
   return database;
 }
+
 Future<PairingRepository> _repoFor(GuardianDatabase database) async {
   return PairingRepository(database);
 }
+
 void main() {
   group('pairing code issuance and session lookup', () {
-    test('creates a pending session with a hashed six-digit code',
-        () async {
+    test('creates a pending session with a hashed six-digit code', () async {
       final database = await _seededDatabase();
       final repo = await _repoFor(database);
       final request = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
       expect(request.code, hasLength(6));
       expect(int.tryParse(request.code), isNotNull);
@@ -86,13 +90,16 @@ void main() {
       final database = await _seededDatabase();
       final repo = await _repoFor(database);
       final request = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
       PairingEnrollmentResult? last;
       for (int i = 0; i < 5; i++) {
         last = await repo.verifyAndEnroll(
-            requestId: request.id, code: '111111',
-            memberId: 'child-x', ownerMemberId: 'parent-x');
+            requestId: request.id,
+            code: '111111',
+            memberId: 'child-x',
+            ownerMemberId: 'parent-x');
         expect(last.reason, i == 4 ? 'too_many_attempts' : 'code_mismatch');
       }
       // The honest result flips to rejected only once the counter reaches 5.
@@ -105,11 +112,14 @@ void main() {
       final database = await _seededDatabase();
       final repo = await _repoFor(database);
       final request = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
       final result = await repo.verifyAndEnroll(
-          requestId: request.id, code: '222222',
-          memberId: 'child-x', ownerMemberId: 'parent-x');
+          requestId: request.id,
+          code: '222222',
+          memberId: 'child-x',
+          ownerMemberId: 'parent-x');
       // Honest rejection of the code: the session survives (counter = 1,
       // status still pending) so the guardian can still recover with the
       // right code — the API reports rejection via the reason, not state.
@@ -124,10 +134,14 @@ void main() {
       final database = await _seededDatabase();
       final repo = await _repoFor(database);
       final request = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
-      await repo.verifyAndEnroll(requestId: request.id, code: '333333',
-          memberId: 'child-x', ownerMemberId: 'parent-x');
+      await repo.verifyAndEnroll(
+          requestId: request.id,
+          code: '333333',
+          memberId: 'child-x',
+          ownerMemberId: 'parent-x');
       expect(await repo.resetFailedAttempts('family-x'), true);
       final session = await repo.sessionForCode('family-x', request.code);
       expect(session!['failure_count'], 0);
@@ -139,11 +153,14 @@ void main() {
       final database = await _seededDatabase();
       final repo = await _repoFor(database);
       final request = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
       final result = await repo.verifyAndEnroll(
-          requestId: request.id, code: request.code,
-          memberId: 'child-x', ownerMemberId: 'parent-x');
+          requestId: request.id,
+          code: request.code,
+          memberId: 'child-x',
+          ownerMemberId: 'parent-x');
       expect(result.state, PairingState.enrolled);
       expect(result.deviceId, isNotNull);
       final device = await repo.deviceById(result.deviceId!);
@@ -159,18 +176,24 @@ void main() {
       final database = await _seededDatabase();
       final repo = await _repoFor(database);
       final first = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
       final firstResult = await repo.verifyAndEnroll(
-          requestId: first.id, code: first.code,
-          memberId: 'child-x', ownerMemberId: 'parent-x');
+          requestId: first.id,
+          code: first.code,
+          memberId: 'child-x',
+          ownerMemberId: 'parent-x');
       expect(firstResult.state, PairingState.enrolled);
       final second = await repo.createParentAuthorizedRequest(
-          familyId: 'family-x', requestedRole: DeviceRole.childDevice,
+          familyId: 'family-x',
+          requestedRole: DeviceRole.childDevice,
           targetMemberId: 'child-x');
       final secondResult = await repo.verifyAndEnroll(
-          requestId: second.id, code: second.code,
-          memberId: 'child-x', ownerMemberId: 'parent-x');
+          requestId: second.id,
+          code: second.code,
+          memberId: 'child-x',
+          ownerMemberId: 'parent-x');
       expect(secondResult.state, PairingState.rejected);
       expect(secondResult.reason, 'active_device_already_linked');
     });
@@ -188,7 +211,8 @@ void main() {
         'owner_member_id': 'parent-x',
         'role': 'childDevice',
         'sync_state': 'synced',
-        'last_synced_at': now.subtract(const Duration(minutes: 30)).toIso8601String(),
+        'last_synced_at':
+            now.subtract(const Duration(minutes: 30)).toIso8601String(),
         'created_at': _seededAt.toIso8601String(),
       });
       await db.insert('devices', {
@@ -198,7 +222,8 @@ void main() {
         'owner_member_id': 'parent-x',
         'role': 'childDevice',
         'sync_state': 'queued',
-        'last_synced_at': now.subtract(const Duration(hours: 4)).toIso8601String(),
+        'last_synced_at':
+            now.subtract(const Duration(hours: 4)).toIso8601String(),
         'created_at': _seededAt.toIso8601String(),
       });
       await db.insert('devices', {
@@ -227,8 +252,8 @@ void main() {
         final life = await repo.lifecycleForDevice(row['id'] as String);
         verdicts.add(DeviceHealth.fromRows(row, life, now: now));
       }
-      final verdictOf = (id) => verdicts
-          .firstWhere((v) => v.deviceId == id).health;
+      final verdictOf =
+          (id) => verdicts.firstWhere((v) => v.deviceId == id).health;
       expect(verdictOf('device-healthy'), DeviceHealthKind.healthy);
       expect(verdictOf('device-stale'), DeviceHealthKind.stale);
       expect(verdictOf('device-offline'), DeviceHealthKind.offline);
@@ -269,20 +294,20 @@ void main() {
       final oldDevice = await repo.deviceById('device-old');
       expect(oldDevice!['revoked_at'], isNotNull);
       expect(await repo.devicesForFamily('family-x'), hasLength(2));
-      final lifecycle =
-          await repo.lifecycleForDevice(result.newDeviceId!);
+      final lifecycle = await repo.lifecycleForDevice(result.newDeviceId!);
       expect(lifecycle!['lifecycle'], 'enrolled');
       final outbox = await db.query('outbox',
-          where: 'operation = ?',
-          whereArgs: ['device.transferred'], limit: 1);
+          where: 'operation = ?', whereArgs: ['device.transferred'], limit: 1);
       expect(outbox, isNotEmpty);
     });
   });
   group('lifecycle helpers', () {
     test('isTransferable only for enrolled, unrevoked devices', () {
       expect(DeviceLinkingLifecycle.isTransferable('enrolled', null), true);
-      expect(DeviceLinkingLifecycle.isTransferable('enrolled',
-          '2025-07-02T00:00:00Z'), false);
+      expect(
+          DeviceLinkingLifecycle.isTransferable(
+              'enrolled', '2025-07-02T00:00:00Z'),
+          false);
       expect(DeviceLinkingLifecycle.isTransferable('revoked', null), false);
     });
   });

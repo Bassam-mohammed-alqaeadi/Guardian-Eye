@@ -263,13 +263,89 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/device-link/:familyId',
             name: 'deviceLink',
-            builder: (context, state) => ChildRedemptionScreen(
+            builder: (context, state) {
+              final familyId = state.pathParameters['familyId']!;
+              final extra = state.extra as Map<String, dynamic>?;
+              return DeviceEnrollScreen(
+                familyId: familyId,
+                code: extra?['code'] as String? ?? '',
+                requestId: extra?['requestId'] as String?,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/enroll/:familyId/:code',
+            name: 'deviceEnroll',
+            builder: (context, state) => DeviceEnrollScreen(
+              familyId: state.pathParameters['familyId']!,
+              code: state.pathParameters['code']!,
+            ),
+          ),
+          GoRoute(
+            path: '/enroll/:familyId/:code/confirm',
+            name: 'deviceEnrollConfirm',
+            builder: (context, state) => DeviceEnrollConfirmScreen(
+              familyId: state.pathParameters['familyId']!,
+              code: state.pathParameters['code']!,
+            ),
+          ),
+          GoRoute(
+            path: '/enroll/:familyId/success',
+            name: 'pairingSuccess',
+            builder: (context, state) => PairingSuccessScreen(
                 familyId: state.pathParameters['familyId']!),
           ),
           GoRoute(
-            path: '/safety/permissions',
-            name: 'safetyPermissions',
-            builder: (context, state) => const PermissionsScreen(),
+            path: '/safety/pairing/:familyId/lockout',
+            name: 'deviceLockout',
+            builder: (context, state) => DeviceLockoutScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/couple/:familyId/link-device',
+            name: 'spouseLinkDevice',
+            builder: (context, state) => SpouseLinkDeviceScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/couple/:familyId/enroll',
+            name: 'spouseEnroll',
+            builder: (context, state) =>
+                SpouseEnrollScreen(familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/couple/:familyId/role',
+            name: 'spouseRoleConfirm',
+            builder: (context, state) => SpouseRoleConfirmationScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/settings/devices/:familyId',
+            name: 'deviceHealthDashboard',
+            builder: (context, state) => DeviceHealthDashboardScreen(
+                familyId: state.pathParameters['familyId']!),
+          ),
+          GoRoute(
+            path: '/settings/device/:deviceId/transfer',
+            name: 'deviceTransfer',
+            builder: (context, state) => DeviceTransferScreen(
+              familyId: state.extra as String? ?? '',
+              deviceId: state.pathParameters['deviceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/settings/device/:deviceId/unlink',
+            name: 'deviceUnlink',
+            builder: (context, state) => DeviceUnlinkScreen(
+              familyId: state.extra as String? ?? '',
+              deviceId: state.pathParameters['deviceId']!,
+            ),
+          ),
+          GoRoute(
+            path: '/safety/permissions/:familyId',
+            name: 'devicePermissionOnboarding',
+            builder: (context, state) => DevicePermissionOnboardingScreen(
+                familyId: state.pathParameters['familyId']!),
           ),
           // FS-002 Web Filtering subsystem routes (WF-001 … WF-010).
           GoRoute(
@@ -652,72 +728,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 SosDrillScreen(familyId: state.pathParameters['familyId']!),
           ),
 
-          // FS-015 Device Linking & Enrollment subsystem routes
-          // (DL-002 … DL-011). DL-001 is the existing `/safety/pairing/:familyId`
-          // issuance surface in pairing_screen.dart, extended with the FS-015
-          // inventory and lockout banner.
-          GoRoute(
-            path: '/safety/pairing/:familyId/lockout',
-            name: 'deviceLinkLockout',
-            builder: (context, state) => DeviceLockoutScreen(
-                familyId: state.pathParameters['familyId']!),
-          ),
-          GoRoute(
-            path: '/enroll/:familyId/:code',
-            name: 'deviceEnroll',
-            builder: (context, state) => DeviceEnrollScreen(
-                familyId: state.pathParameters['familyId']!,
-                code: state.pathParameters['code']!),
-          ),
-          GoRoute(
-            path: '/enroll/:familyId/:code/confirm',
-            name: 'deviceEnrollConfirm',
-            builder: (context, state) => DeviceEnrollConfirmScreen(
-                familyId: state.pathParameters['familyId']!,
-                code: state.pathParameters['code']!),
-          ),
-          GoRoute(
-            path: '/couple/:familyId/link-device',
-            name: 'spouseLinkDevice',
-            builder: (context, state) => SpouseLinkDeviceScreen(
-                familyId: state.pathParameters['familyId']!),
-          ),
-          GoRoute(
-            path: '/couple/:familyId/enroll',
-            name: 'spouseEnroll',
-            builder: (context, state) =>
-                SpouseEnrollScreen(familyId: state.pathParameters['familyId']!),
-          ),
-          GoRoute(
-            path: '/couple/:familyId/role',
-            name: 'spouseRoleConfirmation',
-            builder: (context, state) => SpouseRoleConfirmationScreen(
-                familyId: state.pathParameters['familyId']!),
-          ),
-          GoRoute(
-            path: '/onboard/device-permissions',
-            name: 'devicePermissionOnboarding',
-            builder: (context, state) =>
-                const DevicePermissionOnboardingScreen(),
-          ),
-          GoRoute(
-            path: '/settings/devices',
-            name: 'deviceHealthDashboard',
-            builder: (context, state) =>
-                const DeviceHealthDashboardScreen(familyId: 'self'),
-          ),
-          GoRoute(
-            path: '/settings/device/:deviceId/unlink',
-            name: 'deviceUnlink',
-            builder: (context, state) => DeviceUnlinkScreen(
-                familyId: 'self', deviceId: state.pathParameters['deviceId']!),
-          ),
-          GoRoute(
-            path: '/settings/device/:deviceId/transfer',
-            name: 'deviceTransfer',
-            builder: (context, state) => DeviceTransferScreen(
-                familyId: 'self', deviceId: state.pathParameters['deviceId']!),
-          ),
+          // FS-015 Device Linking & Enrollment subsystem routes (DL-001 … DL-011).
+          // Handled above in the consolidated block to avoid duplication.
           GoRoute(
             path: '/location/sharing/self',
             name: 'childLocationSharingLegacy',
