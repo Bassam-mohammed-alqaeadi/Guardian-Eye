@@ -10,6 +10,7 @@ import '../screens/screen_time_policies_screen.dart';
 import '../screens/family_safety_experience_screens.dart';
 import '../screens/safety_actions_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/privacy_controls_screen.dart';
 import '../screens/pairing_screen.dart';
 import '../screens/child_redemption_screen.dart';
 import '../screens/permissions_screen.dart';
@@ -157,6 +158,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/firebase-session',
             name: 'firebaseSession',
             builder: (context, state) => const FirebaseSessionScreen(),
+          ),
+          GoRoute(
+            path: '/privacy-controls',
+            name: 'privacyControls',
+            builder: (context, state) => const PrivacyControlsScreen(),
           ),
           GoRoute(
             path: '/safety/pairing/:familyId',

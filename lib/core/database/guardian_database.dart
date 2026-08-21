@@ -349,9 +349,10 @@ class GuardianDatabase {
     }
   }
 
-  /// Sanity check exposing the current table set — used by tests to prove
-  /// the guard succeeded.
-  @visibleForTesting
+  /// Verifies the nine foundational tables and their indexes exist on the
+  /// open database. Used by tests to prove the migration guard succeeded
+  /// and by the privacy purge engine to refuse to touch a legacy database
+  /// whose foundational schema could not be recovered.
   Future<bool> verifyBaseSchema() async {
     final db = await database;
     final tables = await db.query('sqlite_master',
@@ -501,8 +502,8 @@ class GuardianDatabase {
           'CREATE INDEX IF NOT EXISTS idx_exception_family_status_created ON child_exception_requests(family_id, status, created_at DESC)');
     }
     if (oldVersion < 11) {
-      await _addColumnIfMissing(
-          db, 'policy_overrides', 'child_device_id', 'TEXT REFERENCES devices(id)');
+      await _addColumnIfMissing(db, 'policy_overrides', 'child_device_id',
+          'TEXT REFERENCES devices(id)');
     }
     if (oldVersion < 12) {
       await _addColumnIfMissing(
@@ -647,7 +648,8 @@ class GuardianDatabase {
           'CREATE TABLE IF NOT EXISTS tasks(task_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), title TEXT NOT NULL, description TEXT, due_minute INTEGER NOT NULL DEFAULT 0, due_date TEXT NOT NULL, recurrence TEXT NOT NULL DEFAULT \'none\', weekdays TEXT NOT NULL DEFAULT \'1,2,3,4,5\', assigned_child_ids TEXT NOT NULL DEFAULT \'\', linked_rule_id TEXT, status TEXT NOT NULL DEFAULT \'scheduled\', created_by_member_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, sync_state TEXT NOT NULL DEFAULT \'queued\', PRIMARY KEY(family_id, task_id))');
       await db.execute(
           'CREATE TABLE IF NOT EXISTS task_completion_log(id TEXT PRIMARY KEY, task_id TEXT NOT NULL, family_id TEXT NOT NULL REFERENCES families(id), child_id TEXT NOT NULL, action TEXT NOT NULL, actor_member_id TEXT NOT NULL, acted_at TEXT NOT NULL, note TEXT, FOREIGN KEY(family_id, task_id) REFERENCES tasks(family_id, task_id))');
-      await db.execute('CREATE INDEX IF NOT EXISTS idx_tasks_family ON tasks(family_id)');
+      await db.execute(
+          'CREATE INDEX IF NOT EXISTS idx_tasks_family ON tasks(family_id)');
       await db.execute(
           'CREATE INDEX IF NOT EXISTS idx_task_completion_family_time ON task_completion_log(family_id, acted_at DESC)');
     }

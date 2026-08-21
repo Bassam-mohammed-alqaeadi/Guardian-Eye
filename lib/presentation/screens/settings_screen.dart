@@ -101,6 +101,23 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+            _SectionHeader(title: l10n.t('privacyTitle')),
+            Card.filled(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.push('/privacy-controls'),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    const Icon(Icons.privacy_tip_outlined),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l10n.t('privacyControls'))),
+                    const Icon(Icons.chevron_right),
+                  ]),
+                ),
+              ),
+            ),
           ],
         ),
       ),
