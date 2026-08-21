@@ -22,5 +22,10 @@ ui2.xml
 guardian_backend/node_modules/
 guardian_backend/serviceAccountKey.json
 
-# Firebase platform configuration is committed with every push (project owner policy).
-# firebase_options.dart, google-services.json, GoogleService-Info.plist are included in Git.
+# Firebase platform configuration (Secrets/Credentials)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
+guardian_backend/.env
+guardian_backend/firebase-key.json
+guardian_backend/serviceAccountKey.json
