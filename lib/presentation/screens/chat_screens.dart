@@ -8,6 +8,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/theme/guardian_tokens.dart';
 import '../../domain/family_chat.dart';
 import '../../domain/guardian_models.dart';
+import '../../core/security/biometric_auth_service.dart';
 import '../widgets/guardian_primitives.dart';
 
 /// ---------------------------------------------------------------------------
@@ -93,8 +94,8 @@ class ChatListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final runtime = ref.watch(familyRuntimeContextProvider(familyId));
-    final guard = _chatGuard(
-        context, ref, runtime, FamilyPermission.viewChat, familyId);
+    final guard =
+        _chatGuard(context, ref, runtime, FamilyPermission.viewChat, familyId);
     if (guard != null) {
       return Scaffold(
         backgroundColor: GuardianTokens.guardianNavy,
@@ -102,7 +103,8 @@ class ChatListScreen extends ConsumerWidget {
       );
     }
     final ctx = runtime.valueOrNull as FamilyRuntimeContext;
-    final summariesAsync = ref.watch(familyChatThreadSummariesProvider(familyId));
+    final summariesAsync =
+        ref.watch(familyChatThreadSummariesProvider(familyId));
     final sweepAsync = ref.watch(chatSweepProvider(familyId));
 
     return Scaffold(
@@ -138,6 +140,18 @@ class ChatListScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   GuardianCard(
                     onTap: () async {
+                      final lockEnabled =
+                          ref.read(chatLockEnabledProvider).valueOrNull ??
+                              false;
+                      if (lockEnabled) {
+                        final authed = await ref
+                            .read(biometricAuthServiceProvider)
+                            .authenticate(
+                              localizedReason: l10n.t('securityAuthToChat'),
+                            );
+                        if (!authed) return;
+                      }
+
                       final service = ref.read(familyChatServiceProvider);
                       try {
                         final thread = await service.findOrCreateThread(
@@ -146,8 +160,7 @@ class ChatListScreen extends ConsumerWidget {
                           ctx: ctx,
                         );
                         if (!context.mounted) return;
-                        context
-                            .push('/chat/$familyId/${thread.id}');
+                        context.push('/chat/$familyId/${thread.id}');
                       } catch (_) {
                         if (!context.mounted) return;
                         _showSendError(context, l10n);
@@ -160,10 +173,11 @@ class ChatListScreen extends ConsumerWidget {
                             icon: Icons.people_outline,
                             background: GuardianTokens.guardianTeal),
                         const SizedBox(width: 12),
-                        Expanded(child: Text(l10n.t('chatNewFamilyThread'),
-                            style: const TextStyle(
-                                fontFamily: GuardianTokens.fontFamily,
-                                fontWeight: FontWeight.w600))),
+                        Expanded(
+                            child: Text(l10n.t('chatNewFamilyThread'),
+                                style: const TextStyle(
+                                    fontFamily: GuardianTokens.fontFamily,
+                                    fontWeight: FontWeight.w600))),
                         const Icon(Icons.chevron_right),
                       ]),
                     ),
@@ -255,12 +269,13 @@ class _MemberThreadTile extends StatelessWidget {
         final ref = ProviderScope.containerOf(context);
         try {
           final target = others.first;
-          final thread = await ref.read(familyChatServiceProvider).findOrCreateThread(
-                familyId: familyId,
-                type: allowTypes.first,
-                memberId: target.id,
-                ctx: ctx,
-              );
+          final thread =
+              await ref.read(familyChatServiceProvider).findOrCreateThread(
+                    familyId: familyId,
+                    type: allowTypes.first,
+                    memberId: target.id,
+                    ctx: ctx,
+                  );
           if (!context.mounted) return;
           context.push('/chat/$familyId/${thread.id}');
         } catch (_) {
@@ -282,14 +297,13 @@ class _MemberThreadTile extends StatelessWidget {
                         fontFamily: GuardianTokens.fontFamily,
                         fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(others.isEmpty
-                    ? l10n.t('nothingHereYet')
-                    : others.first.displayName,
+                Text(
+                    others.isEmpty
+                        ? l10n.t('nothingHereYet')
+                        : others.first.displayName,
                     style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant)),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -309,23 +323,34 @@ class _SpouseThreadTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final otherSpouse = ctx.allMembers.where((m) =>
-        m.id != ctx.actor!.id &&
-        m.isActive &&
-        m.role == FamilyRole.spouse).toList(growable: false);
+    final otherSpouse = ctx.allMembers
+        .where((m) =>
+            m.id != ctx.actor!.id && m.isActive && m.role == FamilyRole.spouse)
+        .toList(growable: false);
     return GuardianCard(
       onTap: otherSpouse.isEmpty
           ? null
           : () async {
               final ref = ProviderScope.containerOf(context);
-              try {
-                final thread =
-                    await ref.read(familyChatServiceProvider).findOrCreateThread(
-                          familyId: familyId,
-                          type: FamilyChatThreadType.spouse,
-                          memberId: otherSpouse.first.id,
-                          ctx: ctx,
+              final lockEnabled =
+                  ref.read(chatLockEnabledProvider).valueOrNull ?? false;
+              if (lockEnabled) {
+                final authed =
+                    await ref.read(biometricAuthServiceProvider).authenticate(
+                          localizedReason: l10n.t('securityAuthToChat'),
                         );
+                if (!authed) return;
+              }
+
+              try {
+                final thread = await ref
+                    .read(familyChatServiceProvider)
+                    .findOrCreateThread(
+                      familyId: familyId,
+                      type: FamilyChatThreadType.spouse,
+                      memberId: otherSpouse.first.id,
+                      ctx: ctx,
+                    );
                 if (!context.mounted) return;
                 context.push('/chat/$familyId/${thread.id}');
               } catch (_) {
@@ -347,9 +372,10 @@ class _SpouseThreadTile extends StatelessWidget {
                         fontFamily: GuardianTokens.fontFamily,
                         fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(otherSpouse.isEmpty
-                    ? l10n.t('nothingHereYet')
-                    : otherSpouse.first.displayName,
+                Text(
+                    otherSpouse.isEmpty
+                        ? l10n.t('nothingHereYet')
+                        : otherSpouse.first.displayName,
                     style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -377,47 +403,70 @@ class _ThreadRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final swept = sweep?.expiredThreads
-            .contains(summary.thread.id) ==
-        true;
+    final swept = sweep?.expiredThreads.contains(summary.thread.id) == true;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: GuardianCard(
-        onTap: () => context.push('/chat/$familyId/${summary.thread.id}'),
-        child: Row(children: [
-          GuardianIconBadge(
-              icon: summary.thread.isFamilyThread
-                  ? Icons.people_outline
-                  : Icons.chat_outlined),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Consumer(
+        builder: (context, ref, _) {
+          return GuardianCard(
+            onTap: () async {
+              final lockEnabled =
+                  ref.read(chatLockEnabledProvider).valueOrNull ?? false;
+              if (lockEnabled) {
+                final authed =
+                    await ref.read(biometricAuthServiceProvider).authenticate(
+                          localizedReason: l10n.t('securityAuthToChat'),
+                        );
+                if (!authed) return;
+              }
+              if (!context.mounted) return;
+              context.push('/chat/$familyId/${summary.thread.id}');
+            },
+            child: Row(
               children: [
-                Text(_threadLabel(l10n, summary.thread),
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(
-                  summary.lastMessage == null
-                      ? l10n.t('chatEmpty')
-                      : (summary.lastMessage!.body.length > 48
-                          ? '${summary.lastMessage!.body.substring(0, 48)}…'
-                          : summary.lastMessage!.body),
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                GuardianIconBadge(
+                  icon: summary.thread.isFamilyThread
+                      ? Icons.people_outline
+                      : Icons.chat_outlined,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _threadLabel(l10n, summary.thread),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        summary.lastMessage == null
+                            ? l10n.t('chatEmpty')
+                            : (summary.lastMessage!.body.length > 48
+                                ? '${summary.lastMessage!.body.substring(0, 48)}…'
+                                : summary.lastMessage!.body),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    GuardianStatusChip(
+                      label: l10n.t('chatExpiration24h'),
+                      kind: GuardianStatusKind.watch,
+                      live: !swept,
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            GuardianStatusChip(
-              label: l10n.t('chatExpiration24h'),
-              kind: GuardianStatusKind.watch,
-              live: !swept,
-            ),
-          ]),
-        ]),
+          );
+        },
       ),
     );
   }
@@ -459,10 +508,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final runtime =
-        ref.watch(familyRuntimeContextProvider(widget.familyId));
-    final guard = _chatGuard(context, ref, runtime,
-        FamilyPermission.viewChat, widget.familyId);
+    final runtime = ref.watch(familyRuntimeContextProvider(widget.familyId));
+    final guard = _chatGuard(
+        context, ref, runtime, FamilyPermission.viewChat, widget.familyId);
     if (guard != null) {
       return Scaffold(
         backgroundColor: GuardianTokens.guardianNavy,
@@ -496,8 +544,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           padding: const EdgeInsets.all(12),
                           child: Row(children: [
                             const Icon(Icons.timelapse_outlined,
-                                color: GuardianTokens.guardianTeal,
-                                size: 18),
+                                color: GuardianTokens.guardianTeal, size: 18),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(l10n.t('chatExpirationNotice'),
@@ -511,25 +558,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       if (sweepAsync.valueOrNull != null &&
                           messagesAsync.valueOrNull != null &&
                           messagesAsync.valueOrNull!.isEmpty &&
-                          sweepAsync.valueOrNull!
-                              .expiredThreads
+                          sweepAsync.valueOrNull!.expiredThreads
                               .contains(widget.threadId))
                         GuardianCard(
                           color: GuardianTokens.statusWatchSoft,
                           child: Padding(
                             padding: const EdgeInsets.all(12),
-                            child: Row(children: [
-                              const Icon(Icons.hourglass_top_outlined,
-                                  color: GuardianTokens.statusWatch,
-                                  size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(l10n.t('chatThreadExpiredNotice'),
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600)),
-                              ),
-                            ],
+                            child: Row(
+                              children: [
+                                const Icon(Icons.hourglass_top_outlined,
+                                    color: GuardianTokens.statusWatch,
+                                    size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(l10n.t('chatThreadExpiredNotice'),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600)),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -548,8 +595,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           state: GuardianViewState.error,
                           title: l10n.t('chatFailedBanner'),
                           message: err.toString(),
-                          onRetry: () =>
-                              ref.invalidate(chatActiveMessagesProvider(_messagesKey)),
+                          onRetry: () => ref.invalidate(
+                              chatActiveMessagesProvider(_messagesKey)),
                         ),
                         data: (messages) => Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -571,8 +618,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ]),
           ),
-          _Composer(familyId: widget.familyId, threadId: widget.threadId, ctx: ctx,
-              controller: _input, sending: _sending,
+          _Composer(
+              familyId: widget.familyId,
+              threadId: widget.threadId,
+              ctx: ctx,
+              controller: _input,
+              sending: _sending,
               onOutcome: (outcome) => setState(() => _lastOutcome = outcome),
               onSending: (v) => setState(() => _sending = v)),
         ]),
@@ -598,20 +649,23 @@ class _OutcomeBanner extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Row(children: [
-          Icon(switch (outcome) {
-            FamilyChatSendOutcome.sent => Icons.check_circle_outline,
-            FamilyChatSendOutcome.queued => Icons.cloud_queue_outlined,
-            FamilyChatSendOutcome.failed => Icons.error_outline,
-            FamilyChatSendOutcome.duplicate => Icons.info_outline,
-          }, size: 16, color: palette),
+          Icon(
+              switch (outcome) {
+                FamilyChatSendOutcome.sent => Icons.check_circle_outline,
+                FamilyChatSendOutcome.queued => Icons.cloud_queue_outlined,
+                FamilyChatSendOutcome.failed => Icons.error_outline,
+                FamilyChatSendOutcome.duplicate => Icons.info_outline,
+              },
+              size: 16,
+              color: palette),
           const SizedBox(width: 8),
           Expanded(
             child: Text(_sendOutcomeLabel(l10n, outcome),
                 style: TextStyle(fontSize: 12, color: palette)),
           ),
           if (outcome == FamilyChatSendOutcome.failed)
-            const Icon(Icons.refresh_outlined, size: 14,
-                color: GuardianTokens.statusAlert),
+            const Icon(Icons.refresh_outlined,
+                size: 14, color: GuardianTokens.statusAlert),
         ]),
       ),
     );
@@ -632,8 +686,8 @@ class _MessageBubble extends StatelessWidget {
           GuardianTokens.statusWatch, GuardianTokens.statusWatchSoft),
       FamilyChatMessageState.failed => const GuardianStatusPalette(
           GuardianTokens.statusAlert, GuardianTokens.statusAlertSoft),
-      FamilyChatMessageState.expired => const GuardianStatusPalette(
-          Color(0xFF4A5A78), Color(0xFFEDF2F9)),
+      FamilyChatMessageState.expired =>
+        const GuardianStatusPalette(Color(0xFF4A5A78), Color(0xFFEDF2F9)),
     };
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -654,11 +708,11 @@ class _MessageBubble extends StatelessWidget {
             Row(children: [
               Text(_timeLabel(message.createdAt),
                   style: TextStyle(
-                      fontSize: 11, color: palette.text.withValues(alpha: 0.75))),
+                      fontSize: 11,
+                      color: palette.text.withValues(alpha: 0.75))),
               const SizedBox(width: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: palette.soft,
                   borderRadius: BorderRadius.circular(8),
@@ -726,8 +780,7 @@ class _ComposerState extends ConsumerState<_Composer> {
                 hintText: l10n.t('chatTypeHere'),
                 border: InputBorder.none,
                 hintStyle: TextStyle(
-                    color:
-                        Theme.of(context).colorScheme.onSurfaceVariant),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),

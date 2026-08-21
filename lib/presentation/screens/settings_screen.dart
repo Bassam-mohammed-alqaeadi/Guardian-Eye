@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../application/guardian_providers.dart';
 import '../../core/localization/app_localizations.dart';
-import 'package:go_router/go_router.dart';
+import '../../core/database/guardian_database.dart';
+import '../../core/security/biometric_auth_service.dart';
 
 /// The single settings surface for Guardian Eye Pro.
 ///
@@ -192,12 +195,96 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+            _SectionHeader(title: l10n.t('securityTitle')),
+            const _SecuritySettingsCard(),
           ],
         ),
       ),
     );
   }
 }
+
+/// FS-012 Security Enhancement: Biometric Lock & Privacy Notifications.
+class _SecuritySettingsCard extends ConsumerWidget {
+  const _SecuritySettingsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final chatLock = ref.watch(chatLockEnabledProvider);
+    final service = ref.watch(biometricAuthServiceProvider);
+
+    return Card.filled(
+      child: Column(
+        children: [
+          SwitchListTile(
+            title: Text(l10n.t('securityChatBiometricLock')),
+            subtitle: Text(l10n.t('securityChatBiometricLockDesc')),
+            value: chatLock.valueOrNull ?? false,
+            onChanged: (value) async {
+              if (value) {
+                final available = await service.isAvailable();
+                if (!available) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(l10n.t('securityBiometricsUnavailable'))),
+                  );
+                  return;
+                }
+                final authed = await service.authenticate(
+                  localizedReason: l10n.t('securityAuthToEnable'),
+                );
+                if (!authed) return;
+              }
+              await service.setChatLockEnabled(value);
+              ref.invalidate(chatLockEnabledProvider);
+            },
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          // FS-012 Security Enhancement: Privacy Notifications.
+          // Persisted in SQLite for consistency with RemoteNotificationService.
+          Consumer(builder: (context, ref, _) {
+            final privacyNotifications =
+                ref.watch(privacyNotificationsProvider);
+            return SwitchListTile(
+              title: Text(l10n.t('securityPrivacyNotifications')),
+              subtitle: Text(l10n.t('securityPrivacyNotificationsDesc')),
+              value: privacyNotifications.valueOrNull ?? false,
+              onChanged: (value) async {
+                final db = await GuardianDatabase.instance.database;
+                await db.insert(
+                  'notification_settings',
+                  {
+                    'key': 'security_privacy_notifications',
+                    'render_enabled': value ? 1 : 0,
+                    'dispatch_enabled': 1,
+                    'updated_at': DateTime.now().toUtc().toIso8601String()
+                  },
+                  conflictAlgorithm: ConflictAlgorithm.replace,
+                );
+                ref.invalidate(privacyNotificationsProvider);
+              },
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+final privacyNotificationsProvider = FutureProvider<bool>((ref) async {
+  try {
+    final db = await GuardianDatabase.instance.database;
+    final rows = await db.query('notification_settings',
+        where: "key = 'security_privacy_notifications'", limit: 1);
+    if (rows.isEmpty) return false;
+    return rows.single['render_enabled'] == 1;
+  } catch (_) {
+    return false;
+  }
+});
 
 /// M9 Trigger C — canonical manual "sync now" surface.
 ///

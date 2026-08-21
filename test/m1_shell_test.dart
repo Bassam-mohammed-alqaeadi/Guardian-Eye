@@ -1,4 +1,5 @@
 library;
+
 /// M1 — App Shell + Canonical Navigation: focused widget evidence.
 ///
 /// These tests prove the shell properties defined by the M1 scope:
@@ -38,14 +39,14 @@ class _NoChildDevicesRepository implements ChildDeviceRepository {
 }
 
 final List<Override> _dataSourceOverrides = [
-  childDeviceRepositoryProvider.overrideWithValue(
-      _NoChildDevicesRepository()),
+  childDeviceRepositoryProvider.overrideWithValue(_NoChildDevicesRepository()),
   recentIncidentsProvider('f-1').overrideWith((ref) async => const []),
 ];
 
 /// Empty-family dashboard fixture reused by every shell test.
 const GuardianDashboard _emptyFamily = GuardianDashboard(
     family: null,
+    member: null,
     children: [],
     incidentsToday: 0,
     queuedOperations: 0);
@@ -85,10 +86,10 @@ class _GoConsumer extends ConsumerWidget {
 Future<void> _pumpWithTarget(WidgetTester tester, String location) async {
   await tester.pumpWidget(
     ProviderScope(
-          overrides: [
+      overrides: [
         dashboardProvider.overrideWith((ref) async => _emptyFamily),
-            localeProvider.overrideWith((ref) => 'ar'),
-            ..._dataSourceOverrides,
+        localeProvider.overrideWith((ref) => 'ar'),
+        ..._dataSourceOverrides,
       ],
       child: Directionality(
         textDirection: TextDirection.ltr,
@@ -120,41 +121,49 @@ void main() {
       // never an inline theme. The platform shell (GuardianBottomNav)
       // now wraps screens in its own Scaffold, so the screen scaffold
       // is the last one in the tree.
-      final ThemeData theme = Theme.of(tester.element(find.byType(Scaffold).last));
-      expect(theme.textTheme.bodyMedium?.fontFamily ?? theme.textTheme.titleMedium?.fontFamily,
+      final ThemeData theme =
+          Theme.of(tester.element(find.byType(Scaffold).last));
+      expect(
+          theme.textTheme.bodyMedium?.fontFamily ??
+              theme.textTheme.titleMedium?.fontFamily,
           'Cairo');
       expect(find.text('Guardian Eye Pro'), findsOneWidget);
     });
 
-    testWidgets('Arabic locale drives a right-to-left shell',
-        (tester) async {
+    testWidgets('Arabic locale drives a right-to-left shell', (tester) async {
       await _pump(tester, languageCode: 'ar');
-      expect(tester.widget<Directionality>(find.byType(Directionality).first).textDirection,
+      expect(
+          tester
+              .widget<Directionality>(find.byType(Directionality).first)
+              .textDirection,
           TextDirection.rtl);
       expect(find.byTooltip('الإعدادات'), findsOneWidget);
     });
 
-    testWidgets('English locale drives a left-to-right shell',
-        (tester) async {
+    testWidgets('English locale drives a left-to-right shell', (tester) async {
       await _pump(tester, languageCode: 'en');
-      expect(tester.widget<Directionality>(find.byType(Directionality).first).textDirection,
+      expect(
+          tester
+              .widget<Directionality>(find.byType(Directionality).first)
+              .textDirection,
           TextDirection.ltr);
       expect(find.byTooltip('Settings'), findsOneWidget);
     });
 
-    testWidgets('navigation entry points live on the family home and all use the canonical router',
+    testWidgets(
+        'navigation entry points live on the family home and all use the canonical router',
         (tester) async {
       final family = GuardianFamily(
           id: 'f-1', name: 'Al-Family', createdAt: DateTime(2026, 1, 1));
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            dashboardProvider.overrideWith(
-                (ref) async => GuardianDashboard(
-                    family: family,
-                    children: [],
-                    incidentsToday: 0,
-                    queuedOperations: 0)),
+            dashboardProvider.overrideWith((ref) async => GuardianDashboard(
+                family: family,
+                member: null,
+                children: [],
+                incidentsToday: 0,
+                queuedOperations: 0)),
             localeProvider.overrideWith((ref) => 'ar'),
             ..._dataSourceOverrides,
           ],
@@ -172,7 +181,8 @@ void main() {
       expect(find.text('اللغة'), findsOneWidget);
     });
 
-    testWidgets('settings language toggle updates the shell locale and feedback appears',
+    testWidgets(
+        'settings language toggle updates the shell locale and feedback appears',
         (tester) async {
       await _pump(tester);
       await tester.tap(find.byTooltip('الإعدادات'));
@@ -183,33 +193,33 @@ void main() {
       expect(find.textContaining('Settings saved'), findsOneWidget);
     });
 
-    testWidgets('an unverified actor gets disabled safety actions rather than dead ends',
+    testWidgets(
+        'an unverified actor gets disabled safety actions rather than dead ends',
         (tester) async {
       final family = GuardianFamily(
           id: 'f-1', name: 'Al-Family', createdAt: DateTime(2026, 1, 1));
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            dashboardProvider.overrideWith(
-                (ref) async => GuardianDashboard(
-                    family: family,
-                    children: [],
-                    incidentsToday: 0,
-                    queuedOperations: 0)),
+            dashboardProvider.overrideWith((ref) async => GuardianDashboard(
+                family: family,
+                member: null,
+                children: [],
+                incidentsToday: 0,
+                queuedOperations: 0)),
             localeProvider.overrideWith((ref) => 'ar'),
-            familyRuntimeContextProvider(
-                    'f-1').overrideWith((ref) async =>
-                FamilyRuntimeContext(
-                  familyId: 'f-1',
-                  family: family,
-                  actor: null,
-                  isVerified: false,
-                  permissionsFor:
-                      const FamilyAuthorization().permissionsFor,
-                  allMembers: const [],
-                  children: const [],
-                  devices: const [],
-                )),
+            familyRuntimeContextProvider('f-1')
+                .overrideWith((ref) async => FamilyRuntimeContext(
+                      familyId: 'f-1',
+                      family: family,
+                      actor: null,
+                      isVerified: false,
+                      permissionsFor:
+                          const FamilyAuthorization().permissionsFor,
+                      allMembers: const [],
+                      children: const [],
+                      devices: const [],
+                    )),
             ..._dataSourceOverrides,
           ],
           child: const GuardianApp(),
@@ -228,8 +238,7 @@ void main() {
       // locally-added role check, always delegated via FamilyRuntimeContext.
       // The dashboard now has more cards before the safety-policies group,
       // so scroll until the manage-policies button is built and visible.
-      await tester.scrollUntilVisible(
-          find.text('إدارة السياسات'), 100);
+      await tester.scrollUntilVisible(find.text('إدارة السياسات'), 100);
       await tester.pumpAndSettle();
       // In Flutter 3.35.7, OutlinedButton.icon returns the private
       // _OutlinedButtonWithIcon widget rather than an OutlinedButton
@@ -251,10 +260,13 @@ void main() {
           final child = widget.child;
           if (child is Text) return child.data == 'إدارة السياسات';
           if (child is Row) {
-            return child.children.whereType<Text>().any((t) => t.data == 'إدارة السياسات');
+            return child.children
+                .whereType<Text>()
+                .any((t) => t.data == 'إدارة السياسات');
           }
           // _OutlinedButtonWithIconChild: its `label` field holds the text.
-          if (child != null && child.runtimeType.toString().contains('WithIconChild')) {
+          if (child != null &&
+              child.runtimeType.toString().contains('WithIconChild')) {
             try {
               final label = (child as dynamic).label;
               return label is Text && label.data == 'إدارة السياسات';
@@ -266,11 +278,13 @@ void main() {
         },
         description: 'button labeled إدارة السياسات',
       );
-      final managePolicies = tester.widget<ButtonStyleButton>(managePoliciesFinder);
+      final managePolicies =
+          tester.widget<ButtonStyleButton>(managePoliciesFinder);
       expect(managePolicies.onPressed, isNull);
     });
 
-    testWidgets('dead routes land on the not-found page instead of prototype screens',
+    testWidgets(
+        'dead routes land on the not-found page instead of prototype screens',
         (tester) async {
       await _pumpWithTarget(tester, '/child-profile');
       expect(find.text('الصفحة غير موجودة'), findsOneWidget);
@@ -283,7 +297,8 @@ void main() {
       expect(find.text('الصفحة غير موجودة'), findsOneWidget);
     });
 
-    testWidgets('settings has account/session, language and permissions entries',
+    testWidgets(
+        'settings has account/session, language and permissions entries',
         (tester) async {
       await _pump(tester);
       await tester.tap(find.byTooltip('الإعدادات'));

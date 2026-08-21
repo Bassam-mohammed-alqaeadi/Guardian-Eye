@@ -167,7 +167,7 @@ class RoleGateScreen extends ConsumerWidget {
               RoleGateDecision.landWithRole =>
                 const _LandingRedirect(route: '/'),
               RoleGateDecision.landAsChild =>
-                const _LandingRedirect(route: '/'),
+                _ChildLandingRedirect(familyId: _familyIdOf(ref)),
               RoleGateDecision.landAsSpouse =>
                 _SpouseLandingRedirect(familyId: _familyIdOf(ref)),
               RoleGateDecision.unverified => const _UnverifiedState(),
@@ -314,6 +314,42 @@ class _LandingRedirectState extends ConsumerState<_LandingRedirect> {
       ]),
     );
   }
+}
+
+/// Canonical child landing: the gate lands on the FS-012 Child Dashboard
+/// surface (/child/:fid/:cid/dashboard) for the verified child actor.
+class _ChildLandingRedirect extends ConsumerStatefulWidget {
+  const _ChildLandingRedirect({this.familyId});
+  final String? familyId;
+
+  @override
+  ConsumerState<_ChildLandingRedirect> createState() =>
+      _ChildLandingRedirectState();
+}
+
+class _ChildLandingRedirectState extends ConsumerState<_ChildLandingRedirect> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final familyId = widget.familyId ??
+            ref.read(dashboardProvider).valueOrNull?.family?.id;
+        final dashboard = ref.read(dashboardProvider).valueOrNull;
+        final actor = dashboard?.member;
+
+        if (familyId != null && familyId.isNotEmpty && actor != null) {
+          context.go('/child/$familyId/${actor.id}/dashboard');
+        } else {
+          context.go('/');
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const Center(child: CircularProgressIndicator());
 }
 
 /// Canonical spouse landing: the gate lands on the existing couple-harmony

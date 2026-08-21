@@ -23,6 +23,9 @@ const String kGuardianNotificationChannelDescription =
 const String kNotificationPayloadKind = 'kind';
 const String kNotificationPayloadFamilyId = 'familyId';
 const String kNotificationPayloadNotificationEventId = 'notificationEventId';
+const String kNotificationPayloadThreadId = 'threadId';
+const String kNotificationPayloadSenderName = 'senderName';
+const String kNotificationPayloadMessageBody = 'messageBody';
 
 typedef NotificationRouteResolver = Future<Uri> Function(
     NotificationOpenContext context);
@@ -241,12 +244,35 @@ class RemoteNotificationService {
     if (state != NotificationPermissionState.granted) return;
     final kind = _parseKind(message.data[kNotificationPayloadKind]);
     if (kind == null) return;
+
+    // FS-012 Security Enhancement: Privacy Notifications for Chat.
+    final isChat = message.data[kNotificationPayloadKind] == 'chat';
+    final privacyEnabled = await _isPrivacyNotificationsEnabled();
+
     await _ensureChannel();
     try {
+      final String title;
+      final String body;
+
+      if (isChat) {
+        if (privacyEnabled) {
+          title = 'رسالة عائلية جديدة';
+          body = 'لديك رسالة جديدة — افتح التطبيق للاطلاع';
+        } else {
+          title =
+              message.data[kNotificationPayloadSenderName] ?? 'رسالة عائلية';
+          body = message.data[kNotificationPayloadMessageBody] ??
+              'لديك رسالة جديدة';
+        }
+      } else {
+        title = _titleFor(kind);
+        body = _bodyFor(kind);
+      }
+
       await _plugin.show(
         id: message.hashCode,
-        title: _titleFor(kind),
-        body: _bodyFor(kind),
+        title: title,
+        body: body,
         notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             kGuardianNotificationChannelId,
@@ -311,7 +337,21 @@ class RemoteNotificationService {
     final value = raw.toString();
     if (value == 'incident') return NotificationKind.incident;
     if (value == 'sos') return NotificationKind.sos;
+    if (value == 'chat')
+      return NotificationKind.incident; // Chat uses incident logic for now
     return null;
+  }
+
+  Future<bool> _isPrivacyNotificationsEnabled() async {
+    try {
+      final db = await _database.database;
+      final rows = await db.query('notification_settings',
+          where: "key = 'security_privacy_notifications'", limit: 1);
+      if (rows.isEmpty) return false;
+      return rows.single['render_enabled'] == 1;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Persists preferences. Never claims a preference change produced a

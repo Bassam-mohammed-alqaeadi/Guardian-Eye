@@ -84,12 +84,26 @@ class FamilyRepository {
         await db.query('families', where: 'archived_at IS NULL', limit: 1);
     if (rows.isEmpty) {
       return const GuardianDashboard(
-          family: null, children: [], incidentsToday: 0, queuedOperations: 0);
+          family: null,
+          member: null,
+          children: [],
+          incidentsToday: 0,
+          queuedOperations: 0);
     }
     final family = GuardianFamily.fromMap(rows.first);
-    final children = await db.query('family_members',
-        where: 'family_id = ? AND role = ?',
-        whereArgs: [family.id, FamilyRole.child.storageKey]);
+    // In this local-only stage, we assume the first non-child member is the
+    // current actor for dashboard purposes, or null if only children exist.
+    final members = await db.query('family_members',
+        where: 'family_id = ?', whereArgs: [family.id]);
+    final member = members.map(FamilyMember.fromMap).firstWhere(
+        (m) => m.role != FamilyRole.child,
+        orElse: () => FamilyMember.fromMap(members.first));
+
+    final children = members
+        .map(FamilyMember.fromMap)
+        .where((m) => m.role == FamilyRole.child)
+        .toList();
+
     final now = DateTime.now().toUtc();
     final start = DateTime.utc(now.year, now.month, now.day).toIso8601String();
     final incidents = Sqflite.firstIntValue(await db.rawQuery(
@@ -120,7 +134,8 @@ class FamilyRepository {
 
     return GuardianDashboard(
         family: family,
-        children: children.map(FamilyMember.fromMap).toList(),
+        member: member,
+        children: children,
         incidentsToday: incidents,
         queuedOperations: queued,
         activeSosCount: sos,

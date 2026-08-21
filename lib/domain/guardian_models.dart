@@ -330,6 +330,7 @@ class PairingLifecycle {
 class GuardianDashboard {
   const GuardianDashboard(
       {required this.family,
+      required this.member,
       required this.children,
       required this.incidentsToday,
       required this.queuedOperations,
@@ -338,6 +339,7 @@ class GuardianDashboard {
       this.unreadChatCount = 0,
       this.locationCount = 0});
   final GuardianFamily? family;
+  final FamilyMember? member;
   final List<FamilyMember> children;
   final int incidentsToday;
   final int queuedOperations;

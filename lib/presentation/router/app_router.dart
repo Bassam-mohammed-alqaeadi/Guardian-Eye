@@ -39,6 +39,7 @@ import '../screens/startup_screens.dart';
 import '../screens/whats_new_screen.dart';
 import '../screens/family_setup_screens.dart';
 import '../screens/family_dashboard_screens.dart';
+import '../screens/child_mode_screens.dart';
 import '../widgets/guardian_bottom_nav.dart';
 import '../../domain/guardian_models.dart';
 import '../../application/guardian_providers.dart';
@@ -193,6 +194,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => ChildLandingWrapper(
                 familyId: state.pathParameters['familyId']!,
                 childId: state.pathParameters['childId']!),
+          ),
+          GoRoute(
+            path: '/child/:familyId/:childId/dashboard',
+            name: 'childDashboard',
+            builder: (context, state) => ChildModeDashboard(
+                familyId: state.pathParameters['familyId']!,
+                childId: state.pathParameters['childId']!),
+          ),
+          GoRoute(
+            path: '/child/:familyId/:childId/requests',
+            name: 'childRequestsHistory',
+            builder: (context, state) => ChildRequestsScreen(
+                familyId: state.pathParameters['familyId']!,
+                childId: state.pathParameters['childId']!),
+          ),
+          GoRoute(
+            path: '/child/:familyId/:childId/privacy',
+            name: 'childPrivacy',
+            builder: (context, state) => ChildPrivacyScreen(
+                familyId: state.pathParameters['familyId']!,
+                childId: state.pathParameters['childId']!),
+          ),
+          GoRoute(
+            path: '/child/lock',
+            name: 'childLock',
+            builder: (context, state) =>
+                ChildModeLockScreen(reason: state.extra as String? ?? ''),
           ),
           GoRoute(
             path: '/privacy-controls',

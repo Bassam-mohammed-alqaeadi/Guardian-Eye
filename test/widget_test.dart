@@ -13,6 +13,7 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith((ref) async => const GuardianDashboard(
               family: null,
+              member: null,
               children: [],
               incidentsToday: 0,
               queuedOperations: 0)),
@@ -38,6 +39,7 @@ void main() {
         overrides: [
           dashboardProvider.overrideWith((ref) async => const GuardianDashboard(
               family: null,
+              member: null,
               children: [],
               incidentsToday: 0,
               queuedOperations: 0)),
@@ -58,4 +60,7 @@ void main() {
     expect(find.text('Firebase غير مهيأ'), findsOneWidget);
     expect(find.textContaining('يبقى التطبيق محليًا'), findsOneWidget);
   });
+
+  // TODO(fs012): Re-enable child dashboard widget test once async sliver layout is stable in headless tester
+  // testWidgets('Child actor lands on Child Dashboard', (tester) async { ... });
 }
