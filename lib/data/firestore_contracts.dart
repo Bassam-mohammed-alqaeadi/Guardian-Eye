@@ -1195,6 +1195,9 @@ class FirestoreEventContract {
               'appTargets': payload['appTargets'] ?? '',
               'priority': payload['priority'] ?? 50,
               'action': payload['action'],
+              'geofenceIds': payload['geofenceIds'] ?? '',
+              'geofenceTrigger': payload['geofenceTrigger'] ?? 'entering',
+              'linkedTaskId': payload['linkedTaskId'] ?? '',
               'createdAt': payload['createdAt'],
               'updatedAt': payload['updatedAt'],
               'syncState': payload['syncState']

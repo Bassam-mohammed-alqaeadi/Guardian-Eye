@@ -358,8 +358,11 @@ void main() {
               enabled: false,
               assignedChildIds: {'child-a-fr'}),
           createdByMemberId: 'parent-fr');
+      // Rule defaults to Bedtime (21:00 to 07:00). SeededAt is 10:00.
+      // We need a moment inside the window, e.g., 23:00.
+      final inside = _seededAt.add(const Duration(hours: 13));
       final visible = await repo.applicableForChild(
-          familyId: 'family-fr', childId: 'child-a-fr');
+          familyId: 'family-fr', childId: 'child-a-fr', at: inside);
       expect(visible.map((r) => r.ruleId).toSet(), {'ca-only'});
     });
 

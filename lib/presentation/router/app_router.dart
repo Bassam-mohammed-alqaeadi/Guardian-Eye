@@ -828,6 +828,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SosReportScreen(),
           ),
           GoRoute(
+            path: AudioReportScreen.route,
+            name: 'audioReport',
+            builder: (context, state) => const AudioReportScreen(),
+          ),
+          GoRoute(
             path: ReportExportScreen.route,
             name: 'reportExport',
             builder: (context, state) => const ReportExportScreen(),

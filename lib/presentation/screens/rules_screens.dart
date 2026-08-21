@@ -544,6 +544,10 @@ class _RuleBuilderState extends ConsumerState<RuleBuilderScreen> {
   Set<String> _children = const {};
   Set<String> _apps = const {};
   Set<String> _categories = const {};
+  Set<String> _geofences = const {};
+  GeofenceTrigger _geofenceTrigger = GeofenceTrigger.entering;
+  String _linkedTaskId = '';
+  DateTime? _oneshotAt;
   int _priority = 50;
   int? _limitMinutes;
   bool _saving = false;
@@ -575,6 +579,10 @@ class _RuleBuilderState extends ConsumerState<RuleBuilderScreen> {
         assignedChildIds: _children,
         appTargets: _apps,
         categoryTargets: _categories,
+        geofenceIds: _geofences,
+        geofenceTrigger: _geofenceTrigger,
+        linkedTaskId: _linkedTaskId,
+        oneshotAt: _oneshotAt,
         limitMinutes:
             _kind == RuleKind.dailyScreenTime ? _limitMinutes : null,
         priority: _priority,
@@ -783,6 +791,97 @@ class _RuleBuilderState extends ConsumerState<RuleBuilderScreen> {
     }
   }
 
+  Future<void> _pickOneshotDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _oneshotAt ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _oneshotAt = picked);
+  }
+
+  Future<void> _pickGeofences() async {
+    final l10n = AppLocalizations.of(context);
+    final familyId = GoRouterState.of(context).pathParameters['familyId'] ?? '';
+    final geofencesAsync = ref.read(geofencesProvider(familyId));
+    final geofences = geofencesAsync.valueOrNull ?? [];
+    final selected = Set<String>.from(_geofences);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: Text(l10n.t('frCategoryTargets'), // Reusing for Geofences
+              style: const TextStyle(color: GuardianTokens.guardianNavy)),
+          content: geofences.isEmpty
+              ? Text(l10n.t('noData'))
+              : Column(mainAxisSize: MainAxisSize.min, children: [
+                  for (final g in geofences)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(g.name),
+                      value: selected.contains(g.id),
+                      activeColor: GuardianTokens.guardianTeal,
+                      onChanged: (checked) {
+                        setState(() {
+                          if (checked == true) {
+                            selected.add(g.id);
+                          } else {
+                            selected.remove(g.id);
+                          }
+                        });
+                      },
+                    ),
+                ]),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.t('cancel'))),
+            FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(l10n.t('save'))),
+          ],
+        ),
+      ),
+    );
+    if (result == true) setState(() => _geofences = selected);
+  }
+
+  Future<void> _pickLinkedTask() async {
+    final l10n = AppLocalizations.of(context);
+    final familyId = GoRouterState.of(context).pathParameters['familyId'] ?? '';
+    final tasksAsync = ref.read(tasksListProvider(familyId));
+    final tasks = tasksAsync.valueOrNull ?? [];
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.t('rwLinkedRule'),
+            style: const TextStyle(color: GuardianTokens.guardianNavy)),
+        content: tasks.isEmpty
+            ? Text(l10n.t('noData'))
+            : Column(mainAxisSize: MainAxisSize.min, children: [
+                for (final t in tasks)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(t.title),
+                    trailing: _linkedTaskId == t.taskId
+                        ? const Icon(Icons.check, color: GuardianTokens.guardianTeal)
+                        : null,
+                    onTap: () => Navigator.of(dialogContext).pop(t.taskId),
+                  ),
+              ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.t('cancel'))),
+        ],
+      ),
+    );
+    if (result != null) setState(() => _linkedTaskId = result);
+  }
+
   void _kindChanged(RuleKind? kind) {
     if (kind == null) return;
     setState(() {
@@ -959,6 +1058,17 @@ class _RuleBuilderState extends ConsumerState<RuleBuilderScreen> {
                           label: Text(l10n.t('frChooseWeekdays')),
                         ),
                       ),
+                    if (_scheduleKind == RuleScheduleKind.oneTime)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: ElevatedButton.icon(
+                          onPressed: _pickOneshotDate,
+                          icon: const Icon(Icons.event, size: 18),
+                          label: Text(_oneshotAt == null
+                              ? l10n.t('frPick')
+                              : _oneshotAt!.toIso8601String().split('T')[0]),
+                        ),
+                      ),
                     if (_kind == RuleKind.dailyScreenTime) ...[
                       const SizedBox(height: 12),
                       TextField(
@@ -1001,14 +1111,45 @@ class _RuleBuilderState extends ConsumerState<RuleBuilderScreen> {
                       ElevatedButton.icon(
                         onPressed: _pickApps,
                         icon: const Icon(Icons.apps_outlined, size: 18),
-                        label: Text('${l10n.t('frAppTargets')}: ${_apps.isEmpty ? l10n.t('frPick') : _apps.join('، ')}'),
+                        label: Text('${l10n.t('frAppTargets')}: ${_apps.isEmpty ? l10n.t('frPick') : _apps.join(', ')}'),
                       ),
                     if (_kind == RuleKind.contentCategory)
                       ElevatedButton.icon(
                         onPressed: _pickCategories,
                         icon: const Icon(Icons.filter_list_outlined, size: 18),
-                        label: Text('${l10n.t('frCategoryTargets')}: ${_categories.isEmpty ? l10n.t('frPick') : _categories.join('، ')}'),
+                        label: Text('${l10n.t('frCategoryTargets')}: ${_categories.isEmpty ? l10n.t('frPick') : _categories.join(', ')}'),
                       ),
+                    if (_kind == RuleKind.geofenceRule) ...[
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _pickGeofences,
+                        icon: const Icon(Icons.location_on_outlined, size: 18),
+                        label: Text('${l10n.t('frCategoryTargets')}: ${_geofences.isEmpty ? l10n.t('frPick') : _geofences.join(', ')}'),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<GeofenceTrigger>(
+                        initialValue: _geofenceTrigger,
+                        decoration: InputDecoration(
+                            labelText: l10n.t('frRuleAction')), // Reusing label for trigger
+                        items: GeofenceTrigger.values
+                            .map((t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(t.name),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _geofenceTrigger = v);
+                        },
+                      ),
+                    ],
+                    if (_kind == RuleKind.taskGated) ...[
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _pickLinkedTask,
+                        icon: const Icon(Icons.task_outlined, size: 18),
+                        label: Text('${l10n.t('rwLinkedRule')}: ${_linkedTaskId.isEmpty ? l10n.t('frPick') : _linkedTaskId}'),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1067,6 +1208,10 @@ class _RuleEditState extends ConsumerState<RuleEditScreen> {
   Set<int> _weekdays = const {};
   Set<String> _apps = const {};
   Set<String> _categories = const {};
+  Set<String> _geofences = const {};
+  GeofenceTrigger _geofenceTrigger = GeofenceTrigger.entering;
+  String _linkedTaskId = '';
+  DateTime? _oneshotAt;
   int _priority = 50;
   int? _limitMinutes;
   bool _saving = false;
@@ -1093,6 +1238,10 @@ class _RuleEditState extends ConsumerState<RuleEditScreen> {
       weekdays: _weekdays.isEmpty ? rule.weekdays : _weekdays,
       appTargets: _apps,
       categoryTargets: _categories,
+      geofenceIds: _geofences,
+      geofenceTrigger: _geofenceTrigger,
+      linkedTaskId: _linkedTaskId,
+      oneshotAt: _oneshotAt,
       priority: _priority,
       limitMinutes: _limitMinutes,
     );
@@ -1142,6 +1291,10 @@ class _RuleEditState extends ConsumerState<RuleEditScreen> {
       _weekdays = rule.weekdays;
       _apps = rule.appTargets;
       _categories = rule.categoryTargets;
+      _geofences = rule.geofenceIds;
+      _geofenceTrigger = rule.geofenceTrigger;
+      _linkedTaskId = rule.linkedTaskId;
+      _oneshotAt = rule.oneshotAt;
       _priority = rule.priority;
       _limitMinutes = rule.limitMinutes;
     }
@@ -1262,6 +1415,17 @@ class _RuleEditState extends ConsumerState<RuleEditScreen> {
                         icon: const Icon(Icons.calendar_month, size: 18),
                         label: Text(l10n.t('frChooseWeekdays')),
                       ),
+                    if (rule.scheduleKind == RuleScheduleKind.oneTime)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: ElevatedButton.icon(
+                          onPressed: _pickOneshotDate,
+                          icon: const Icon(Icons.event, size: 18),
+                          label: Text(_oneshotAt == null
+                              ? l10n.t('frPick')
+                              : _oneshotAt!.toIso8601String().split('T')[0]),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1284,12 +1448,43 @@ class _RuleEditState extends ConsumerState<RuleEditScreen> {
                     const SizedBox(height: 8),
                     if (_apps.isNotEmpty || _categories.isNotEmpty) ...[
                       Text(
-                          '${l10n.t('frAppTargets')}: ${_apps.isEmpty ? '—' : _apps.join('، ')}',
+                          '${l10n.t('frAppTargets')}: ${_apps.isEmpty ? '-' : _apps.join(', ')}',
                           style: Theme.of(context).textTheme.bodySmall),
                       const SizedBox(height: 4),
                       Text(
-                          '${l10n.t('frCategoryTargets')}: ${_categories.isEmpty ? '—' : _categories.join('، ')}',
+                          '${l10n.t('frCategoryTargets')}: ${_categories.isEmpty ? '-' : _categories.join(', ')}',
                           style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                    if (rule.kind == RuleKind.geofenceRule) ...[
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _pickGeofences,
+                        icon: const Icon(Icons.location_on_outlined, size: 18),
+                        label: Text('${l10n.t('frCategoryTargets')}: ${_geofences.isEmpty ? l10n.t('frPick') : _geofences.join(', ')}'),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<GeofenceTrigger>(
+                        initialValue: _geofenceTrigger,
+                        decoration: InputDecoration(
+                            labelText: l10n.t('frRuleAction')),
+                        items: GeofenceTrigger.values
+                            .map((t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(t.name),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _geofenceTrigger = v);
+                        },
+                      ),
+                    ],
+                    if (rule.kind == RuleKind.taskGated) ...[
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _pickLinkedTask,
+                        icon: const Icon(Icons.task_outlined, size: 18),
+                        label: Text('${l10n.t('rwLinkedRule')}: ${_linkedTaskId.isEmpty ? l10n.t('frPick') : _linkedTaskId}'),
+                      ),
                     ],
                   ],
                 ),
@@ -1410,6 +1605,97 @@ class _RuleEditState extends ConsumerState<RuleEditScreen> {
       ),
     );
     if (result == true) setState(() => _rule = rule.copyWith(assignedChildIds: selected));
+  }
+
+  Future<void> _pickOneshotDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _oneshotAt ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _oneshotAt = picked);
+  }
+
+  Future<void> _pickGeofences() async {
+    final l10n = AppLocalizations.of(context);
+    final familyId = GoRouterState.of(context).pathParameters['familyId'] ?? '';
+    final geofencesAsync = ref.read(geofencesProvider(familyId));
+    final geofences = geofencesAsync.valueOrNull ?? [];
+    final selected = Set<String>.from(_geofences);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: Text(l10n.t('frCategoryTargets'),
+              style: const TextStyle(color: GuardianTokens.guardianNavy)),
+          content: geofences.isEmpty
+              ? Text(l10n.t('noData'))
+              : Column(mainAxisSize: MainAxisSize.min, children: [
+                  for (final g in geofences)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(g.name),
+                      value: selected.contains(g.id),
+                      activeColor: GuardianTokens.guardianTeal,
+                      onChanged: (checked) {
+                        setState(() {
+                          if (checked == true) {
+                            selected.add(g.id);
+                          } else {
+                            selected.remove(g.id);
+                          }
+                        });
+                      },
+                    ),
+                ]),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.t('cancel'))),
+            FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(l10n.t('save'))),
+          ],
+        ),
+      ),
+    );
+    if (result == true) setState(() => _geofences = selected);
+  }
+
+  Future<void> _pickLinkedTask() async {
+    final l10n = AppLocalizations.of(context);
+    final familyId = GoRouterState.of(context).pathParameters['familyId'] ?? '';
+    final tasksAsync = ref.read(tasksListProvider(familyId));
+    final tasks = tasksAsync.valueOrNull ?? [];
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.t('rwLinkedRule'),
+            style: const TextStyle(color: GuardianTokens.guardianNavy)),
+        content: tasks.isEmpty
+            ? Text(l10n.t('noData'))
+            : Column(mainAxisSize: MainAxisSize.min, children: [
+                for (final t in tasks)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(t.title),
+                    trailing: _linkedTaskId == t.taskId
+                        ? const Icon(Icons.check, color: GuardianTokens.guardianTeal)
+                        : null,
+                    onTap: () => Navigator.of(dialogContext).pop(t.taskId),
+                  ),
+              ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.t('cancel'))),
+        ],
+      ),
+    );
+    if (result != null) setState(() => _linkedTaskId = result);
   }
 }
 

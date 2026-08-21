@@ -82,6 +82,7 @@ extension ReportSectionKind on ReportSection {
   static const String safety = 'safety';
   static const String modes = 'modes';
   static const String sos = 'sos';
+  static const String audio = 'audio';
 }
 
 /// Full report snapshot for one family over one period.

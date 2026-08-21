@@ -179,6 +179,8 @@ class ReportsDashboardScreen extends ConsumerWidget {
           Icons.tune, Icons.arrow_forward_ios, '/reports/$familyId/modes'),
       _SectionSpec('rpSosTitle', ReportSectionKind.sos,
           Icons.emergency, Icons.arrow_forward_ios, '/reports/$familyId/sos'),
+      _SectionSpec('rpAudioTitle', ReportSectionKind.audio,
+          Icons.mic, Icons.arrow_forward_ios, '/reports/$familyId/audio'),
     ];
     return [
       for (final spec in sections)
@@ -805,6 +807,65 @@ class _SosSectionBody extends StatelessWidget {
             kind: metric.tone == ReportTone.critical
                 ? GuardianStatusKind.sos
                 : null,
+          ),
+      ],
+    );
+  }
+}
+
+class AudioReportScreen extends ConsumerWidget {
+  const AudioReportScreen({super.key});
+  static const route = '/reports/:familyId/audio';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final familyId =
+        GoRouterState.of(context).pathParameters['familyId'] ?? '';
+    final runtime =
+        ref.watch(familyRuntimeContextProvider(familyId));
+
+    return _guardedScaffold(
+      context: context,
+      l10n: l10n,
+      runtime: runtime,
+      requiredPermission: FamilyPermission.viewReports,
+      child: _SectionDetailScaffold(
+        l10n: l10n,
+        title: l10n.t('rpAudioTitle'),
+        familyId: familyId,
+        kind: ReportSectionKind.audio,
+        runtime: runtime,
+        childBuilder: (section) => _AudioSectionBody(
+            l10n: l10n, section: section),
+      ),
+    );
+  }
+}
+
+class _AudioSectionBody extends StatelessWidget {
+  const _AudioSectionBody({required this.l10n, required this.section});
+  final AppLocalizations l10n;
+  final ReportSection section;
+
+  @override
+  Widget build(BuildContext context) {
+    if (section.isEmpty) {
+      return GuardianStateView(
+        state: GuardianViewState.empty,
+        title: l10n.t('rpNoData'),
+        message: l10n.t('rpAudioEmptyHint'),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final metric in section.metrics)
+          GuardianStatTile(
+            icon: Icons.mic,
+            value: metric.value,
+            label: l10n.t(metric.labelKey),
           ),
       ],
     );

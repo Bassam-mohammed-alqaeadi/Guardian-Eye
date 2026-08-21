@@ -38,16 +38,16 @@ class FamilyRulesRepository {
   /// Rules that apply to a child at a moment — the read-only view a child
   /// device is allowed to see (honest, self-only).
   Future<List<FamilyRule>> applicableForChild(
-      {required String familyId, required String childId}) async {
+      {required String familyId,
+      required String childId,
+      DateTime? at}) async {
     final all = await listForFamily(familyId);
+    final moment = at ?? DateTime.now();
     return all
         .where((rule) =>
             rule.enabled &&
             rule.appliesToChild(childId) &&
-            (rule.scheduleKind == RuleScheduleKind.daily ||
-                (rule.scheduleKind == RuleScheduleKind.weekly &&
-                    rule.weekdays.isEmpty) ||
-                true))
+            rule.isActiveAt(moment))
         .toList(growable: false);
   }
 

@@ -237,6 +237,19 @@ Future<void> _seedAll(Database db) async {
     'accuracy_m': 20.0,
     'created_at': DateTime.utc(2025, 7, 2, 20, 0, 0).toIso8601String(),
   });
+  // FS-008 audio sessions.
+  await db.insert('audio_sessions', {
+    'id': 'audio-1',
+    'family_id': 'family-r',
+    'member_id': 'child-r',
+    'device_id': 'device-r',
+    'status': 'completed',
+    'privacy_class': 'safetyEvidence',
+    'started_at': DateTime.utc(2025, 7, 1, 21, 0, 0).toIso8601String(),
+    'ended_at': DateTime.utc(2025, 7, 1, 21, 0, 30).toIso8601String(),
+    'duration_seconds': 30,
+    'sync_state': 'synced',
+  });
 }
 Directory _exportDir() {
   final dir = Directory.systemTemp.createTempSync('fs009-export-');
@@ -256,7 +269,7 @@ void main() {
           period: ReportPeriod.week,
           now: DateTime.utc(2024, 6, 1));
       expect(snapshot.isEmpty, isTrue);
-      expect(snapshot.sections.length, 6);
+      expect(snapshot.sections.length, 7);
       for (final section in snapshot.sections) {
         expect(section.isEmpty, isTrue, reason: section.kind);
       }
@@ -330,6 +343,14 @@ void main() {
       expect(int.parse(sos.metrics
           .cast<ReportMetric?>()
           .firstWhere((m) => m!.labelKey == 'rpSosTotal')!.value), 1);
+      final audio =
+          snapshot.sections.cast<ReportSection?>().firstWhere((s) => s!.kind == 'audio')!;
+      expect(int.parse(audio.metrics
+          .cast<ReportMetric?>()
+          .firstWhere((m) => m!.labelKey == 'rpAudioSessionsTotal')!.value), 1);
+      expect(audio.metrics
+          .cast<ReportMetric?>()
+          .firstWhere((m) => m!.labelKey == 'rpAudioDurationTotal')!.value, '30s');
     });
   });
   group('FS-009 export artefacts', () {

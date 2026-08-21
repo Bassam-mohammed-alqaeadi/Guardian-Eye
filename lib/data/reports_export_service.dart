@@ -15,13 +15,29 @@ import '../domain/reports_domain.dart';
 /// labelled inside the artefact itself ("No data captured in this period").
 class ReportExportService {
   ReportExportService({pw.Font? font, Directory? outputDirectory})
-      : _font = font ?? pw.Font.helvetica(),
+      : _font = font,
         _outputDirectory = outputDirectory;
 
-  final pw.Font _font;
+  final pw.Font? _font;
   final Directory? _outputDirectory;
-  pw.ThemeData get _theme =>
-      pw.ThemeData.withFont(base: _font, bold: pw.Font.helveticaBold());
+
+  Future<pw.ThemeData> _buildTheme() async {
+    if (_font != null) return pw.ThemeData.withFont(base: _font!);
+    try {
+      // Try to load Cairo for Arabic/Unicode support if available in assets.
+      final fontData = await File('assets/fonts/Cairo-Regular.ttf').readAsBytes();
+      final boldData = await File('assets/fonts/Cairo-Bold.ttf').readAsBytes();
+      final base = pw.Font.ttf(fontData.buffer.asByteData());
+      final bold = pw.Font.ttf(boldData.buffer.asByteData());
+      return pw.ThemeData.withFont(base: base, bold: bold);
+    } catch (_) {
+      // Fallback to Helvetica (no Unicode support, but safe).
+      return pw.ThemeData.withFont(
+        base: pw.Font.helvetica(),
+        bold: pw.Font.helveticaBold(),
+      );
+    }
+  }
 
   /// Export a snapshot to the given [format] and return the written file.
   Future<File> export({
@@ -36,7 +52,8 @@ class ReportExportService {
       await file.writeAsString(csv, encoding: utf8);
       return file;
     }
-    final pdf = _buildPdf(snapshot);
+    final theme = await _buildTheme();
+    final pdf = _buildPdf(snapshot, theme);
     final file = File(p.join(dir.path,
         'guardian_report_${snapshot.familyId}_${_stamp(snapshot)}.pdf'));
     await file.writeAsBytes(await pdf.save());
@@ -54,9 +71,9 @@ class ReportExportService {
 
   String _buildCsv(FamilyReportSnapshot snapshot) {
     final cells = <List<Object?>>[];
-    cells.add(['Guardian Eye Pro — Family Report']);
+    cells.add(['Guardian Eye Pro - Family Report']);
     cells.add(['Family', snapshot.familyName]);
-    cells.add(['Period', '${_d(snapshot.start)} → ${_d(snapshot.end)}']);
+    cells.add(['Period', '${_d(snapshot.start)} to ${_d(snapshot.end)}']);
     cells.add(['Captured at', _d(snapshot.capturedAt)]);
     cells.add([]);
 
@@ -82,14 +99,15 @@ class ReportExportService {
 
   // ----------------------------------------------------------------- PDF
 
-  pw.Document _buildPdf(FamilyReportSnapshot snapshot) {
-    final doc = pw.Document(theme: _theme);
+  pw.Document _buildPdf(FamilyReportSnapshot snapshot, pw.ThemeData theme) {
+    final doc = pw.Document(theme: theme);
     final navy = PdfColor.fromInt(0xFF0F2A5B);
     final teal = PdfColor.fromInt(0xFF00B8A9);
 
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(20),
+      textDirection: pw.TextDirection.ltr, // Base direction
       build: (pw.Context context) => [
         _pdfHeader(snapshot, navy, teal),
         for (final section in snapshot.sections)
@@ -121,7 +139,7 @@ class ReportExportService {
                       fontSize: 20,
                       fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
-              pw.Text('Family Report — ${snapshot.familyName}',
+              pw.Text('Family Report - ${snapshot.familyName}',
                   style: pw.TextStyle(
                       font: _font, color: PdfColors.white, fontSize: 12)),
             ]),
@@ -134,7 +152,7 @@ class ReportExportService {
       ),
       pw.SizedBox(height: 8),
       pw.Text(
-        'Period: ${_d(snapshot.start)} → ${_d(snapshot.end)}  ·  '
+        'Period: ${_d(snapshot.start)} to ${_d(snapshot.end)}  |  '
         'Generated: ${_d(snapshot.capturedAt)}',
         style: pw.TextStyle(font: _font, fontSize: 9, color: PdfColors.grey700),
       ),
@@ -234,7 +252,7 @@ class ReportExportService {
       ),
       child: pw.Text(
         'Honest report: generated from data recorded on the family device. '
-        'Guardian Eye Pro — ${snapshot.capturedAt.year}',
+        'Guardian Eye Pro - ${snapshot.capturedAt.year}',
         style: pw.TextStyle(font: _font, fontSize: 8, color: navy),
       ),
     );

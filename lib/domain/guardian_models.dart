@@ -155,11 +155,21 @@ class FamilyMember {
   final DateTime? revokedAt;
   final DateTime? updatedAt;
   bool get isActive => status == FamilyMemberStatus.active;
+
+  static String _toCamelCase(String s) {
+    final parts = s.split('_');
+    if (parts.length <= 1) return s;
+    return parts[0] +
+        parts.skip(1).map((p) => p[0].toUpperCase() + p.substring(1)).join();
+  }
+
   factory FamilyMember.fromMap(Map<String, Object?> map) => FamilyMember(
       id: map['id']! as String,
       familyId: map['family_id']! as String,
       displayName: map['display_name']! as String,
-      role: FamilyRole.values.byName(map['role']! as String),
+      role: FamilyRole.values.firstWhere(
+          (e) => e.name == map['role'] || e.name == _toCamelCase(map['role'] as String),
+          orElse: () => FamilyRole.child),
       createdAt: DateTime.parse(map['created_at']! as String),
       status: map['status'] == null
           ? FamilyMemberStatus.active

@@ -263,11 +263,19 @@ class FamilyRule {
         !weekdays.contains(moment.weekday)) {
       return false;
     }
+    // For daily rules, we also respect weekdays if they are set,
+    // otherwise they default to Mon-Fri in the builder.
+    if (scheduleKind == RuleScheduleKind.daily &&
+        weekdays.isNotEmpty &&
+        !weekdays.contains(moment.weekday)) {
+      return false;
+    }
     if (startMinute == endMinute) return true;
     final minute = moment.hour * 60 + moment.minute;
     if (startMinute < endMinute) {
       return minute >= startMinute && minute < endMinute;
     }
+    // Overnight window (e.g., 22:00 to 07:00)
     return minute >= startMinute || minute < endMinute;
   }
 

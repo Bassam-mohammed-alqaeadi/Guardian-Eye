@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../core/database/guardian_database.dart';
 import '../domain/reports_domain.dart';
+import '../domain/guardian_models.dart';
 
 /// FS-009 — Reports & Export. Pure aggregation layer over the subsystem
 /// tables. Every section declares the exact window it read and returns an
@@ -33,8 +34,8 @@ class ReportsRepository {
     final db = await _database.database;
     final rows =
         await db.query('families', where: 'id = ?', whereArgs: [familyId]);
-    if (rows.isEmpty) return '—';
-    return (rows.first['name'] as String?) ?? '—';
+    if (rows.isEmpty) return '-';
+    return (rows.first['name'] as String?) ?? '-';
   }
 
   int _asInt(Object? v) {
@@ -258,6 +259,36 @@ class ReportsRepository {
     return rows;
   }
 
+  // ----------------------------------------------------------------- audio
+
+  Future<int> audioSessionsCount(String familyId, DateTime start, DateTime end) async {
+    final db = await _database.database;
+    final rows = await db.rawQuery(
+        'SELECT COUNT(*) AS total FROM audio_sessions '
+        'WHERE family_id = ? AND started_at >= ? AND started_at <= ?',
+        [familyId, _iso(start), _iso(end)]);
+    return (rows.first['total'] as int? ?? 0);
+  }
+
+  Future<int> audioTotalDurationSeconds(String familyId, DateTime start, DateTime end) async {
+    final db = await _database.database;
+    final rows = await db.rawQuery(
+        'SELECT SUM(duration_seconds) AS total FROM audio_sessions '
+        'WHERE family_id = ? AND started_at >= ? AND started_at <= ?',
+        [familyId, _iso(start), _iso(end)]);
+    return (rows.first['total'] as int? ?? 0);
+  }
+
+  Future<List<Map<String, Object?>>> audioSessions(
+      String familyId, DateTime start, DateTime end) async {
+    final db = await _database.database;
+    final rows = await db.query('audio_sessions',
+        where: 'family_id = ? AND started_at >= ? AND started_at <= ?',
+        whereArgs: [familyId, _iso(start), _iso(end)],
+        orderBy: 'started_at DESC');
+    return rows;
+  }
+
   // ----------------------------------------------------------- aggregates
 
   /// Builds the honest per-section snapshot for the given period. Sections
@@ -301,8 +332,8 @@ class ReportsRepository {
       ],
             rows: webTop
           .map<List<String>>((r) => [
-                (r['domain'] ?? '—') as String,
-                (r['category'] ?? '—') as String,
+                (r['domain'] ?? '-') as String,
+                (r['category'] ?? '-') as String,
                 '${_asInt(r['total'])}',
               ])
           .toList(),
@@ -313,11 +344,20 @@ class ReportsRepository {
         .map((r) => r['day'] ?? '')
         .toSet()
         .length;
+
+    // Fetch members to resolve display names
+    final db = await _database.database;
+    final memberRows = await db.query('family_members', where: 'family_id = ?', whereArgs: [familyId]);
+    final members = memberRows.map(FamilyMember.fromMap).toList();
+
     int usageTotalMs = 0;
     final usageRows = <List<String>>[];
     for (final r in usageChildren) {
-      usageTotalMs += _asInt(r['total_ms']);
-      usageRows.add([(r['member_id'] ?? '—') as String, _humanMinutes(_asInt(r['total_ms']))]);
+      final ms = _asInt(r['total_ms']);
+      usageTotalMs += ms;
+      final memberId = r['member_id'] as String?;
+      final member = members.cast<FamilyMember?>().firstWhere((m) => m?.id == memberId, orElse: () => null);
+      usageRows.add([member?.displayName ?? memberId ?? '-', _humanMinutes(ms)]);
     }
     final usageSection = ReportSection(
       kind: ReportSectionKind.usage,
@@ -379,7 +419,7 @@ class ReportsRepository {
       metrics: [
         ReportMetric(labelKey: 'rpModesTotal', value: '${modes.length}'),
         ReportMetric(labelKey: 'rpModesActive',
-            value: '${modes.where((m) => m['state'] == 'applied').length}'),
+            value: '${modes.where((m) => m['state'] == 'active' || m['state'] == 'applied').length}'),
       ],
     );
 
@@ -396,6 +436,20 @@ class ReportsRepository {
       ],
     );
 
+    final audioCount = await audioSessionsCount(familyId, start, end);
+    final audioDuration = await audioTotalDurationSeconds(familyId, start, end);
+    final audioSection = ReportSection(
+      kind: ReportSectionKind.audio,
+      titleKey: 'rpAudioTitle',
+      dataStart: start,
+      dataEnd: end,
+      isEmpty: audioCount == 0,
+      metrics: [
+        ReportMetric(labelKey: 'rpAudioSessionsTotal', value: '$audioCount'),
+        ReportMetric(labelKey: 'rpAudioDurationTotal', value: _humanSeconds(audioDuration)),
+      ],
+    );
+
     return FamilyReportSnapshot(
       familyId: familyId,
       familyName: name,
@@ -409,9 +463,19 @@ class ReportsRepository {
         safetySection,
         modeSection,
         sosSection,
+        audioSection,
       ],
       capturedAt: t,
     );
+  }
+
+  String _humanSeconds(int totalSeconds) {
+    final h = totalSeconds ~/ 3600;
+    final m = (totalSeconds % 3600) ~/ 60;
+    final s = totalSeconds % 60;
+    if (h > 0) return '${h}h ${m}m ${s}s';
+    if (m > 0) return '${m}m ${s}s';
+    return '${s}s';
   }
 
   String _humanMinutes(int totalMs) {
